@@ -50,6 +50,9 @@ ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable
 ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
 
-DEMO_PAGE_INTRO_HTML = """ """
+DEMO_PAGE_INTRO_HTML = """
+<p>Simulador de comercialización de la Facultad de Ciencias Económicas y Jurídicas (UNLPam).
+Elija una configuración para crear una sesión de prueba.</p>
+"""
 
 SECRET_KEY = '4124799046129'

@@ -1,0 +1,10 @@
+{{ extends "otree/WaitPage.html" }}
+
+{{ block global_styles }}
+    {{ include "global/estilos.html" }}
+{{ endblock }}
+
+{{ block body_main }}
+    {{ include "global/encabezado.html" }}
+    {{ super() }}
+{{ endblock }}
