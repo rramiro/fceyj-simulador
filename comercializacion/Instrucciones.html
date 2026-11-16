@@ -1,0 +1,78 @@
+{{ block title }}
+    Simulador de comercialización
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes dirigen una empresa que fabrica y vende <b>gaseosas</b>. En su mercado
+    compiten <b>{{ num_empresas }} empresas</b>, incluida la suya, durante
+    <b>{{ num_rondas }} trimestres</b>. Todas venden un producto similar y parten
+    en igualdad de condiciones.
+</p>
+
+<h5>Qué deciden cada trimestre</h5>
+<ul>
+    <li><b>Precio de venta</b> por unidad: entre {{ precio_min }} y {{ precio_max }}.</li>
+    <li><b>Inversión en publicidad</b>: entre $ 0 y {{ publicidad_max }}.</li>
+</ul>
+
+<h5>Cómo funciona el mercado</h5>
+<ul>
+    <li>
+        <b>El tamaño del mercado depende del precio promedio.</b> Si las empresas
+        en conjunto cobran más caro, los consumidores compran menos gaseosas en total.
+    </li>
+    <li>
+        <b>Cada empresa se lleva una porción del mercado</b> según qué tan atractiva
+        sea frente a las demás:
+        <ul>
+            <li>Cobrar <i>más caro que el promedio</i> le quita clientes; cobrar más barato le suma.</li>
+            <li>La <i>publicidad</i> atrae clientes, pero cada peso adicional rinde menos que el anterior.</li>
+        </ul>
+    </li>
+    <li>
+        Lo que gana cada empresa depende de su decisión <b>y de lo que decidan las demás</b>.
+        La publicidad no hace crecer el mercado: solo reparte los clientes entre las empresas.
+    </li>
+    <li>Cada trimestre se decide de nuevo; la publicidad no tiene efecto en los trimestres siguientes.</li>
+</ul>
+
+<h5>Costos de su empresa</h5>
+<ul>
+    <li>Costo variable: {{ costo_variable }} por unidad vendida.</li>
+    <li>Costo fijo: {{ costo_fijo }} por trimestre (se paga aunque no venda nada).</li>
+    <li>La publicidad es un gasto del trimestre.</li>
+</ul>
+
+<p class="alert alert-info">
+    <b>Resultado del trimestre</b> = ventas − costo variable − publicidad − costo fijo.<br>
+    Gana la empresa con mayor <b>resultado acumulado</b> al final del juego.
+</p>
+
+<details class="mb-3">
+    <summary>Ver el modelo matemático</summary>
+    <div class="mt-2">
+        <p>Con <i>p<sub>i</sub></i> el precio y <i>A<sub>i</sub></i> la publicidad de la empresa <i>i</i>:</p>
+        <ul>
+            <li>Precio medio: p̄ = (1/n) · Σ p<sub>i</sub></li>
+            <li>
+                Demanda total: D = {{ demanda_base }} · (p̄ / {{ precio_referencia }})<sup>−{{ elasticidad }}</sup>
+            </li>
+            <li>
+                Atractivo: a<sub>i</sub> = −{{ beta_precio }} · (p<sub>i</sub> / p̄ − 1)
+                + {{ beta_publicidad }} · ln(1 + A<sub>i</sub> / {{ escala_publicidad }})
+            </li>
+            <li>
+                Participación (logit): s<sub>i</sub> = e<sup>a<sub>i</sub></sup> / Σ<sub>j</sub> e<sup>a<sub>j</sub></sup>
+            </li>
+            <li>Unidades vendidas: s<sub>i</sub> · D</li>
+        </ul>
+    </div>
+</details>
+
+{{ formfields }}
+
+{{ next_button }}
+
+{{ endblock }}

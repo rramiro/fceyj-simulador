@@ -1,0 +1,24 @@
+{{ block title }}
+    Resultado final
+{{ endblock }}
+
+{{ block content }}
+
+<table class="table table-sm w-auto">
+    <thead>
+        <tr><th>Puesto</th><th>Empresa</th><th class="text-end">Resultado acumulado</th></tr>
+    </thead>
+    <tbody>
+        {{ for f in filas }}
+        <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+            <td>{{ f.puesto }}</td>
+            <td>{{ f.nombre }}</td>
+            <td class="text-end {{ if f.acumulado_negativo }}text-danger{{ endif }}">{{ f.resultado_acumulado }}</td>
+        </tr>
+        {{ endfor }}
+    </tbody>
+</table>
+
+<p>¡Gracias por participar!</p>
+
+{{ endblock }}

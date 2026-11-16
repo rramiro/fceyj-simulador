@@ -1,0 +1,36 @@
+{{ block title }}
+    {{ nombre }} — Trimestre {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+{{ if anterior }}
+<div class="card mb-3">
+    <div class="card-header">Trimestre anterior</div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-6 col-md-3"><small class="text-muted d-block">Su precio</small>{{ anterior_precio }}</div>
+            <div class="col-6 col-md-3"><small class="text-muted d-block">Precio medio del mercado</small>{{ anterior_precio_medio }}</div>
+            <div class="col-6 col-md-3"><small class="text-muted d-block">Su publicidad</small>{{ anterior_publicidad }}</div>
+            <div class="col-6 col-md-3"><small class="text-muted d-block">Su participación</small>{{ anterior_participacion }}</div>
+        </div>
+        <p class="text-center mt-2 mb-0">
+            Resultado: <b class="{{ if anterior_negativo }}text-danger{{ endif }}">{{ anterior_resultado }}</b>
+        </p>
+    </div>
+</div>
+{{ endif }}
+
+<p class="text-muted">
+    Costo variable: {{ costo_variable }} por unidad · Costo fijo: {{ costo_fijo }} por trimestre.
+</p>
+
+{{ formfield 'precio' }}
+<p class="form-text">Entre {{ precio_min }} y {{ precio_max }}.</p>
+
+{{ formfield 'publicidad' }}
+<p class="form-text">Entre $ 0 y {{ publicidad_max }}.</p>
+
+{{ next_button }}
+
+{{ endblock }}

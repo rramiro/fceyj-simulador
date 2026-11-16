@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "otree-devserver",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set PATH=%CD%\\.venv\\Scripts;%PATH% && otree devserver"],
+      "port": 8000
+    }
+  ]
+}

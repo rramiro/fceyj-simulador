@@ -1,0 +1,57 @@
+{{ block title }}
+    Resultados del trimestre {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Precio medio del mercado: <b>{{ precio_medio }}</b> ·
+    Demanda total: <b>{{ demanda_total }}</b> unidades
+</p>
+
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Empresa</th>
+            <th class="text-end">Precio</th>
+            <th class="text-end">Publicidad</th>
+            <th class="text-end">Participación</th>
+            <th class="text-end">Unidades</th>
+            <th class="text-end">Ventas</th>
+            <th class="text-end">Resultado</th>
+            <th class="text-end">Acumulado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ for f in filas }}
+        <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+            <td>{{ f.nombre }}</td>
+            <td class="text-end">{{ f.precio }}</td>
+            <td class="text-end">{{ f.publicidad }}</td>
+            <td class="text-end">{{ f.participacion }}</td>
+            <td class="text-end">{{ f.unidades }}</td>
+            <td class="text-end">{{ f.ventas }}</td>
+            <td class="text-end {{ if f.resultado_negativo }}text-danger{{ endif }}">{{ f.resultado }}</td>
+            <td class="text-end {{ if f.acumulado_negativo }}text-danger{{ endif }}">{{ f.resultado_acumulado }}</td>
+        </tr>
+        {{ endfor }}
+    </tbody>
+</table>
+</div>
+
+<h5>Detalle de {{ nombre }}</h5>
+<table class="table table-sm w-auto">
+    <tr><td>Ventas</td><td class="text-end">{{ ventas }}</td></tr>
+    <tr><td>− Costo variable</td><td class="text-end">{{ costo_variable }}</td></tr>
+    <tr><td>− Publicidad</td><td class="text-end">{{ costo_publicidad }}</td></tr>
+    <tr><td>− Costo fijo</td><td class="text-end">{{ costo_fijo }}</td></tr>
+    <tr class="fw-bold">
+        <td>Resultado del trimestre</td>
+        <td class="text-end {{ if resultado_negativo }}text-danger{{ endif }}">{{ resultado }}</td>
+    </tr>
+</table>
+
+{{ next_button }}
+
+{{ endblock }}
