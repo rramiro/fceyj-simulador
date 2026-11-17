@@ -10,10 +10,8 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Un despliegue a la vez; el que llega después espera (no se cancela).
-concurrency:
-  group: despliegue
-  cancel-in-progress: false
+# Concurrencia por ambiente (en cada job de despliegue, más abajo): testing nunca queda
+# trabado porque producción esté esperando su aprobación.
 
 permissions:
   contents: read
@@ -66,6 +64,10 @@ jobs:
 
   testing:
     needs: imagen
+    # Un despliegue de testing a la vez; el siguiente espera a que termine.
+    concurrency:
+      group: despliegue-testing
+      cancel-in-progress: false
     uses: ./.github/workflows/desplegar-ambiente.yml
     permissions:
       contents: read
@@ -77,6 +79,13 @@ jobs:
 
   produccion:
     needs: [imagen, testing]
+    # Un despliegue de producción a la vez. Mientras uno espera aprobación, la versión más
+    # nueva queda en cola (GitHub conserva solo la última en cola). No se cancela el que está
+    # en curso, para no cortar un despliegue a la mitad: para pasar directo a la versión
+    # nueva, rechazar la espera vieja en "Review deployments".
+    concurrency:
+      group: despliegue-produccion
+      cancel-in-progress: false
     uses: ./.github/workflows/desplegar-ambiente.yml
     permissions:
       contents: read

@@ -37,6 +37,10 @@ jobs:
 
   recrear:
     needs: confirmar
+    # Misma fila que los despliegues de ese ambiente: no se pisa con uno en curso.
+    concurrency:
+      group: despliegue-${{ inputs.ambiente }}
+      cancel-in-progress: false
     uses: ./.github/workflows/desplegar-ambiente.yml
     permissions:
       contents: read
