@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="docente.css?v=6">
+    <link rel="stylesheet" href="docente.css?v=8">
 </head>
 <body>
 
@@ -20,7 +20,8 @@
         </a>
         <div class="titulo-sistema">
             Tablero docente
-            <small><a href="../portada/docentes.html">← Panel docente</a></small>
+            <small><a href="../portada/docentes.html">← Panel docente</a> ·
+                <button type="button" class="enlace enlace-chico" id="cerrar-sesion">Cerrar sesión</button></small>
         </div>
     </div>
 </header>
@@ -102,6 +103,22 @@
     <p id="error" class="aviso-error" role="alert" hidden></p>
     <div id="aviso-copia" class="aviso-copia" role="status" hidden></div>
 
+    <!-- Ventana de ingreso (usa el login de oTree: usuario admin y la contraseña del ambiente) -->
+    <dialog id="modal-ingreso" class="modal modal-ingreso" aria-labelledby="ingreso-titulo">
+        <form id="form-ingreso" novalidate>
+            <img class="ingreso-logo" src="../fceyj/logo-fceyj.png" alt="Facultad de Ciencias Económicas y Jurídicas - UNLPam">
+            <h2 id="ingreso-titulo">Ingreso docente</h2>
+            <p class="nota">Con el usuario y la contraseña de administración del simulador.</p>
+            <label for="ingreso-usuario">Usuario</label>
+            <input id="ingreso-usuario" name="usuario" type="text" value="admin" autocomplete="username" spellcheck="false">
+            <label for="ingreso-clave">Contraseña</label>
+            <input id="ingreso-clave" name="clave" type="password" autocomplete="current-password">
+            <p id="ingreso-error" class="ingreso-error" role="alert" hidden></p>
+            <button type="submit" class="boton boton-ancho" id="ingreso-boton">Ingresar</button>
+            <a class="nota ingreso-volver" href="../portada/docentes.html">← Volver al panel docente</a>
+        </form>
+    </dialog>
+
     <!-- Ventana de confirmación (reemplaza los confirm() del navegador) -->
     <dialog id="modal" class="modal" aria-labelledby="modal-titulo" aria-describedby="modal-texto">
         <div class="modal-icono" id="modal-icono" aria-hidden="true">
@@ -123,6 +140,6 @@
     </div>
 </footer>
 
-<script src="docente.js?v=8"></script>
+<script src="docente.js?v=9"></script>
 </body>
 </html>

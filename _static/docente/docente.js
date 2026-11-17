@@ -53,11 +53,18 @@
         if (texto) { e.textContent = texto; e.hidden = false; } else { e.hidden = true; }
     }
 
-    function api(ruta, cuerpo) {
-        var opciones = cuerpo === undefined ? {method: 'GET'}
-            : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(cuerpo)};
+    /* Un pedido a la API. X-Tablero es la marca que exige el proxy (ver deploy/proxy/Caddyfile). */
+    function pedir(ruta, cuerpo) {
+        var opciones = cuerpo === undefined
+            ? {method: 'GET', headers: {'X-Tablero': '1'}}
+            : {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Tablero': '1'}, body: JSON.stringify(cuerpo)};
         opciones.credentials = 'same-origin';
         return fetch(ruta, opciones).then(function (r) {
+            if (r.status === 401) {
+                var e = new Error('Hay que iniciar sesión.');
+                e.sinSesion = true;
+                throw e;
+            }
             if (!r.ok) {
                 return r.text().then(function (t) {
                     var msg = r.status === 403
@@ -69,6 +76,76 @@
             return r.json();
         });
     }
+
+    /* Como pedir(), pero si no hay sesión iniciada muestra la ventana de ingreso y reintenta. */
+    function api(ruta, cuerpo) {
+        return pedir(ruta, cuerpo).catch(function (e) {
+            if (!e.sinSesion) { throw e; }
+            return pedirIngreso().then(function () { return pedir(ruta, cuerpo); });
+        });
+    }
+
+    // ------------------------------------------------------------------ ingreso
+    // Se usa el login de oTree (usuario "admin" y la contraseña de administración del
+    // ambiente): un solo ingreso sirve para el tablero y para el panel de oTree.
+    // Si varios pedidos descubren a la vez que falta la sesión, se abre una sola ventana.
+    var ingresoPendiente = null;
+
+    function pedirIngreso() {
+        if (!ingresoPendiente) {
+            ingresoPendiente = new Promise(function (resolver) {
+                var modal = $('modal-ingreso');
+                $('ingreso-error').hidden = true;
+                $('ingreso-clave').value = '';
+                modal._alIngresar = resolver;
+                if (!modal.open) { modal.showModal(); }
+                ($('ingreso-usuario').value ? $('ingreso-clave') : $('ingreso-usuario')).focus();
+            }).then(function () { ingresoPendiente = null; });
+        }
+        return ingresoPendiente;
+    }
+
+    function ingresar(ev) {
+        ev.preventDefault();
+        var boton = $('ingreso-boton'), error = $('ingreso-error');
+        var usuario = $('ingreso-usuario').value.trim(), clave = $('ingreso-clave').value;
+        if (!usuario || !clave) { error.textContent = 'Complete el usuario y la contraseña.'; error.hidden = false; return; }
+        boton.disabled = true;
+        boton.textContent = 'Ingresando…';
+        error.hidden = true;
+        // El formulario de oTree pide su código anti-falsificación (csrftoken): se lee de su página de login.
+        fetch('/login', {credentials: 'same-origin'}).then(function (r) { return r.text(); }).then(function (html) {
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            var token = doc.querySelector('input[name="csrftoken"]');
+            var datos = new URLSearchParams({username: usuario, password: clave});
+            if (token) { datos.set('csrftoken', token.value); }
+            return fetch('/login', {method: 'POST', body: datos, credentials: 'same-origin'});
+        }).then(function (r) {
+            // Si el ingreso es correcto, oTree redirige a otra página; si no, vuelve a mostrar /login.
+            if (new URL(r.url).pathname === '/login') {
+                throw new Error('Usuario o contraseña incorrectos.');
+            }
+            var modal = $('modal-ingreso');
+            modal.close();
+            $('ingreso-clave').value = '';
+            if (modal._alIngresar) { var f = modal._alIngresar; modal._alIngresar = null; f(); }
+        }).catch(function (e) {
+            error.textContent = e.message === 'Failed to fetch' ? 'No se pudo conectar con el servidor.' : e.message;
+            error.hidden = false;
+            $('ingreso-clave').select();
+        }).then(function () {
+            boton.disabled = false;
+            boton.textContent = 'Ingresar';
+        });
+    }
+
+    $('form-ingreso').addEventListener('submit', ingresar);
+    $('cerrar-sesion').addEventListener('click', function () {
+        // /logout de oTree borra la sesión (y redirige a su login, que acá no hace falta mostrar).
+        fetch('/logout', {credentials: 'same-origin'}).then(function () { location.reload(); });
+    });
+    // Sin sesión el tablero no puede mostrar nada: Esc no cierra la ventana de ingreso.
+    $('modal-ingreso').addEventListener('cancel', function (ev) { ev.preventDefault(); });
 
     // ----------------------------------------------------------------- estados
     var ETAPAS = {

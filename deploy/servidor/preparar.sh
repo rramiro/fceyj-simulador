@@ -182,8 +182,8 @@ EOF
         unset CLAVE
     fi
 
-    # Tablero docente: clave REST de oTree (en el ambiente y en el proxy) y la contraseña
-    # de administración en bcrypt para el proxy. Se completan si faltan (servidores viejos).
+    # Tablero docente: clave REST de oTree, en el ambiente y en el proxy (el proxy la agrega
+    # a los pedidos a /api/ de quien inició sesión en oTree). Se completa si falta.
     SUFIJO="$(echo "$AMB" | tr '[:lower:]' '[:upper:]')"
     if [[ -z "$(valor "$ENV_AMB" OTREE_REST_KEY)" ]]; then
         echo "OTREE_REST_KEY=$(openssl rand -hex 24)" >> "$ENV_AMB"
@@ -193,12 +193,7 @@ EOF
         sed -i "/^REST_KEY_$SUFIJO=/d" "$BASE/proxy/.env"
         echo "REST_KEY_$SUFIJO=$CLAVE_REST" >> "$BASE/proxy/.env"
     fi
-    if [[ -z "$(valor "$BASE/proxy/.env" "DOCENTE_HASH_$SUFIJO")" ]]; then
-        HASH="$(docker run --rm caddy:2.8-alpine caddy hash-password --plaintext "$(valor "$ENV_AMB" OTREE_ADMIN_PASSWORD)")"
-        # Entre comillas simples: el hash tiene "$" y docker compose no debe interpretarlos.
-        echo "DOCENTE_HASH_$SUFIJO='$HASH'" >> "$BASE/proxy/.env"
-    fi
-    unset CLAVE_REST HASH
+    unset CLAVE_REST
 done
 
 echo "    Levantando el proxy"

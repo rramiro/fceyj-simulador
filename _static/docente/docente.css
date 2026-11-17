@@ -61,10 +61,10 @@ main { padding-top: 24px; padding-bottom: 40px; min-height: 70vh; }
 .panel-cabecera { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
 .form-codigo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .form-codigo label { font-weight: 700; color: var(--indigo); font-size: .9rem; }
-input[type=text], textarea {
+input[type=text], input[type=password], textarea {
     font: inherit; color: var(--texto); border: 1px solid var(--borde); border-radius: 6px; padding: .45em .7em; background: #fff;
 }
-input[type=text]:focus, textarea:focus { outline: none; border-color: var(--celeste); box-shadow: 0 0 0 3px rgba(59,154,215,.2); }
+input[type=text]:focus, input[type=password]:focus, textarea:focus { outline: none; border-color: var(--celeste); box-shadow: 0 0 0 3px rgba(59,154,215,.2); }
 .lista-sesiones { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .tarjeta-sesion {
     display: flex; align-items: flex-start; gap: 8px;
@@ -116,6 +116,19 @@ input[type=text]:focus, textarea:focus { outline: none; border-color: var(--cele
 .boton-peligro { background: var(--rojo); border-color: var(--rojo); }
 .boton-peligro:hover { background: #A8323B; border-color: #A8323B; }
 @media (prefers-reduced-motion: reduce) { .modal[open] { animation: none; } }
+
+/* Ventana de ingreso */
+.modal-ingreso { text-align: left; width: min(400px, calc(100% - 32px)); padding: 28px 30px 24px; }
+.modal-ingreso::backdrop { background: rgba(35, 34, 90, .55); backdrop-filter: blur(2px); }
+.ingreso-logo { display: block; height: 46px; margin: 0 auto 16px; }
+.modal-ingreso h2 { text-align: center; margin-bottom: .25em; }
+.modal-ingreso > form > .nota { text-align: center; margin-bottom: 18px; }
+.modal-ingreso label { display: block; font-weight: 700; color: var(--indigo); font-size: .92rem; margin: 10px 0 4px; }
+.modal-ingreso input { width: 100%; }
+.ingreso-error { background: #FDECEE; color: #8A1F2B; border-radius: 6px; padding: 8px 12px; margin: 12px 0 0; font-size: .92rem; }
+.boton-ancho { width: 100%; margin-top: 18px; padding-top: .65em; padding-bottom: .65em; }
+.ingreso-volver { display: block; text-align: center; margin-top: 14px; text-decoration: none; }
+.enlace-chico { font-size: inherit; font-weight: 400; }
 
 /* Vista de sesión */
 .barra-sesion { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }

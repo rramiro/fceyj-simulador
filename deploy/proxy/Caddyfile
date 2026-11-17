@@ -4,7 +4,7 @@
 }
 
 # Configuración común a los dos ambientes:
-#   {args[0]} contenedor de oTree · {args[1]} clave REST de oTree · {args[2]} contraseña (bcrypt) del docente
+#   {args[0]} contenedor de oTree · {args[1]} clave REST de oTree
 (simulador) {
 	encode gzip
 
@@ -16,25 +16,41 @@
 	@html path *.html
 	header @html Cache-Control "no-cache"
 
-	# Tablero docente y API REST de oTree: piden la contraseña de administración
-	# (usuario "admin") y Caddy agrega la clave REST que exige oTree. Así la clave
-	# nunca llega al navegador y los equipos no pueden usar la API.
-	@docente path /api/* /static/docente/*
-	basic_auth @docente {
-		admin {args[2]}
+	# API REST de oTree (la usa el tablero docente). Se entra con el login de oTree:
+	# 1) Solo se aceptan pedidos con el encabezado X-Tablero, que pone el tablero y que una
+	#    página de otro sitio no puede agregar (defensa contra pedidos falsificados).
+	# 2) Caddy le pregunta a oTree si el navegador tiene la sesión de administración iniciada
+	#    (/server_check exige login). Si la tiene, agrega la clave REST que pide oTree (nunca
+	#    llega al navegador) y deja pasar el pedido; si no, responde 401 y el tablero muestra
+	#    su ventana de ingreso.
+	route /api/* {
+		@sin_marca not header X-Tablero 1
+		respond @sin_marca "Pedido no permitido" 403
+
+		reverse_proxy {args[0]}:8000 {
+			method GET
+			rewrite /server_check
+			@con_sesion status 2xx
+			handle_response @con_sesion {
+				request_header otree-rest-key {args[1]}
+			}
+			handle_response {
+				respond "Hay que iniciar sesión" 401
+			}
+		}
+		reverse_proxy {args[0]}:8000
 	}
-	request_header @docente otree-rest-key {args[1]}
 
 	# Caddy maneja los websockets de oTree (páginas de espera, monitor) sin configuración extra.
 	reverse_proxy {args[0]}:8000
 }
 
 {$DOMINIO_PRODUCCION} {
-	import simulador simulador-produccion {$REST_KEY_PRODUCCION} {$DOCENTE_HASH_PRODUCCION}
+	import simulador simulador-produccion {$REST_KEY_PRODUCCION}
 }
 
 {$DOMINIO_TESTING} {
-	import simulador simulador-testing {$REST_KEY_TESTING} {$DOCENTE_HASH_TESTING}
+	import simulador simulador-testing {$REST_KEY_TESTING}
 	# Para que los buscadores no indexen el ambiente de pruebas.
 	header X-Robots-Tag "noindex, nofollow"
 }

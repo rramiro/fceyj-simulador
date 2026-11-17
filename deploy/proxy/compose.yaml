@@ -2,8 +2,7 @@
 # saca y renueva los certificados HTTPS y reparte por dominio.
 # En el servidor vive en /opt/simulador/proxy/ con su .env (lo arma preparar.sh):
 #   DOMINIO_PRODUCCION, DOMINIO_TESTING, CORREO,
-#   REST_KEY_PRODUCCION, REST_KEY_TESTING (las mismas que OTREE_REST_KEY de cada ambiente),
-#   DOCENTE_HASH_PRODUCCION, DOCENTE_HASH_TESTING (contraseña de administración en bcrypt)
+#   REST_KEY_PRODUCCION, REST_KEY_TESTING (las mismas que OTREE_REST_KEY de cada ambiente)
 
 services:
   caddy:
@@ -19,8 +18,6 @@ services:
       CORREO: ${CORREO:?falta CORREO}
       REST_KEY_PRODUCCION: ${REST_KEY_PRODUCCION:?falta REST_KEY_PRODUCCION}
       REST_KEY_TESTING: ${REST_KEY_TESTING:?falta REST_KEY_TESTING}
-      DOCENTE_HASH_PRODUCCION: ${DOCENTE_HASH_PRODUCCION:?falta DOCENTE_HASH_PRODUCCION}
-      DOCENTE_HASH_TESTING: ${DOCENTE_HASH_TESTING:?falta DOCENTE_HASH_TESTING}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

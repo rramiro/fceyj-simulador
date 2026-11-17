@@ -123,8 +123,10 @@ Probar en `https://test.simulador.eco.unlpam.edu.ar/` y `https://simulador.eco.u
 
 ## Tablero docente
 
-En `https://simulador.eco.unlpam.edu.ar/static/docente/` (en testing, el mismo camino en `test.simulador.eco.unlpam.edu.ar`; también desde la portada: *Soy docente* → *Tablero docente*). Pide usuario
-`admin` y la contraseña de administración del ambiente.
+En `https://simulador.eco.unlpam.edu.ar/static/docente/` (en testing, el mismo camino en `test.simulador.eco.unlpam.edu.ar`; también desde la portada: *Soy docente* → *Tablero docente*). Muestra una
+ventana de **Ingreso docente**: usuario `admin` y la contraseña de administración del ambiente. Es
+el mismo login de oTree, así que un solo ingreso sirve para el tablero y para el panel de oTree
+(crear sesiones, datos). *Cerrar sesión* está arriba a la derecha.
 
 - Lista las sesiones del simulador (las partidas de *Demo* no aparecen: se abren por código).
 - Para cada mercado muestra en qué trimestre y en qué pantalla está cada equipo, quién está
@@ -140,11 +142,32 @@ En `https://simulador.eco.unlpam.edu.ar/static/docente/` (en testing, el mismo c
   usar *Delete* en el panel de oTree (*Sessions*), y eso no tiene vuelta atrás.
 
 Cómo funciona: el juego guarda el estado de cada equipo en `participant.vars['tablero']` y el
-tablero lo lee con la API REST de oTree. En el servidor, Caddy protege `/static/docente/` y `/api/`
-con la contraseña y agrega la clave REST (`OTREE_REST_KEY`) que exige oTree; la clave nunca llega
-al navegador. `preparar.sh` genera la clave y guarda la contraseña cifrada (bcrypt) en
-`/opt/simulador/proxy/.env`. Si se cambia la contraseña de administración de un ambiente, borrar
-la línea `DOCENTE_HASH_<AMBIENTE>` de ese archivo y volver a correr `preparar.sh`.
+tablero lo lee con la API REST de oTree. En el servidor, Caddy protege `/api/`: solo deja pasar
+pedidos con el encabezado `X-Tablero` (los que hace el tablero) de un navegador con la sesión de
+administración de oTree iniciada (lo consulta a oTree en `/server_check`). Si no hay sesión
+responde 401 y el tablero muestra la ventana de ingreso. Recién entonces agrega la clave REST
+(`OTREE_REST_KEY`) que exige oTree; la clave nunca llega al navegador. `preparar.sh` genera la
+clave y la guarda en el `.env` de cada ambiente y en `/opt/simulador/proxy/.env`.
+
+> **Servidores preparados antes de esta versión** (que pedían usuario y contraseña con la ventana
+> del navegador): después de `git -C /tmp/simulador pull`, volver a correr
+> `bash /tmp/simulador/deploy/servidor/preparar.sh`, que actualiza la configuración del proxy y lo
+> reinicia (conserva todo lo demás). Las líneas `DOCENTE_HASH_*` que hayan quedado en
+> `/opt/simulador/proxy/.env` ya no se usan y se pueden borrar.
+
+### Cambiar la contraseña del docente
+
+Con la copia del repositorio actualizada en el servidor (`git -C /tmp/simulador pull`):
+
+```
+bash /tmp/simulador/deploy/servidor/cambiar-clave.sh testing      # o produccion
+```
+
+Pide la contraseña nueva (no va en el comando, para que no quede en el historial), la guarda en
+`OTREE_ADMIN_PASSWORD` del ambiente y reinicia su app. Vale para el panel de oTree y para el
+tablero docente, que usan el mismo login. Las sesiones y los datos no se tocan; quien tenga la
+sesión iniciada tiene que volver a ingresar. Guarda una copia de la configuración anterior
+(`*.antes-<fecha>`) por si hay que volver atrás.
 
 En la computadora (`otree devserver`) la API no pide clave: el tablero funciona directamente en
 `http://localhost:8000/static/docente/index.html`.
@@ -191,7 +214,7 @@ Conviene copiar periódicamente la carpeta de respaldos fuera del servidor.
 | Error en un ambiente | `cd /opt/simulador/produccion && docker compose -p simulador-produccion logs --tail 50 app` |
 | Falla "Conectar y desplegar" en Actions | Que los secretos `SSH_*` estén bien copiados (la clave completa, con BEGIN y END) |
 | No sale el certificado HTTPS | Que los dominios ya apunten a la IP; después `docker restart simulador-proxy-caddy-1` |
-| Olvidé la contraseña de administración | Editar `OTREE_ADMIN_PASSWORD` en `/opt/simulador/<ambiente>/.env`, borrar `DOCENTE_HASH_<AMBIENTE>` de `/opt/simulador/proxy/.env`, correr `preparar.sh` y desplegar de nuevo |
+| Olvidé la contraseña de administración | Verla: `grep OTREE_ADMIN_PASSWORD /opt/simulador/<ambiente>/.env`. Cambiarla: `bash /tmp/simulador/deploy/servidor/cambiar-clave.sh <ambiente>` |
 | Historial de despliegues | `cat /opt/simulador/despliegues.log` |
 
 ## Probar el stack en la computadora
