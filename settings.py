@@ -3,7 +3,7 @@ from os import environ
 SESSION_CONFIGS = [
     dict(
         name='comercializacion',
-        display_name='Simulador de comercialización (gaseosas) - V1',
+        display_name='Simulador de comercialización (gaseosas) - V2',
         app_sequence=['comercializacion'],
         num_demo_participants=4,  # una por empresa; múltiplo de PLAYERS_PER_GROUP
         # --- Desarrollo del juego ---
@@ -18,11 +18,27 @@ SESSION_CONFIGS = [
         escala_publicidad=500_000,    # $: inversión a partir de la cual la publicidad "se nota"
         costo_variable=1200,          # $ por unidad
         costo_fijo=6_000_000,         # $ por trimestre y por empresa
+        # --- V2: publicidad acumulada ---
+        retencion_publicidad=0.5,     # λ: parte del stock publicitario que pasa al trimestre siguiente
+        # --- V2: producción y stock ---
+        capacidad=20_000,             # unidades máximas a producir por trimestre
+        stock_inicial=0,              # unidades en stock al empezar el juego
+        costo_almacenamiento=300,     # $ por unidad en stock al cierre de cada trimestre
+        traspaso_faltantes=1.0,       # parte de la demanda no atendida que compra a otra empresa (0 a 1)
+        # --- V2: demanda variable ---
+        estacionalidad='1.3, 0.9, 0.7, 1.1',  # factores por trimestre del año (ene-mar = verano); promedian 1
+        trimestre_inicial=1,          # trimestre del año en que empieza el juego (1 = ene-mar)
+        desvio_shock=0.05,            # desvío del shock aleatorio de demanda (5 %)
+        # --- V2: investigación de mercado ---
+        costo_estudio_competencia=400_000,   # datos de los rivales del trimestre anterior
+        costo_estudio_pronostico=400_000,    # pronóstico de demanda del trimestre
+        costo_estudio_sensibilidad=600_000,  # unidades propias a distintos precios
+        error_pronostico=0.05,        # el pronóstico puede errar hasta ±5 %
         # --- Límites de las decisiones ---
         precio_min=1000,              # $ por unidad
         precio_max=6000,              # $ por unidad
         publicidad_max=10_000_000,    # $ por trimestre
-        doc='Mercado de gaseosas: cada empresa decide precio y publicidad por trimestre.',
+        doc='Mercado de gaseosas: cada empresa decide precio, publicidad y producción por trimestre.',
     ),
 ]
 

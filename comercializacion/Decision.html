@@ -6,32 +6,117 @@
 
 {{ block content }}
 
+<p class="text-muted">
+    Época del año: <b>{{ estacion }}</b>.
+    {{ if ultima }}<b class="text-danger">Es el último trimestre: el stock que sobre se pierde.</b>{{ endif }}
+</p>
+
 {{ if anterior }}
 <div class="card mb-3">
     <div class="card-header">Trimestre anterior</div>
     <div class="card-body">
-        <div class="row text-center">
-            <div class="col-6 col-md-3"><small class="text-muted d-block">Su precio</small>{{ anterior_precio }}</div>
-            <div class="col-6 col-md-3"><small class="text-muted d-block">Precio medio del mercado</small>{{ anterior_precio_medio }}</div>
-            <div class="col-6 col-md-3"><small class="text-muted d-block">Su publicidad</small>{{ anterior_publicidad }}</div>
-            <div class="col-6 col-md-3"><small class="text-muted d-block">Su participación</small>{{ anterior_participacion }}</div>
+        <div class="row text-center g-2">
+            <div class="col-6 col-md-2"><small class="text-muted d-block">Su precio</small>{{ anterior_precio }}</div>
+            <div class="col-6 col-md-2"><small class="text-muted d-block">Precio medio</small>{{ anterior_precio_medio }}</div>
+            <div class="col-6 col-md-2"><small class="text-muted d-block">Su publicidad</small>{{ anterior_publicidad }}</div>
+            <div class="col-6 col-md-2"><small class="text-muted d-block">Unidades vendidas</small>{{ anterior_unidades }}</div>
+            <div class="col-6 col-md-2"><small class="text-muted d-block">Participación</small>{{ anterior_participacion }}</div>
+            <div class="col-6 col-md-2"><small class="text-muted d-block">Resultado</small>
+                <b class="{{ if anterior_negativo }}text-danger{{ endif }}">{{ anterior_resultado }}</b></div>
         </div>
-        <p class="text-center mt-2 mb-0">
-            Resultado: <b class="{{ if anterior_negativo }}text-danger{{ endif }}">{{ anterior_resultado }}</b>
+        {{ if anterior_faltante }}
+        <p class="text-center text-danger mt-2 mb-0">
+            Les faltaron {{ anterior_faltante }} unidades: esos clientes compraron a otras empresas.
         </p>
+        {{ endif }}
     </div>
 </div>
 {{ endif }}
 
-<p class="text-muted">
-    Costo variable: {{ costo_variable }} por unidad · Costo fijo: {{ costo_fijo }} por trimestre.
-</p>
+{{ if ver_pronostico }}
+<div class="card mb-3">
+    <div class="card-header">Estudio: pronóstico de demanda</div>
+    <div class="card-body">
+        Si el precio medio del mercado {{ if anterior }}se mantiene en{{ else }}es de{{ endif }} {{ pronostico_precio }}, este trimestre se
+        venderán en total entre <b>{{ pronostico_min }}</b> y <b>{{ pronostico_max }}</b> unidades
+        (unas {{ pronostico_por_empresa }} por empresa si se repartieran en partes iguales).
+    </div>
+</div>
+{{ endif }}
+
+{{ if ver_competencia }}
+<div class="card mb-3">
+    <div class="card-header">Estudio: datos de la competencia (trimestre anterior)</div>
+    <div class="card-body">
+        <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead><tr>
+                <th>Empresa</th><th class="text-end">Precio</th><th class="text-end">Publicidad</th>
+                <th class="text-end">Producción</th><th class="text-end">Vendidas</th><th class="text-end">Stock final</th>
+            </tr></thead>
+            <tbody>
+            {{ for f in competencia }}
+                <tr>
+                    <td>{{ f.nombre }}</td><td class="text-end">{{ f.precio }}</td><td class="text-end">{{ f.publicidad }}</td>
+                    <td class="text-end">{{ f.produccion }}</td><td class="text-end">{{ f.unidades }}</td><td class="text-end">{{ f.stock_final }}</td>
+                </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{{ endif }}
+
+{{ if ver_sensibilidad }}
+<div class="card mb-3">
+    <div class="card-header">Estudio: sensibilidad al precio</div>
+    <div class="card-body">
+        <p class="mb-2">
+            Unidades que les comprarían en un trimestre de demanda promedio, si los rivales repiten
+            su decisión anterior y ustedes mantienen su publicidad. No incluye la estacionalidad ni
+            el límite de stock.
+        </p>
+        <div class="table-responsive">
+        <table class="table table-sm w-auto mb-0">
+            <thead><tr>
+                <th class="text-end">Su precio</th><th class="text-end">Unidades</th>
+                <th class="text-end">Participación</th><th class="text-end">Margen bruto</th>
+            </tr></thead>
+            <tbody>
+            {{ for f in sensibilidad }}
+                <tr><td class="text-end">{{ f.precio }}</td><td class="text-end">{{ f.unidades }}</td>
+                    <td class="text-end">{{ f.participacion }}</td><td class="text-end">{{ f.margen }}</td></tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+        </div>
+        <small class="text-muted">Margen bruto = unidades × (precio − costo de producción).</small>
+    </div>
+</div>
+{{ endif }}
+
+<div class="card mb-3">
+    <div class="card-header">Situación actual</div>
+    <div class="card-body">
+        <ul class="mb-0">
+            <li>Stock disponible: <b>{{ stock_inicial }}</b> unidades.</li>
+            <li>Efecto de la publicidad anterior que se mantiene: {{ publicidad_arrastre }}.</li>
+            <li>Costo de producción: {{ costo_variable }} por unidad · Almacenamiento: {{ costo_almacenamiento }}
+                por unidad que quede en stock · Costo fijo: {{ costo_fijo }}.</li>
+            {{ if player.costo_investigacion }}<li>Estudios comprados este trimestre: {{ costo_investigacion }}.</li>{{ endif }}
+        </ul>
+    </div>
+</div>
 
 {{ formfield 'precio' }}
 <p class="form-text">Entre {{ precio_min }} y {{ precio_max }}.</p>
 
 {{ formfield 'publicidad' }}
 <p class="form-text">Entre $ 0 y {{ publicidad_max }}.</p>
+
+{{ formfield 'produccion' }}
+<p class="form-text">Entre 0 y {{ capacidad }} unidades. Podrán vender hasta su stock más lo que produzcan.</p>
 
 {{ next_button }}
 

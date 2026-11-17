@@ -1,0 +1,61 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Investigación de mercado (trimestre {{ player.round_number }} de {{ num_rondas }})
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Antes de decidir pueden comprar estudios de mercado. El costo se suma a los gastos de este
+    trimestre y la información aparece en la pantalla de decisión.
+</p>
+
+<div class="list-group mb-3">
+    <label class="list-group-item d-flex gap-3">
+        <input class="form-check-input flex-shrink-0 mt-1" type="checkbox" name="compra_pronostico" value="True">
+        <span>
+            <b>Pronóstico de demanda</b> — {{ estudio_pronostico }}<br>
+            <small class="text-muted">
+                Cuántas gaseosas se venderán en total en el mercado este trimestre, según el precio
+                medio actual (con un margen de error).
+            </small>
+        </span>
+    </label>
+
+    {{ if not primera }}
+    <label class="list-group-item d-flex gap-3">
+        <input class="form-check-input flex-shrink-0 mt-1" type="checkbox" name="compra_competencia" value="True">
+        <span>
+            <b>Datos de la competencia</b> — {{ estudio_competencia }}<br>
+            <small class="text-muted">
+                Precio, publicidad, producción, unidades vendidas y stock de cada rival en el trimestre anterior.
+            </small>
+        </span>
+    </label>
+
+    <label class="list-group-item d-flex gap-3">
+        <input class="form-check-input flex-shrink-0 mt-1" type="checkbox" name="compra_sensibilidad" value="True">
+        <span>
+            <b>Sensibilidad al precio</b> — {{ estudio_sensibilidad }}<br>
+            <small class="text-muted">
+                Cuántas unidades les comprarían a distintos precios si los rivales repiten su decisión
+                anterior y ustedes mantienen su publicidad, en un trimestre de demanda promedio.
+            </small>
+        </span>
+    </label>
+    {{ endif }}
+</div>
+
+{{ if primera }}
+<p class="text-muted">
+    Los estudios de la competencia y de sensibilidad al precio estarán disponibles desde el
+    segundo trimestre, cuando haya datos del trimestre anterior.
+</p>
+{{ endif }}
+
+<p>Si no quieren comprar ningún estudio, avancen sin marcar nada.</p>
+
+{{ next_button }}
+
+{{ endblock }}

@@ -7,52 +7,63 @@
 {{ block content }}
 
 <p>
+    Época: <b>{{ estacion }}</b> ·
     Precio medio del mercado: <b>{{ precio_medio }}</b> ·
-    Demanda total: <b>{{ demanda_total }}</b> unidades
+    Demanda total: <b>{{ demanda_total }}</b> unidades ·
+    Vendidas: <b>{{ unidades_vendidas }}</b>
 </p>
 
-<div class="table-responsive">
-<table class="table table-sm table-striped">
-    <thead>
-        <tr>
-            <th>Empresa</th>
-            <th class="text-end">Precio</th>
-            <th class="text-end">Publicidad</th>
-            <th class="text-end">Participación</th>
-            <th class="text-end">Unidades</th>
-            <th class="text-end">Ventas</th>
-            <th class="text-end">Resultado</th>
-            <th class="text-end">Acumulado</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{ for f in filas }}
-        <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
-            <td>{{ f.nombre }}</td>
-            <td class="text-end">{{ f.precio }}</td>
-            <td class="text-end">{{ f.publicidad }}</td>
-            <td class="text-end">{{ f.participacion }}</td>
-            <td class="text-end">{{ f.unidades }}</td>
-            <td class="text-end">{{ f.ventas }}</td>
-            <td class="text-end {{ if f.resultado_negativo }}text-danger{{ endif }}">{{ f.resultado }}</td>
-            <td class="text-end {{ if f.acumulado_negativo }}text-danger{{ endif }}">{{ f.resultado_acumulado }}</td>
-        </tr>
-        {{ endfor }}
-    </tbody>
-</table>
-</div>
+<div class="row g-4">
+    <div class="col-md-5">
+        <h5>Participación en las ventas</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Empresa</th><th class="text-end">Participación</th></tr></thead>
+            <tbody>
+            {{ for f in mercado_filas }}
+                <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+                    <td>{{ f.nombre }}</td><td class="text-end">{{ f.participacion }}</td>
+                </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
 
-<h5>Detalle de {{ nombre }}</h5>
-<table class="table table-sm w-auto">
-    <tr><td>Ventas</td><td class="text-end">{{ ventas }}</td></tr>
-    <tr><td>− Costo variable</td><td class="text-end">{{ costo_variable }}</td></tr>
-    <tr><td>− Publicidad</td><td class="text-end">{{ costo_publicidad }}</td></tr>
-    <tr><td>− Costo fijo</td><td class="text-end">{{ costo_fijo }}</td></tr>
-    <tr class="fw-bold">
-        <td>Resultado del trimestre</td>
-        <td class="text-end {{ if resultado_negativo }}text-danger{{ endif }}">{{ resultado }}</td>
-    </tr>
-</table>
+        <h5>Unidades de {{ nombre }}</h5>
+        <table class="table table-sm">
+            <tr><td>Stock inicial</td><td class="text-end">{{ stock_inicial }}</td></tr>
+            <tr><td>+ Producción</td><td class="text-end">{{ produccion }}</td></tr>
+            <tr><td>− Vendidas</td><td class="text-end">{{ unidades }}</td></tr>
+            <tr class="fw-bold"><td>Stock final</td><td class="text-end">{{ stock_final }}</td></tr>
+        </table>
+        <p class="small text-muted">
+            Demanda que les correspondía: {{ demanda }} unidades.
+            {{ if hubo_faltante }}<span class="text-danger">No pudieron atender {{ faltante }} unidades por falta de stock.</span>{{ endif }}
+            Stock publicitario: {{ stock_publicidad }}.
+        </p>
+    </div>
+
+    <div class="col-md-7">
+        <h5>Resultado de {{ nombre }}</h5>
+        <table class="table table-sm">
+            <tr><td>Ventas</td><td class="text-end">{{ ventas }}</td></tr>
+            <tr><td>− Costo de ventas</td><td class="text-end">{{ costo_ventas }}</td></tr>
+            <tr><td>− Publicidad</td><td class="text-end">{{ costo_publicidad }}</td></tr>
+            <tr><td>− Almacenamiento</td><td class="text-end">{{ costo_almacenamiento }}</td></tr>
+            <tr><td>− Estudios de mercado</td><td class="text-end">{{ costo_investigacion }}</td></tr>
+            <tr><td>− Costo fijo</td><td class="text-end">{{ costo_fijo }}</td></tr>
+            {{ if hubo_baja }}
+            <tr class="text-danger"><td>− Baja del stock sobrante (fin del juego)</td><td class="text-end">{{ baja_stock }}</td></tr>
+            {{ endif }}
+            <tr class="fw-bold">
+                <td>Resultado del trimestre</td>
+                <td class="text-end {{ if resultado_negativo }}text-danger{{ endif }}">{{ resultado }}</td>
+            </tr>
+            <tr class="fw-bold">
+                <td>Resultado acumulado</td>
+                <td class="text-end {{ if acumulado_negativo }}text-danger{{ endif }}">{{ resultado_acumulado }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
 
 {{ next_button }}
 
