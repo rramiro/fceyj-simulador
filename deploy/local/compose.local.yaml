@@ -1,0 +1,6 @@
+# Para probar un ambiente en la computadora (sin proxy ni HTTPS), sumado a deploy/compose.yaml:
+# expone oTree en http://localhost:8080. Ver "Probar en la computadora" en DESPLIEGUE.md.
+services:
+  app:
+    ports:
+      - "8080:8000"

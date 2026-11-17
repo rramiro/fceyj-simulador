@@ -1,0 +1,48 @@
+# Recrea la base de un ambiente (BORRA todas sus sesiones) y despliega la versión de main.
+# Se usa cuando una versión cambia los campos del modelo. Antes hace un respaldo en el servidor.
+# En producción, además, pide la aprobación del ambiente.
+name: Recrear base
+
+on:
+  workflow_dispatch:
+    inputs:
+      ambiente:
+        description: Ambiente cuya base se recrea
+        type: choice
+        options: [testing, produccion]
+        required: true
+      confirmacion:
+        description: Escribir BORRAR para confirmar (se pierden todas las sesiones; descargar antes los datos)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  confirmar:
+    name: Confirmar
+    runs-on: ubuntu-latest
+    outputs:
+      imagen: ${{ steps.imagen.outputs.imagen }}
+    steps:
+      - name: Verificar la confirmación
+        if: inputs.confirmacion != 'BORRAR'
+        run: |
+          echo "::error::Para recrear la base hay que escribir BORRAR en la confirmación."
+          exit 1
+      - name: Imagen de la versión actual de main
+        id: imagen
+        run: echo "imagen=ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  recrear:
+    needs: confirmar
+    uses: ./.github/workflows/desplegar-ambiente.yml
+    permissions:
+      contents: read
+      packages: read
+    with:
+      ambiente: ${{ inputs.ambiente }}
+      imagen: ${{ needs.confirmar.outputs.imagen }}
+      resetdb: true
+    secrets: inherit

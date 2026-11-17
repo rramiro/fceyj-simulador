@@ -1,0 +1,43 @@
+# Pruebas del simulador: bots de oTree, verificaciones del modelo y huella del esquema.
+# Corre en cada push y pull request, y antes de cada despliegue.
+name: Pruebas
+
+on:
+  push:
+    branches-ignore: [main]   # en main las corre el workflow "Despliegue"
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Bots y modelo de mercado
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt requests
+
+      - name: Bots de oTree (8 empresas, todas las páginas)
+        run: otree test comercializacion 8
+
+      - name: Verificaciones y calibración del modelo
+        run: python scripts/simular_mercado.py
+
+      - name: Esquema de la base
+        run: |
+          python scripts/esquema.py
+          {
+            echo "### Huella del esquema de la base"
+            echo ""
+            echo "\`$(python scripts/esquema.py --huella)\` — si cambia, desplegar en producción requiere recrear la base."
+          } >> "$GITHUB_STEP_SUMMARY"

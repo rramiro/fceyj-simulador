@@ -1,0 +1,75 @@
+# Un ambiente del simulador (testing o produccion). En el servidor vive en
+# /opt/simulador/<ambiente>/ junto a su archivo .env; lo maneja desplegar.sh.
+#
+# Variables del .env (las crea preparar.sh; IMAGEN la actualiza cada despliegue):
+#   AMBIENTE, IMAGEN, POSTGRES_PASSWORD, OTREE_ADMIN_PASSWORD, OTREE_SECRET_KEY,
+#   OTREE_AUTH_LEVEL (STUDY por defecto), RESPALDOS_DIAS (14 por defecto)
+
+services:
+  app:
+    image: ${IMAGEN:?falta IMAGEN en .env}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://otree:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}@db/otree
+      OTREE_PRODUCTION: "1"
+      OTREE_AUTH_LEVEL: ${OTREE_AUTH_LEVEL:-STUDY}
+      OTREE_ADMIN_PASSWORD: ${OTREE_ADMIN_PASSWORD:?falta OTREE_ADMIN_PASSWORD}
+      OTREE_SECRET_KEY: ${OTREE_SECRET_KEY:?falta OTREE_SECRET_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      interna: {}
+      web:
+        # Nombre con el que lo encuentra el proxy (Caddyfile).
+        aliases: ["simulador-${AMBIENTE:?falta AMBIENTE}"]
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: otree
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: otree
+    volumes:
+      - datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U otree -d otree"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [interna]
+
+  # Respaldo diario de la base en ./respaldos (se borran los de más de RESPALDOS_DIAS días).
+  respaldo:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: otree
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: otree
+      RESPALDOS_DIAS: ${RESPALDOS_DIAS:-14}
+    volumes:
+      - ./respaldos:/respaldos
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          pg_dump | gzip > /respaldos/diario-$$(date +%Y%m%d-%H%M).sql.gz
+          find /respaldos -name 'diario-*.sql.gz' -mtime +$$RESPALDOS_DIAS -delete
+          sleep 86400
+        done
+    networks: [interna]
+
+networks:
+  interna: {}
+  web:
+    external: true
+    name: web
+
+volumes:
+  datos: {}

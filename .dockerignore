@@ -1,0 +1,20 @@
+# Lo que no entra en la imagen de Docker.
+.git
+.github
+.gitattributes
+.claude
+.venv
+venv
+__pycache__
+*.py[cod]
+*.sqlite3
+_bots*
+__temp*
+*.otreezip
+.env
+.env.*
+# De deploy/ solo entra compose.yaml: desplegar.sh lo extrae de la imagen.
+deploy/*
+!deploy/compose.yaml
+Dockerfile
+.dockerignore

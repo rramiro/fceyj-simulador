@@ -1,0 +1,31 @@
+# Proxy compartido por los dos ambientes: recibe todo el tráfico (puertos 80 y 443),
+# saca y renueva los certificados HTTPS y reparte por dominio.
+# En el servidor vive en /opt/simulador/proxy/ con su .env:
+#   DOMINIO_PRODUCCION, DOMINIO_TESTING, CORREO
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMINIO_PRODUCCION: ${DOMINIO_PRODUCCION:?falta DOMINIO_PRODUCCION}
+      DOMINIO_TESTING: ${DOMINIO_TESTING:?falta DOMINIO_TESTING}
+      CORREO: ${CORREO:?falta CORREO}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [web]
+
+networks:
+  web:
+    external: true
+    name: web
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}

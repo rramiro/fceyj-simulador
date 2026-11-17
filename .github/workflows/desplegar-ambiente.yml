@@ -1,0 +1,66 @@
+# Despliega una imagen ya construida en un ambiente. Lo usan "Despliegue" y "Recrear base".
+#
+# Secretos del repositorio (los muestra deploy/servidor/preparar.sh):
+#   SSH_HOST, SSH_KEY, SSH_KNOWN_HOSTS
+# Variables del repositorio (opcionales, para el enlace en GitHub):
+#   DOMINIO_TESTING, DOMINIO_PRODUCCION
+name: Desplegar en un ambiente
+
+on:
+  workflow_call:
+    inputs:
+      ambiente:
+        type: string
+        required: true
+      imagen:
+        type: string
+        required: true
+      resetdb:
+        type: boolean
+        default: false
+    secrets:
+      SSH_HOST:
+        required: true
+      SSH_KEY:
+        required: true
+      SSH_KNOWN_HOSTS:
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  desplegar:
+    name: Desplegar en ${{ inputs.ambiente }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # El ambiente "produccion" tiene aprobación obligatoria (se configura en GitHub).
+    environment:
+      name: ${{ inputs.ambiente }}
+      url: ${{ inputs.ambiente == 'produccion' && vars.DOMINIO_PRODUCCION && format('https://{0}', vars.DOMINIO_PRODUCCION) || inputs.ambiente == 'testing' && vars.DOMINIO_TESTING && format('https://{0}', vars.DOMINIO_TESTING) || '' }}
+    steps:
+      - name: Conectar y desplegar
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          AMBIENTE: ${{ inputs.ambiente }}
+          IMAGEN: ${{ inputs.imagen }}
+          RESETDB: ${{ inputs.resetdb && '--resetdb' || '' }}
+          # Token temporal para que el servidor baje la imagen de ghcr.io (vence al terminar).
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/despliegue && chmod 600 ~/.ssh/despliegue
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # La clave está restringida en el servidor: solo ejecuta desplegar.sh.
+          set +e
+          printf '%s' "$TOKEN" | ssh -i ~/.ssh/despliegue -o BatchMode=yes \
+              "despliegue@$SSH_HOST" desplegar "$AMBIENTE" "$IMAGEN" $RESETDB
+          codigo=$?
+          set -e
+          if [ "$codigo" -eq 3 ]; then
+            echo "::error title=Cambio de esquema::Esta versión cambia los campos de la base. En producción hay que descargar los datos y correr el workflow 'Recrear base'."
+          fi
+          exit "$codigo"

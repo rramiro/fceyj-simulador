@@ -88,4 +88,6 @@ Elija una configuración para crear una sesión de prueba.
 <a href="/static/portada/index.html">Volver a la portada</a>.</p>
 """
 
-SECRET_KEY = '4124799046129'
+# En el servidor se toma de la variable de entorno OTREE_SECRET_KEY (ver deploy/).
+# El valor fijo solo se usa en desarrollo.
+SECRET_KEY = environ.get('OTREE_SECRET_KEY', '4124799046129')
