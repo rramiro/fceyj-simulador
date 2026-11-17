@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula de la FCEyJ — Simulador de comercialización</title>
+    <link rel="stylesheet" href="{{ static 'bootstrap5/css/bootstrap.min.css' }}">
+    {{ include "global/estilos.html" }}
+</head>
+<body>
+    {{ include "global/encabezado.html" }}
+    <div class="otree-body container" style="max-width: 640px;">
+        <h2 class="otree-title">Bienvenidos al aula</h2>
+        <p>
+            Van a jugar en equipo: <b>usen un solo dispositivo por empresa</b> y entren una sola vez.
+            Cuando presionen el botón quedarán en espera hasta que el docente abra la sesión
+            y se completen los mercados.
+        </p>
+        <button id="entrar" type="button" class="btn btn-primary btn-lg">Entrar a la clase</button>
+        <p class="small text-muted mt-3 mb-0">
+            Si la página dice que no hay una sesión abierta, esperen a que el docente la inicie.
+        </p>
+    </div>
+    <script>
+        // oTree muestra esta página primero; al confirmar, vuelve a la misma
+        // dirección con welcome_page_ok=1 y asigna al equipo a la sesión del aula.
+        document.getElementById('entrar').addEventListener('click', function () {
+            const params = new URLSearchParams(window.location.search);
+            params.set('welcome_page_ok', '1');
+            window.location.href = window.location.pathname + '?' + params.toString();
+        });
+    </script>
+</body>
+</html>

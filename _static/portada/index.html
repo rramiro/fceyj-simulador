@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simuladores de negocios — FCEyJ UNLPam</title>
+    <meta name="description" content="Simuladores de negocios de la Facultad de Ciencias Económicas y Jurídicas de la UNLPam para aprender decidiendo en clase.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
+    <link rel="stylesheet" href="portada.css">
+</head>
+<body>
+
+<!-- ============================ Encabezado ============================ -->
+<header class="encabezado">
+    <div class="contenedor encabezado-fila">
+        <a href="#inicio" class="logo">
+            <img src="../fceyj/logo-fceyj.png"
+                 alt="Facultad de Ciencias Económicas y Jurídicas - Universidad Nacional de La Pampa">
+        </a>
+        <nav class="menu" aria-label="Secciones">
+            <a href="#juegos">Juegos</a>
+            <a href="#como-se-juega">Cómo se juega</a>
+            <a href="#docentes">Docentes</a>
+            <a href="#unirse" class="boton boton-chico">Unirse a la clase</a>
+        </nav>
+    </div>
+</header>
+
+<main id="inicio">
+
+<!-- ============================ Portada ============================ -->
+<section class="portada">
+    <div class="contenedor portada-fila">
+        <div class="portada-texto">
+            <p class="antetitulo">Simuladores de negocios</p>
+            <h1>Aprender a decidir, decidiendo.</h1>
+            <p class="bajada">
+                Juegos de simulación para usar en clase: los equipos dirigen empresas que compiten
+                en un mismo mercado durante varios trimestres, toman decisiones comerciales y ven
+                sus consecuencias frente a las de sus compañeros.
+            </p>
+            <div class="acciones">
+                <a href="#unirse" class="boton">Unirse a la clase</a>
+                <a href="/demo/comercializacion" class="boton boton-secundario">Probar una demo</a>
+            </div>
+        </div>
+        <div class="portada-panel" aria-hidden="true">
+            <div class="mini-tabla">
+                <div class="mini-titulo">Resultados del trimestre 2</div>
+                <div class="mini-fila"><span>Cola Pampeana</span><span class="barra" style="--v: 31%"></span><b>31 %</b></div>
+                <div class="mini-fila propia"><span>Su empresa</span><span class="barra" style="--v: 27%"></span><b>27 %</b></div>
+                <div class="mini-fila"><span>Aguas del Oeste</span><span class="barra" style="--v: 25%"></span><b>25 %</b></div>
+                <div class="mini-fila"><span>Burbuja Premium</span><span class="barra" style="--v: 17%"></span><b>17 %</b></div>
+                <div class="mini-pie">Participación en las ventas</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ Juegos ============================ -->
+<section id="juegos" class="seccion">
+    <div class="contenedor">
+        <h2>Juegos disponibles</h2>
+
+        <article class="juego">
+            <div class="juego-cabecera">
+                <div>
+                    <p class="antetitulo">Comercialización</p>
+                    <h3>Mercado de gaseosas</h3>
+                </div>
+                <span class="etiqueta">Versión 2</span>
+            </div>
+
+            <ul class="datos">
+                <li><b>4</b> empresas por mercado</li>
+                <li><b>4 a 6</b> trimestres</li>
+                <li><b>1</b> dispositivo por equipo</li>
+            </ul>
+
+            <div class="juego-columnas">
+                <div>
+                    <h4>Qué decide cada empresa</h4>
+                    <ul>
+                        <li><b>Precio</b> de venta por unidad.</li>
+                        <li><b>Publicidad</b>: atrae clientes con rendimientos decrecientes y su efecto se acumula entre trimestres.</li>
+                        <li><b>Producción</b>: solo se vende lo que se tiene; lo que falta se lo llevan los rivales y lo que sobra cuesta almacenarlo.</li>
+                        <li><b>Investigación de mercado</b> (opcional y paga): pronóstico de demanda, datos de la competencia y sensibilidad al precio.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Qué se aprende</h4>
+                    <ul>
+                        <li>Elasticidad de la demanda y fijación de precios.</li>
+                        <li>Competencia por participación: el resultado depende también de lo que hacen los demás.</li>
+                        <li>El dilema de la publicidad: invertir para no perder clientes frente a ponerse de acuerdo.</li>
+                        <li>Gestión de stock con demanda estacional e incierta.</li>
+                        <li>Cuánto vale la información antes de decidir.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <details class="modelo">
+                <summary>Ver el modelo de mercado</summary>
+                <ul>
+                    <li>La <b>demanda total</b> del trimestre depende del precio medio del mercado
+                        (con elasticidad constante), de la época del año y de una variación aleatoria.</li>
+                    <li>Cada empresa recibe una <b>porción de esa demanda</b> según un modelo logit:
+                        su atractivo baja si cobra más caro que el promedio y sube con su stock publicitario,
+                        medido en forma logarítmica.</li>
+                    <li>Las <b>ventas</b> se limitan al stock disponible; la demanda no atendida pasa a
+                        las empresas que todavía tienen stock.</li>
+                    <li>El <b>resultado</b> se calcula con el criterio de costo de ventas: ventas − costo de ventas
+                        − publicidad − almacenamiento − estudios − costo fijo.</li>
+                </ul>
+                <p class="nota">Todos los parámetros se ajustan al crear la sesión, sin tocar el código.</p>
+            </details>
+
+            <div class="acciones">
+                <a href="/demo/comercializacion" class="boton boton-secundario">Probar una demo</a>
+                <a href="#como-se-juega" class="enlace">Cómo se juega →</a>
+            </div>
+        </article>
+
+        <p class="nota proximamente">Próximamente se sumarán nuevos juegos.</p>
+    </div>
+</section>
+
+<!-- ============================ Cómo se juega ============================ -->
+<section id="como-se-juega" class="seccion seccion-gris">
+    <div class="contenedor">
+        <h2>Cómo se juega</h2>
+        <ol class="pasos">
+            <li>
+                <h3>El docente abre la sesión</h3>
+                <p>Elige el juego y la cantidad de empresas, ajusta los parámetros si quiere,
+                   y crea la sesión en el aula.</p>
+            </li>
+            <li>
+                <h3>Los equipos entran</h3>
+                <p>Cada equipo abre el enlace del aula en un solo dispositivo. Al completarse un
+                   mercado de 4 empresas, el juego empieza.</p>
+            </li>
+            <li>
+                <h3>Cada trimestre</h3>
+                <p><b>Investigan</b> (si quieren), <b>deciden</b> precio, publicidad y producción,
+                   y esperan a que todas las empresas del mercado decidan para ver los <b>resultados</b>.</p>
+            </li>
+            <li>
+                <h3>Ranking y discusión</h3>
+                <p>Al final se muestra el ranking por resultado acumulado. Es el momento de discutir
+                   qué estrategias funcionaron y por qué.</p>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<!-- ============================ Unirse ============================ -->
+<section id="unirse" class="seccion">
+    <div class="contenedor">
+        <div class="unirse">
+            <div>
+                <h2>Unirse a la clase</h2>
+                <p>Entren con este enlace cuando el docente lo indique. <b>Un dispositivo por equipo.</b></p>
+                <p class="enlace-aula"><code id="enlace-aula">/room/aula</code>
+                    <button type="button" class="boton boton-chico boton-secundario" id="copiar">Copiar</button></p>
+            </div>
+            <a href="/room/aula" class="boton boton-grande">Entrar al aula</a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ Docentes ============================ -->
+<section id="docentes" class="seccion seccion-gris">
+    <div class="contenedor">
+        <h2>Para docentes</h2>
+        <p class="bajada">Las acciones de esta sección piden la contraseña de administración del servidor.</p>
+        <div class="tarjetas">
+            <a class="tarjeta" href="/room_without_session/aula">
+                <h3>Crear sesión en el aula</h3>
+                <p>Abre la sesión a la que se van a sumar los equipos que entren por el enlace del aula.
+                   En «Configurar sesión» se ajustan los parámetros del mercado.</p>
+            </a>
+            <a class="tarjeta" href="/sessions">
+                <h3>Seguir una sesión</h3>
+                <p>Panel de sesiones: avance de cada equipo, monitor en vivo y resultados.</p>
+            </a>
+            <a class="tarjeta" href="/export">
+                <h3>Descargar los datos</h3>
+                <p>Exporta todas las decisiones y resultados a CSV para analizarlos en clase.</p>
+            </a>
+            <a class="tarjeta" href="/demo">
+                <h3>Partidas de prueba</h3>
+                <p>Crea una partida para recorrer el juego con varias empresas en la misma pantalla.</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<!-- ============================ Pie ============================ -->
+<footer class="pie">
+    <div class="contenedor pie-fila">
+        <div>
+            <b>Facultad de Ciencias Económicas y Jurídicas</b><br>
+            Universidad Nacional de La Pampa
+        </div>
+        <div class="pie-derecha">
+            <a href="https://www.eco.unlpam.edu.ar" rel="noopener">www.eco.unlpam.edu.ar</a><br>
+            Software libre desarrollado con <a href="https://www.otree.org" rel="noopener">oTree</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Muestra el enlace completo del aula según el servidor en el que se abre la portada.
+    (function () {
+        var url = window.location.origin + '/room/aula';
+        var codigo = document.getElementById('enlace-aula');
+        codigo.textContent = url;
+        document.getElementById('copiar').addEventListener('click', function (e) {
+            var boton = e.currentTarget;
+            var hecho = function () {
+                boton.textContent = 'Copiado';
+                setTimeout(function () { boton.textContent = 'Copiar'; }, 1800);
+            };
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(hecho, function () {});
+            }
+        });
+    })();
+</script>
+</body>
+</html>

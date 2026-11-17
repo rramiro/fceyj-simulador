@@ -66,9 +66,21 @@ ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable
 ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
 
+# Aulas ("rooms" de oTree): enlace fijo por el que los equipos entran a la sesión
+# que abre el docente. Los alumnos usan /room/aula; el docente crea la sesión
+# desde /room_without_session/aula (o Rooms en el panel).
+ROOMS = [
+    dict(
+        name='aula',
+        display_name='Aula de la FCEyJ',
+        welcome_page='global/BienvenidaAula.html',
+    ),
+]
+
 DEMO_PAGE_INTRO_HTML = """
 <p>Simulador de comercialización de la Facultad de Ciencias Económicas y Jurídicas (UNLPam).
-Elija una configuración para crear una sesión de prueba.</p>
+Elija una configuración para crear una sesión de prueba.
+<a href="/static/portada/index.html">Volver a la portada</a>.</p>
 """
 
 SECRET_KEY = '4124799046129'
