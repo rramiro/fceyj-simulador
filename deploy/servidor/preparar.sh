@@ -18,6 +18,10 @@ ORIGEN="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # carpeta deploy/ de
 BASE=/opt/simulador
 USUARIO=despliegue
 
+# Dominios de la Facultad (se ofrecen por defecto; se pueden cambiar al correr el script).
+DOMINIO_PRODUCCION_DEFECTO=simulador.eco.unlpam.edu.ar
+DOMINIO_TESTING_DEFECTO=test.simulador.eco.unlpam.edu.ar
+
 if [[ $EUID -ne 0 ]]; then echo "Ejecutar como root (sudo bash preparar.sh)"; exit 1; fi
 
 pedir_clave() {   # pedir_clave <variable> <descripción>
@@ -63,8 +67,10 @@ echo "==> 3/6 Dominios del proxy"
 if [[ -f "$BASE/proxy/.env" ]]; then
     echo "    Ya configurado ($BASE/proxy/.env); se conserva."
 else
-    read -rp "    Dominio de producción (ej. simulador.eco.unlpam.edu.ar): " DOM_PROD
-    read -rp "    Dominio de testing    (ej. testing.simulador.eco.unlpam.edu.ar): " DOM_TEST
+    read -rp "    Dominio de producción [$DOMINIO_PRODUCCION_DEFECTO]: " DOM_PROD
+    read -rp "    Dominio de testing    [$DOMINIO_TESTING_DEFECTO]: " DOM_TEST
+    DOM_PROD="${DOM_PROD:-$DOMINIO_PRODUCCION_DEFECTO}"
+    DOM_TEST="${DOM_TEST:-$DOMINIO_TESTING_DEFECTO}"
     read -rp "    Correo para avisos de los certificados: " CORREO
     umask 077
     printf 'DOMINIO_PRODUCCION=%s\nDOMINIO_TESTING=%s\nCORREO=%s\n' "$DOM_PROD" "$DOM_TEST" "$CORREO" > "$BASE/proxy/.env"

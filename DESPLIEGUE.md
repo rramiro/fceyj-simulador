@@ -4,8 +4,8 @@ El simulador corre en contenedores Docker en un servidor propio (VPS), con **dos
 
 | Ambiente | Para qué | Se actualiza |
 |---|---|---|
-| **testing** (`testing.simulador.<dominio>`) | Probar los cambios antes de usarlos en clase | Automáticamente con cada push a `main` |
-| **produccion** (`simulador.<dominio>`) | Las clases | Después de testing, **con aprobación manual** en GitHub |
+| **testing** (`test.simulador.eco.unlpam.edu.ar`) | Probar los cambios antes de usarlos en clase | Automáticamente con cada push a `main` |
+| **produccion** (`simulador.eco.unlpam.edu.ar`) | Las clases | Después de testing, **con aprobación manual** en GitHub |
 
 ```
 push a main ─► Pruebas (bots + modelo) ─► Imagen Docker (ghcr.io) ─► testing ─► [aprobación] ─► producción
@@ -57,7 +57,7 @@ ambientes) y acceso con clave SSH. Anotar la IP.
 Crear dos registros DNS tipo **A** apuntando a la IP del servidor, por ejemplo:
 
 - `simulador.eco.unlpam.edu.ar` → producción
-- `testing.simulador.eco.unlpam.edu.ar` → testing
+- `test.simulador.eco.unlpam.edu.ar` → testing
 
 (Si son subdominios de la Facultad, los crea el área de sistemas.)
 
@@ -87,7 +87,8 @@ En el repositorio → **Settings**:
    `SSH_HOST`, `SSH_KNOWN_HOSTS` y `SSH_KEY`.
 2. **Secrets and variables → Actions → Variables** → crear:
    - `DESPLIEGUE_ACTIVO` = `true` (mientras no exista, los push a `main` solo corren las pruebas);
-   - `DOMINIO_TESTING` y `DOMINIO_PRODUCCION` (opcionales: muestran el enlace en cada despliegue).
+   - `DOMINIO_TESTING` = `test.simulador.eco.unlpam.edu.ar` y `DOMINIO_PRODUCCION` = `simulador.eco.unlpam.edu.ar`
+     (opcionales: muestran el enlace en cada despliegue).
 3. **Environments** → crear `testing` (sin reglas) y `produccion` con
    **Required reviewers** = quien aprueba los pases a producción.
 
@@ -96,7 +97,7 @@ En el repositorio → **Settings**:
 **Actions → Despliegue → Run workflow**. Se despliega testing; después GitHub pide aprobar
 producción (**Review deployments → Approve**). En el primer despliegue se crean las tablas.
 
-Probar en `https://testing.simulador.<dominio>/` y `https://simulador.<dominio>/`.
+Probar en `https://test.simulador.eco.unlpam.edu.ar/` y `https://simulador.eco.unlpam.edu.ar/`.
 
 ---
 
@@ -113,7 +114,7 @@ Probar en `https://testing.simulador.<dominio>/` y `https://simulador.<dominio>/
 
 ## Tablero docente
 
-En `https://<dominio>/static/docente/` (también desde la portada: *Soy docente* → *Tablero docente*). Pide usuario
+En `https://simulador.eco.unlpam.edu.ar/static/docente/` (en testing, el mismo camino en `test.simulador.eco.unlpam.edu.ar`; también desde la portada: *Soy docente* → *Tablero docente*). Pide usuario
 `admin` y la contraseña de administración del ambiente.
 
 - Lista las sesiones del simulador (las partidas de *Demo* no aparecen: se abren por código).
