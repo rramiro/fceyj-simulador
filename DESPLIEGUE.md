@@ -133,6 +133,11 @@ En `https://simulador.eco.unlpam.edu.ar/static/docente/` (en testing, el mismo c
 - Al elegir un equipo: su historial trimestre a trimestre, la **devolución automática**
   (reglas en `comercializacion/devolucion.py`) y un cuadro para el **comentario del docente**.
   El equipo ve la devolución y el comentario en su pantalla de resultado final.
+- **Papelera:** *Eliminar* (en la lista o dentro de la sesión) mueve la sesión a la papelera:
+  deja de aparecer en la lista, pero **no se borra ningún dato** (borrado lógico: se guarda la
+  marca `papelera` en `session.vars`). Desde *Papelera* se recupera con un clic. Los equipos que
+  tengan el enlace de una sesión eliminada todavía pueden entrar. Para borrarla de verdad hay que
+  usar *Delete* en el panel de oTree (*Sessions*), y eso no tiene vuelta atrás.
 
 Cómo funciona: el juego guarda el estado de cada equipo en `participant.vars['tablero']` y el
 tablero lo lee con la API REST de oTree. En el servidor, Caddy protege `/static/docente/` y `/api/`

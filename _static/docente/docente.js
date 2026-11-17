@@ -126,24 +126,126 @@
     }
 
     // --------------------------------------------------------------- sesiones
+    // ---------------------------------------------------------- confirmación
+    // Ventana modal propia (<dialog>) en lugar de confirm(): devuelve una promesa con true/false.
+    // El foco arranca en "Cancelar" para que un Enter distraído no confirme una acción.
+    var resolverModal = null;
+
+    function confirmar(o) {
+        var modal = $('modal');
+        $('modal-titulo').textContent = o.titulo;
+        $('modal-texto').textContent = o.texto || '';
+        $('modal-detalle').textContent = o.detalle || '';
+        $('modal-detalle').hidden = !o.detalle;
+        $('modal-aceptar').textContent = o.aceptar || 'Aceptar';
+        $('modal-aceptar').className = 'boton' + (o.peligro ? ' boton-peligro' : '');
+        $('modal-cancelar').textContent = o.cancelar || 'Cancelar';
+        $('modal-icono').hidden = !o.peligro;
+        return new Promise(function (resolver) {
+            resolverModal = resolver;
+            modal.showModal();
+            $('modal-cancelar').focus();
+        });
+    }
+
+    function cerrarModal(resultado) {
+        var modal = $('modal');
+        if (modal.open) { modal.close(); }
+        if (resolverModal) { var r = resolverModal; resolverModal = null; r(resultado); }
+    }
+
+    $('modal-aceptar').addEventListener('click', function () { cerrarModal(true); });
+    $('modal-cancelar').addEventListener('click', function () { cerrarModal(false); });
+    // Esc (evento "cancel" del diálogo) y clic fuera de la ventana: cancelar.
+    $('modal').addEventListener('cancel', function (ev) { ev.preventDefault(); cerrarModal(false); });
+    $('modal').addEventListener('click', function (ev) { if (ev.target === ev.currentTarget) { cerrarModal(false); } });
+
+    // ---------------------------------------------------------------- papelera
+    // Borrado lógico: "eliminar" guarda en session.vars['papelera'] la fecha en que se movió
+    // a la papelera; no se borra ningún dato y "Recuperar" quita la marca. Se usa la API REST
+    // (/api/session_vars), así que en el servidor la protege la misma contraseña del tablero.
+    function fecha(segundos) {
+        return segundos ? new Date(segundos * 1000).toLocaleString('es-AR', {dateStyle: 'short', timeStyle: 'short'}) : '';
+    }
+
+    function marcarPapelera(sesion, enPapelera) {
+        var valor = enPapelera ? {eliminada: Date.now() / 1000} : null;
+        return api('/api/session_vars/' + encodeURIComponent(sesion.code), {vars: {papelera: valor}});
+    }
+
+    function moverAPapelera(sesion, alTerminar) {
+        var nombre = sesion.label || sesion.code;
+        confirmar({
+            titulo: '¿Mover a la papelera?',
+            texto: 'La sesión "' + nombre + '" deja de aparecer en la lista.',
+            detalle: 'No se borra ningún dato: se puede recuperar en cualquier momento desde la papelera.',
+            aceptar: 'Mover a la papelera',
+            peligro: true
+        }).then(function (ok) {
+            if (!ok) { return; }
+            marcarPapelera(sesion, true).then(function () {
+                avisar('Sesión "' + nombre + '" movida a la papelera');
+                alTerminar();
+            }).catch(function (e) { mostrarError(e.message); });
+        });
+    }
+
+    function recuperar(sesion, alTerminar) {
+        var nombre = sesion.label || sesion.code;
+        marcarPapelera(sesion, false).then(function () {
+            avisar('Sesión "' + nombre + '" recuperada');
+            alTerminar();
+        }).catch(function (e) { mostrarError(e.message); });
+    }
+
+    function tarjetaSesion(s, enPapelera) {
+        var info = s.num_participants + ' equipos · creada ' + fecha(s.created_at) + (s.label ? ' · ' + s.code : '');
+        if (enPapelera) { info += ' · eliminada ' + fecha(s.papelera.eliminada); }
+        return el('div', {class: 'tarjeta-sesion' + (enPapelera ? ' en-papelera' : '')}, [
+            el('button', {class: 'abrir-sesion', type: 'button', onclick: function () { abrirSesion(s.code); }}, [
+                el('b', null, s.label || s.code), el('span', {class: 'nota'}, info)
+            ]),
+            enPapelera
+                ? el('button', {class: 'boton-enlace', type: 'button', title: 'Recuperar la sesión',
+                                onclick: function () { recuperar(s, cargarSesiones); }}, 'Recuperar')
+                : el('button', {class: 'boton-eliminar', type: 'button', title: 'Mover a la papelera',
+                                'aria-label': 'Mover a la papelera la sesión ' + (s.label || s.code),
+                                onclick: function () { moverAPapelera(s, cargarSesiones); }}, 'Eliminar')
+        ]);
+    }
+
     function cargarSesiones() {
         var lista = $('lista-sesiones');
+        var verPapelera = estado.verPapelera;
         api('/api/sessions').then(function (sesiones) {
-            vaciar(lista);
             sesiones = sesiones.filter(function (s) { return s.config_name === 'comercializacion'; }).reverse();
-            if (!sesiones.length) {
-                lista.appendChild(el('p', {class: 'nota'},
-                    'No hay sesiones del simulador. Créelas desde el aula o el panel de oTree. ' +
-                    '(Las partidas de prueba de "Demo" no aparecen en la lista: abra su código con el formulario.)'));
-                return;
+            // La marca de papelera vive en session.vars: hay que pedirla sesión por sesión.
+            return Promise.all(sesiones.map(function (s) {
+                return api('/api/get_session/' + encodeURIComponent(s.code), {participant_labels: [], session_vars: ['papelera']})
+                    .then(function (d) { s.papelera = d.papelera || null; return s; });
+            }));
+        }).then(function (sesiones) {
+            var activas = sesiones.filter(function (s) { return !s.papelera; });
+            var eliminadas = sesiones.filter(function (s) { return s.papelera; })
+                .sort(function (a, b) { return b.papelera.eliminada - a.papelera.eliminada; });
+            var boton = $('ver-papelera');
+            boton.textContent = verPapelera ? '← Volver a las sesiones' : 'Papelera (' + eliminadas.length + ')';
+            $('titulo-sesiones').textContent = verPapelera ? 'Papelera' : 'Sesiones';
+
+            vaciar(lista);
+            var mostrar = verPapelera ? eliminadas : activas;
+            if (!mostrar.length) {
+                lista.appendChild(el('p', {class: 'nota'}, verPapelera
+                    ? 'La papelera está vacía.'
+                    : 'No hay sesiones del simulador. Créelas desde el aula o el panel de oTree. ' +
+                      '(Las partidas de prueba de "Demo" no aparecen en la lista: abra su código con el formulario.)'));
             }
-            sesiones.forEach(function (s) {
-                var fecha = s.created_at ? new Date(s.created_at * 1000).toLocaleString('es-AR', {dateStyle: 'short', timeStyle: 'short'}) : '';
-                lista.appendChild(el('button', {class: 'tarjeta-sesion', type: 'button', onclick: function () { abrirSesion(s.code); }}, [
-                    el('b', null, s.label || s.code),
-                    el('span', {class: 'nota'}, [s.num_participants + ' equipos · ' + fecha, s.label ? ' · ' + s.code : ''])
-                ]));
-            });
+            if (verPapelera && mostrar.length) {
+                lista.appendChild(el('p', {class: 'nota nota-papelera'},
+                    'Las sesiones de la papelera conservan todos sus datos. Recuperarlas las devuelve a la lista. ' +
+                    'Si un equipo tiene el enlace de una sesión eliminada, todavía puede entrar.'));
+            }
+            mostrar.forEach(function (s) { lista.appendChild(tarjetaSesion(s, verPapelera)); });
         }).catch(function (e) {
             vaciar(lista);
             lista.appendChild(el('p', {class: 'nota'}, 'No se pudo leer la lista de sesiones.'));
@@ -176,16 +278,25 @@
         $('vista-sesion').hidden = true;
         $('panel-sesiones').hidden = false;
         mostrarError(null);
+        estado.verPapelera = false;   // "← Sesiones" vuelve siempre a la lista de sesiones
         cargarSesiones();
     }
 
     function actualizar() {
         var codigo = estado.codigo;
         if (!codigo) { return; }
-        api('/api/get_session/' + encodeURIComponent(codigo), {participant_vars: VARS}).then(function (datos) {
+        api('/api/get_session/' + encodeURIComponent(codigo), {participant_vars: VARS, session_vars: ['papelera']}).then(function (datos) {
             if (codigo !== estado.codigo) { return; }
             mostrarError(null);
             $('actualizado').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-AR');
+            // Papelera: aviso con "Recuperar" si la sesión está eliminada; si no, botón para eliminarla.
+            estado.sesionActual = {code: codigo, label: datos.label, papelera: datos.papelera || null};
+            $('aviso-papelera').hidden = !datos.papelera;
+            $('eliminar-sesion').hidden = !!datos.papelera;
+            if (datos.papelera) {
+                $('texto-papelera').textContent = 'Esta sesión está en la papelera (eliminada el ' +
+                    fecha(datos.papelera.eliminada) + '). Sus datos están intactos.';
+            }
             // Solo se redibuja si algo cambió: así no se pierden clics ni el foco del teclado.
             var firma = JSON.stringify(datos.participants);
             if (firma === estado.firma) { return; }
@@ -317,7 +428,18 @@
     }
 
     function cerrarDetalle() {
-        if (estado.borrador && !confirm('Hay un comentario sin guardar. ¿Cerrar igual?')) { return; }
+        if (estado.borrador) {
+            confirmar({
+                titulo: 'Hay un comentario sin guardar',
+                texto: 'Si cierra el detalle, se pierde lo que escribió para este equipo.',
+                aceptar: 'Cerrar sin guardar',
+                cancelar: 'Seguir editando',
+                peligro: true
+            }).then(function (ok) {
+                if (ok) { estado.borrador = false; cerrarDetalle(); }
+            });
+            return;
+        }
         estado.abierto = null;
         estado.borrador = false;
         $('fondo-detalle').hidden = true;
@@ -399,12 +521,22 @@
     // ------------------------------------------------------------------ inicio
     $('form-codigo').addEventListener('submit', function (ev) { ev.preventDefault(); abrirSesion($('codigo').value); });
     $('volver').addEventListener('click', volver);
+    $('ver-papelera').addEventListener('click', function () { estado.verPapelera = !estado.verPapelera; cargarSesiones(); });
+    $('eliminar-sesion').addEventListener('click', function () {
+        if (estado.sesionActual) { moverAPapelera(estado.sesionActual, actualizar); }
+    });
+    $('recuperar-sesion').addEventListener('click', function () {
+        if (estado.sesionActual) { recuperar(estado.sesionActual, actualizar); }
+    });
     $('actualizar').addEventListener('click', actualizar);
     $('cerrar-detalle').addEventListener('click', cerrarDetalle);
     $('fondo-detalle').addEventListener('click', cerrarDetalle);
     $('guardar-comentario').addEventListener('click', guardarComentario);
     $('comentario').addEventListener('input', function () { estado.borrador = true; $('estado-comentario').textContent = 'Sin guardar'; });
-    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && estado.abierto) { cerrarDetalle(); } });
+    document.addEventListener('keydown', function (ev) {
+        // Con la ventana de confirmación abierta, Esc la cierra a ella (no al detalle).
+        if (ev.key === 'Escape' && estado.abierto && !$('modal').open) { cerrarDetalle(); }
+    });
 
     var m = location.hash.match(/sesion=([\w-]+)/);
     if (m) { abrirSesion(m[1]); } else { cargarSesiones(); }

@@ -193,6 +193,22 @@ a:hover { color: var(--fceyj-indigo); }
 .comentario-titulo { font-weight: 700; color: var(--fceyj-indigo); margin-bottom: .3rem; }
 .comentario-texto { white-space: pre-line; }
 
+/* --- Aula completa (reemplaza el "Session is full" de oTree) --- */
+.aula-llena-icono {
+    width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--fceyj-celeste-claro); margin-bottom: 1rem;
+}
+.aula-llena-icono svg { fill: none; stroke: var(--fceyj-indigo); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.aula-llena-casos { display: grid; gap: .75rem; margin: 1.25rem 0; }
+.aula-llena-caso {
+    background: var(--fceyj-gris-fondo); border-left: 5px solid var(--fceyj-celeste);
+    border-radius: 6px; padding: .85rem 1rem;
+}
+.aula-llena-caso h5 { font-size: 1.05rem; margin-bottom: .35rem; }
+.aula-llena-caso p { margin: 0; }
+.aula-llena-secundario { color: var(--fceyj-indigo); border-color: var(--fceyj-indigo); font-weight: 700; }
+.aula-llena-secundario:hover { background: var(--fceyj-celeste-claro); color: var(--fceyj-indigo); border-color: var(--fceyj-indigo); }
+
 details summary {
     color: var(--fceyj-azul);
     cursor: pointer;

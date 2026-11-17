@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="docente.css?v=4">
+    <link rel="stylesheet" href="docente.css?v=6">
 </head>
 <body>
 
@@ -30,7 +30,10 @@
     <!-- Elección de la sesión -->
     <section class="panel" id="panel-sesiones">
         <div class="panel-cabecera">
-            <h1>Sesiones</h1>
+            <div class="titulo-con-papelera">
+                <h1 id="titulo-sesiones">Sesiones</h1>
+                <button type="button" class="enlace" id="ver-papelera">Papelera</button>
+            </div>
             <form id="form-codigo" class="form-codigo">
                 <label for="codigo">Código de sesión</label>
                 <input id="codigo" name="codigo" type="text" placeholder="ej. abcd1234" autocomplete="off" spellcheck="false">
@@ -50,7 +53,13 @@
             <div class="estado-actualizacion">
                 <span id="actualizado" class="nota"></span>
                 <button type="button" class="boton boton-chico boton-secundario" id="actualizar">Actualizar</button>
+                <button type="button" class="boton-eliminar" id="eliminar-sesion" hidden>Mover a la papelera</button>
             </div>
+        </div>
+
+        <div class="aviso-papelera" id="aviso-papelera" role="status" hidden>
+            <span id="texto-papelera"></span>
+            <button type="button" class="boton boton-chico" id="recuperar-sesion">Recuperar</button>
         </div>
 
         <div id="resumen" class="resumen"></div>
@@ -92,6 +101,20 @@
 
     <p id="error" class="aviso-error" role="alert" hidden></p>
     <div id="aviso-copia" class="aviso-copia" role="status" hidden></div>
+
+    <!-- Ventana de confirmación (reemplaza los confirm() del navegador) -->
+    <dialog id="modal" class="modal" aria-labelledby="modal-titulo" aria-describedby="modal-texto">
+        <div class="modal-icono" id="modal-icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="28" height="28"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+        </div>
+        <h2 id="modal-titulo"></h2>
+        <p id="modal-texto"></p>
+        <p id="modal-detalle" class="nota"></p>
+        <div class="modal-acciones">
+            <button type="button" class="boton boton-secundario" id="modal-cancelar">Cancelar</button>
+            <button type="button" class="boton" id="modal-aceptar">Aceptar</button>
+        </div>
+    </dialog>
 </main>
 
 <footer class="pie">
@@ -100,6 +123,6 @@
     </div>
 </footer>
 
-<script src="docente.js?v=5"></script>
+<script src="docente.js?v=8"></script>
 </body>
 </html>

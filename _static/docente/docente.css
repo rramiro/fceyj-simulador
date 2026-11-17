@@ -67,11 +67,55 @@ input[type=text], textarea {
 input[type=text]:focus, textarea:focus { outline: none; border-color: var(--celeste); box-shadow: 0 0 0 3px rgba(59,154,215,.2); }
 .lista-sesiones { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .tarjeta-sesion {
-    text-align: left; background: var(--gris-fondo); border: 1px solid var(--borde); border-radius: var(--radio);
-    padding: 14px 16px; font: inherit; color: var(--texto); cursor: pointer;
+    display: flex; align-items: flex-start; gap: 8px;
+    background: var(--gris-fondo); border: 1px solid var(--borde); border-radius: var(--radio);
+    padding: 12px 12px 12px 16px;
 }
 .tarjeta-sesion:hover { border-color: var(--celeste); background: var(--celeste-claro); }
+.abrir-sesion {
+    flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0;
+    font: inherit; color: var(--texto); cursor: pointer;
+}
+.abrir-sesion:focus-visible { outline: 3px solid var(--celeste); outline-offset: 2px; }
 .tarjeta-sesion b { color: var(--indigo); font-size: 1.1rem; display: block; }
+.tarjeta-sesion.en-papelera { background: #fff; border-style: dashed; }
+.tarjeta-sesion.en-papelera b { color: var(--texto-suave); }
+
+/* Papelera */
+.titulo-con-papelera { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.titulo-con-papelera h1 { margin: 0; }
+.boton-eliminar {
+    background: #fff; color: var(--rojo); border: 1px solid var(--rojo); border-radius: 6px;
+    padding: .15em .7em; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.boton-eliminar:hover { background: #FDECEE; }
+.boton-eliminar:focus-visible { outline: 3px solid var(--celeste); outline-offset: 2px; }
+.aviso-papelera {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    background: #FFF6E5; color: #7A4E0B; border: 1px solid #F0D9A8; border-radius: var(--radio);
+    padding: 10px 16px; margin-bottom: 16px;
+}
+.nota-papelera { grid-column: 1 / -1; }
+
+/* Ventana de confirmación */
+.modal {
+    border: 0; border-radius: 12px; padding: 28px 28px 22px; width: min(440px, calc(100% - 32px));
+    box-shadow: 0 24px 60px rgba(35, 34, 90, .35); color: var(--texto); text-align: center;
+}
+.modal::backdrop { background: rgba(35, 34, 90, .45); }
+.modal[open] { animation: aparecer .14s ease-out; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.modal h2 { font-size: 1.3rem; margin: 0 0 .5em; }
+.modal p { margin: 0 0 .6em; }
+.modal-icono {
+    width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+    background: #FDECEE; margin: 0 auto 14px;
+}
+.modal-icono svg { fill: none; stroke: var(--rojo); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.modal-acciones { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.boton-peligro { background: var(--rojo); border-color: var(--rojo); }
+.boton-peligro:hover { background: #A8323B; border-color: #A8323B; }
+@media (prefers-reduced-motion: reduce) { .modal[open] { animation: none; } }
 
 /* Vista de sesión */
 .barra-sesion { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }

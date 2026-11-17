@@ -3,7 +3,10 @@ import time
 
 from otree.api import *
 
-from . import devolucion, mercado
+from . import ajustes_otree, devolucion, mercado
+
+# Página propia para "aula completa" (ver ajustes_otree.py).
+ajustes_otree.aplicar()
 
 
 doc = """
