@@ -49,8 +49,11 @@ Archivos del repositorio:
 
 ### 1. Servidor
 
-Crear un VPS con **Ubuntu 24.04**, **2 GB de RAM** (unos 12 USD por mes; alcanza para los dos
-ambientes) y acceso con clave SSH. Anotar la IP.
+Crear un VPS con **Ubuntu 22.04 o 24.04**, **2 GB de RAM** (unos 12 USD por mes; alcanza para los
+dos ambientes) y acceso con clave SSH. Anotar la IP.
+
+Puede ser un servidor que ya se usa para otras cosas, con dos condiciones: los puertos **80 y 443**
+tienen que estar libres (los usa el proxy para el HTTPS) y conviene tener 2 GB libres de memoria.
 
 ### 2. Dominios
 
@@ -70,9 +73,15 @@ git clone https://github.com/rramiro/fceyj-simulador.git /tmp/simulador
 bash /tmp/simulador/deploy/servidor/preparar.sh
 ```
 
-El script instala Docker y el firewall, levanta el proxy y pide:
+Hay que correrlo así, desde la copia completa del repositorio: necesita los demás archivos de
+`deploy/`. Antes de cambiar nada controla que los puertos 80 y 443 estén libres.
 
-- los dos dominios y un correo (para los avisos de los certificados HTTPS);
+El script instala Docker (si ya está instalado, por ejemplo Docker CE, usa ese), levanta el proxy y pide:
+
+- si **activar el firewall** (solo cuando está apagado): deja abiertos SSH, 80 y 443, y antes
+  muestra qué otros puertos en uso quedarían bloqueados (por ejemplo, Webmin en el 10000);
+- los dos dominios (ofrece los de la Facultad: alcanza con Enter) y un correo para los avisos de
+  los certificados HTTPS;
 - la **contraseña de administración** de cada ambiente (la que usan los docentes en el panel;
   al menos 10 caracteres, sin espacios, comillas, `$`, `\` ni `` ` ``).
 
@@ -170,6 +179,9 @@ Conviene copiar periódicamente la carpeta de respaldos fuera del servidor.
 
 | Síntoma | Qué revisar (en el servidor) |
 |---|---|
+| `preparar.sh`: `containerd.io : Conflicts: containerd` | Versión vieja del script, que intentaba instalar `docker.io` sobre Docker CE. Bajar la última (`git -C /tmp/simulador pull`) y volver a correrlo |
+| `apt-get update`: `Could not resolve '<mirror>'` | El mirror del proveedor no responde. Cambiarlo por el oficial: `sed -i 's#http://<mirror>/ubuntu#http://archive.ubuntu.com/ubuntu#' /etc/apt/sources.list` y `apt-get update` |
+| `preparar.sh`: puertos 80/443 en uso | Otro servidor web los ocupa (`ss -ltnp '( sport = :80 or sport = :443 )'`). Detenerlo o moverlo antes de seguir |
 | El sitio no carga | `docker ps` (tienen que estar `caddy`, `app`, `db`); `docker logs simulador-proxy-caddy-1` |
 | Error en un ambiente | `cd /opt/simulador/produccion && docker compose -p simulador-produccion logs --tail 50 app` |
 | Falla "Conectar y desplegar" en Actions | Que los secretos `SSH_*` estén bien copiados (la clave completa, con BEGIN y END) |
