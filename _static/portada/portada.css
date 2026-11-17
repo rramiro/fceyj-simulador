@@ -261,9 +261,74 @@ code { font-family: Consolas, 'Courier New', monospace; }
 .pie-fila { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .pie-derecha { text-align: right; }
 
+/* --- Encabezado: título del sistema y rol actual --- */
+.titulo-sistema { text-align: right; color: var(--indigo); font-weight: 700; font-size: 1.15rem; line-height: 1.15; }
+.titulo-sistema small { display: block; font-weight: 400; font-size: .85rem; color: var(--texto-suave); }
+.rol-actual {
+    background: var(--indigo); color: #fff; border-radius: 999px; padding: .2em .9em;
+    font-weight: 700; font-size: .9rem;
+}
+.menu a.cambiar-rol { color: var(--azul); font-weight: 400; border-left: 1px solid var(--borde); padding-left: 22px; }
+.menu a.cambiar-rol:hover { color: var(--indigo); }
+
+/* --- Migas de pan --- */
+.migas { padding-top: 14px; padding-bottom: 0; font-size: .9rem; color: var(--texto-suave); }
+.migas a { text-decoration: none; }
+.migas span[aria-hidden] { margin: 0 .35em; }
+
+/* --- Inicio: elección del rol --- */
+.portada-inicio { padding: 56px 0 64px; text-align: center; }
+.portada-inicio .bajada { margin-left: auto; margin-right: auto; }
+.roles { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; text-align: left; }
+.rol {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px;
+    background: #fff; border: 2px solid var(--borde); border-radius: 12px; padding: 28px 28px;
+    text-decoration: none; color: var(--texto); box-shadow: 0 6px 20px rgba(47, 46, 112, .08);
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.rol:hover { border-color: var(--celeste); transform: translateY(-3px); box-shadow: 0 12px 28px rgba(47, 46, 112, .14); color: var(--texto); }
+.rol:focus-visible { outline: 3px solid var(--celeste); outline-offset: 3px; }
+.rol-icono {
+    width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--celeste-claro);
+}
+.rol-icono svg { fill: none; stroke: var(--indigo); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.rol-docente .rol-icono { background: var(--indigo); }
+.rol-docente .rol-icono svg { stroke: #fff; }
+.rol-titulo { display: block; font-size: 1.5rem; font-weight: 700; color: var(--indigo); line-height: 1.2; }
+.rol-desc { display: block; color: var(--texto-suave); margin-top: .25em; }
+.rol-flecha { font-size: 1.8rem; color: var(--celeste); transition: transform .15s; }
+.rol:hover .rol-flecha { transform: translateX(4px); }
+
+.sobre { display: grid; grid-template-columns: 1.3fr 1fr; gap: 48px; align-items: center; }
+
+/* --- Páginas de cada rol --- */
+.portada-rol { padding: 28px 0 48px; }
+.unirse h1 { color: #fff; }
+.antetitulo-claro { color: #9CCBEA; }
+.acciones-centro { justify-content: center; margin-top: 28px; }
+
+.consejos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.consejo { border-top: 4px solid var(--celeste); background: var(--gris-fondo); border-radius: var(--radio); padding: 18px 18px; }
+.consejo h3 { font-size: 1.05rem; }
+.consejo p { margin: 0; font-size: .97rem; }
+
+.claves { background: #fff; border-radius: var(--radio); padding: 20px 24px; margin-top: 24px; border-left: 5px solid var(--indigo); }
+.claves h3 { font-size: 1.1rem; }
+.claves ul { margin: 0; padding-left: 1.2em; }
+.claves li { margin-bottom: .4em; }
+
+.tarjetas-acciones { margin-top: 24px; }
+.tarjeta-principal { background: var(--indigo); border-color: var(--indigo); }
+.tarjeta-principal h3, .tarjeta-principal p { color: #fff; }
+.tarjeta-principal:hover { background: var(--indigo-oscuro); border-color: var(--celeste); }
+.tarjeta-principal:hover h3, .tarjeta-principal:hover p { color: #fff; }
+.pasos-cinco { grid-template-columns: repeat(5, 1fr); }
+
 /* --- Pantallas chicas --- */
 @media (max-width: 900px) {
-    .portada-fila, .juego-columnas { grid-template-columns: 1fr; }
+    .portada-fila, .juego-columnas, .sobre, .roles { grid-template-columns: 1fr; }
+    .consejos, .pasos-cinco { grid-template-columns: 1fr 1fr; }
     .portada-panel { max-width: 460px; }
     .pasos, .tarjetas { grid-template-columns: 1fr 1fr; }
     .unirse { flex-direction: column; align-items: flex-start; }
@@ -275,7 +340,15 @@ code { font-family: Consolas, 'Courier New', monospace; }
     .portada { padding: 40px 0; }
     .seccion { padding: 44px 0; }
     .juego { padding: 20px; }
-    .pasos, .tarjetas { grid-template-columns: 1fr; }
+    .pasos, .tarjetas, .consejos, .pasos-cinco { grid-template-columns: 1fr; }
+    .titulo-sistema { display: none; }
+    .menu { gap: 12px; }
+    .menu a.cambiar-rol { display: inline; border-left: 0; padding-left: 0; font-size: .9rem; white-space: nowrap; }
+    .rol-actual { font-size: .8rem; padding: .15em .7em; }
+    .rol { padding: 20px; gap: 14px; }
+    .rol-icono { width: 56px; height: 56px; }
+    .rol-titulo { font-size: 1.25rem; }
+    .portada-inicio { padding: 36px 0 44px; }
     .unirse { padding: 28px 22px; }
     .pie-derecha { text-align: left; }
 }

@@ -3,7 +3,7 @@
 #
 # Variables del .env (las crea preparar.sh; IMAGEN la actualiza cada despliegue):
 #   AMBIENTE, IMAGEN, POSTGRES_PASSWORD, OTREE_ADMIN_PASSWORD, OTREE_SECRET_KEY,
-#   OTREE_AUTH_LEVEL (STUDY por defecto), RESPALDOS_DIAS (14 por defecto)
+#   OTREE_REST_KEY, OTREE_AUTH_LEVEL (STUDY por defecto), RESPALDOS_DIAS (14 por defecto)
 
 services:
   app:
@@ -15,6 +15,8 @@ services:
       OTREE_AUTH_LEVEL: ${OTREE_AUTH_LEVEL:-STUDY}
       OTREE_ADMIN_PASSWORD: ${OTREE_ADMIN_PASSWORD:?falta OTREE_ADMIN_PASSWORD}
       OTREE_SECRET_KEY: ${OTREE_SECRET_KEY:?falta OTREE_SECRET_KEY}
+      # Clave de la API REST (la usa el tablero docente; el proxy la agrega a cada pedido).
+      OTREE_REST_KEY: ${OTREE_REST_KEY:?falta OTREE_REST_KEY}
     depends_on:
       db:
         condition: service_healthy

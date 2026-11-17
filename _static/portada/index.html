@@ -8,43 +8,71 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="portada.css">
+    <link rel="stylesheet" href="portada.css?v=3">
 </head>
 <body>
 
-<!-- ============================ Encabezado ============================ -->
 <header class="encabezado">
     <div class="contenedor encabezado-fila">
-        <a href="#inicio" class="logo">
+        <a href="index.html" class="logo">
             <img src="../fceyj/logo-fceyj.png"
                  alt="Facultad de Ciencias Económicas y Jurídicas - Universidad Nacional de La Pampa">
         </a>
-        <nav class="menu" aria-label="Secciones">
-            <a href="#juegos">Juegos</a>
-            <a href="#como-se-juega">Cómo se juega</a>
-            <a href="#docentes">Docentes</a>
-            <a href="#unirse" class="boton boton-chico">Unirse a la clase</a>
-        </nav>
+        <div class="titulo-sistema">
+            Simuladores de negocios
+            <small>Aprender a decidir, decidiendo</small>
+        </div>
     </div>
 </header>
 
-<main id="inicio">
+<main>
 
-<!-- ============================ Portada ============================ -->
-<section class="portada">
-    <div class="contenedor portada-fila">
-        <div class="portada-texto">
-            <p class="antetitulo">Simuladores de negocios</p>
-            <h1>Aprender a decidir, decidiendo.</h1>
-            <p class="bajada">
-                Juegos de simulación para usar en clase: los equipos dirigen empresas que compiten
-                en un mismo mercado durante varios trimestres, toman decisiones comerciales y ven
-                sus consecuencias frente a las de sus compañeros.
+<section class="portada portada-inicio">
+    <div class="contenedor">
+        <p class="antetitulo">Simuladores de negocios</p>
+        <h1>¿Cómo entrás hoy?</h1>
+        <p class="bajada">
+            Elegí tu rol para ir directo a lo que necesitás.
+        </p>
+
+        <div class="roles">
+            <a class="rol rol-estudiante" href="estudiantes.html">
+                <span class="rol-icono" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" width="48" height="48"><circle cx="17" cy="16" r="7"/><circle cx="33" cy="16" r="7"/><path d="M4 40c0-7.2 5.8-13 13-13s13 5.8 13 13M22 40c0-7.2 4.7-13 11-13s11 5.8 11 13"/></svg>
+                </span>
+                <span class="rol-texto">
+                    <span class="rol-titulo">Soy estudiante</span>
+                    <span class="rol-desc">Entrar a la clase con mi equipo y jugar.</span>
+                </span>
+                <span class="rol-flecha" aria-hidden="true">→</span>
+            </a>
+            <a class="rol rol-docente" href="docentes.html">
+                <span class="rol-icono" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" width="48" height="48"><rect x="5" y="8" width="38" height="25" rx="2"/><path d="M14 40h20M24 33v7M12 25l7-7 6 5 10-10"/></svg>
+                </span>
+                <span class="rol-texto">
+                    <span class="rol-titulo">Soy docente</span>
+                    <span class="rol-desc">Preparar la clase, seguir a los equipos y ver los resultados.</span>
+                </span>
+                <span class="rol-flecha" aria-hidden="true">→</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="seccion">
+    <div class="contenedor sobre">
+        <div>
+            <h2>Qué es</h2>
+            <p>
+                Juegos de simulación para usar en clase. Los equipos dirigen empresas que compiten en
+                un mismo mercado durante varios trimestres, toman decisiones comerciales y ven sus
+                consecuencias frente a las de sus compañeros.
             </p>
-            <div class="acciones">
-                <a href="#unirse" class="boton">Unirse a la clase</a>
-                <a href="/demo/comercializacion" class="boton boton-secundario">Probar una demo</a>
-            </div>
+            <p class="nota">
+                Juego disponible: <b>Comercialización — Mercado de gaseosas</b> (precio, publicidad,
+                producción e investigación de mercado, en un contexto con inflación).
+            </p>
         </div>
         <div class="portada-panel" aria-hidden="true">
             <div class="mini-tabla">
@@ -59,148 +87,8 @@
     </div>
 </section>
 
-<!-- ============================ Juegos ============================ -->
-<section id="juegos" class="seccion">
-    <div class="contenedor">
-        <h2>Juegos disponibles</h2>
-
-        <article class="juego">
-            <div class="juego-cabecera">
-                <div>
-                    <p class="antetitulo">Comercialización</p>
-                    <h3>Mercado de gaseosas</h3>
-                </div>
-                <span class="etiqueta">Versión 2</span>
-            </div>
-
-            <ul class="datos">
-                <li><b>4</b> empresas por mercado</li>
-                <li><b>4 a 6</b> trimestres</li>
-                <li><b>1</b> dispositivo por equipo</li>
-            </ul>
-
-            <div class="juego-columnas">
-                <div>
-                    <h4>Qué decide cada empresa</h4>
-                    <ul>
-                        <li><b>Precio</b> de venta por unidad.</li>
-                        <li><b>Publicidad</b>: atrae clientes con rendimientos decrecientes y su efecto se acumula entre trimestres.</li>
-                        <li><b>Producción</b>: solo se vende lo que se tiene; lo que falta se lo llevan los rivales y lo que sobra cuesta almacenarlo.</li>
-                        <li><b>Investigación de mercado</b> (opcional y paga): pronóstico de demanda, datos de la competencia y sensibilidad al precio.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4>Qué se aprende</h4>
-                    <ul>
-                        <li>Elasticidad de la demanda y fijación de precios.</li>
-                        <li>Competencia por participación: el resultado depende también de lo que hacen los demás.</li>
-                        <li>El dilema de la publicidad: invertir para no perder clientes frente a ponerse de acuerdo.</li>
-                        <li>Gestión de stock con demanda estacional e incierta.</li>
-                        <li>Cuánto vale la información antes de decidir.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <details class="modelo">
-                <summary>Ver el modelo de mercado</summary>
-                <ul>
-                    <li>La <b>demanda total</b> del trimestre depende del precio medio del mercado
-                        (con elasticidad constante), de la época del año y de una variación aleatoria.</li>
-                    <li>Cada empresa recibe una <b>porción de esa demanda</b> según un modelo logit:
-                        su atractivo baja si cobra más caro que el promedio y sube con su stock publicitario,
-                        medido en forma logarítmica.</li>
-                    <li>Las <b>ventas</b> se limitan al stock disponible; la demanda no atendida pasa a
-                        las empresas que todavía tienen stock.</li>
-                    <li>El <b>resultado</b> se calcula con el criterio de costo de ventas: ventas − costo de ventas
-                        − publicidad − almacenamiento − estudios − costo fijo.</li>
-                </ul>
-                <p class="nota">Todos los parámetros se ajustan al crear la sesión, sin tocar el código.</p>
-            </details>
-
-            <div class="acciones">
-                <a href="/demo/comercializacion" class="boton boton-secundario">Probar una demo</a>
-                <a href="#como-se-juega" class="enlace">Cómo se juega →</a>
-            </div>
-        </article>
-
-        <p class="nota proximamente">Próximamente se sumarán nuevos juegos.</p>
-    </div>
-</section>
-
-<!-- ============================ Cómo se juega ============================ -->
-<section id="como-se-juega" class="seccion seccion-gris">
-    <div class="contenedor">
-        <h2>Cómo se juega</h2>
-        <ol class="pasos">
-            <li>
-                <h3>El docente abre la sesión</h3>
-                <p>Elige el juego y la cantidad de empresas, ajusta los parámetros si quiere,
-                   y crea la sesión en el aula.</p>
-            </li>
-            <li>
-                <h3>Los equipos entran</h3>
-                <p>Cada equipo abre el enlace del aula en un solo dispositivo. Al completarse un
-                   mercado de 4 empresas, el juego empieza.</p>
-            </li>
-            <li>
-                <h3>Cada trimestre</h3>
-                <p><b>Investigan</b> (si quieren), <b>deciden</b> precio, publicidad y producción,
-                   y esperan a que todas las empresas del mercado decidan para ver los <b>resultados</b>.</p>
-            </li>
-            <li>
-                <h3>Ranking y discusión</h3>
-                <p>Al final se muestra el ranking por resultado acumulado. Es el momento de discutir
-                   qué estrategias funcionaron y por qué.</p>
-            </li>
-        </ol>
-    </div>
-</section>
-
-<!-- ============================ Unirse ============================ -->
-<section id="unirse" class="seccion">
-    <div class="contenedor">
-        <div class="unirse">
-            <div>
-                <h2>Unirse a la clase</h2>
-                <p>Entren con este enlace cuando el docente lo indique. <b>Un dispositivo por equipo.</b></p>
-                <p class="enlace-aula"><code id="enlace-aula">/room/aula</code>
-                    <button type="button" class="boton boton-chico boton-secundario" id="copiar">Copiar</button></p>
-            </div>
-            <a href="/room/aula" class="boton boton-grande">Entrar al aula</a>
-        </div>
-    </div>
-</section>
-
-<!-- ============================ Docentes ============================ -->
-<section id="docentes" class="seccion seccion-gris">
-    <div class="contenedor">
-        <h2>Para docentes</h2>
-        <p class="bajada">Las acciones de esta sección piden la contraseña de administración del servidor.</p>
-        <div class="tarjetas">
-            <a class="tarjeta" href="/room_without_session/aula">
-                <h3>Crear sesión en el aula</h3>
-                <p>Abre la sesión a la que se van a sumar los equipos que entren por el enlace del aula.
-                   En «Configurar sesión» se ajustan los parámetros del mercado.</p>
-            </a>
-            <a class="tarjeta" href="/sessions">
-                <h3>Seguir una sesión</h3>
-                <p>Panel de sesiones: avance de cada equipo, monitor en vivo y resultados.</p>
-            </a>
-            <a class="tarjeta" href="/export">
-                <h3>Descargar los datos</h3>
-                <p>Exporta todas las decisiones y resultados a CSV para analizarlos en clase.</p>
-            </a>
-            <a class="tarjeta" href="/demo">
-                <h3>Partidas de prueba</h3>
-                <p>Crea una partida para recorrer el juego con varias empresas en la misma pantalla.</p>
-            </a>
-        </div>
-    </div>
-</section>
-
 </main>
 
-<!-- ============================ Pie ============================ -->
 <footer class="pie">
     <div class="contenedor pie-fila">
         <div>
@@ -214,23 +102,5 @@
     </div>
 </footer>
 
-<script>
-    // Muestra el enlace completo del aula según el servidor en el que se abre la portada.
-    (function () {
-        var url = window.location.origin + '/room/aula';
-        var codigo = document.getElementById('enlace-aula');
-        codigo.textContent = url;
-        document.getElementById('copiar').addEventListener('click', function (e) {
-            var boton = e.currentTarget;
-            var hecho = function () {
-                boton.textContent = 'Copiado';
-                setTimeout(function () { boton.textContent = 'Copiar'; }, 1800);
-            };
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(hecho, function () {});
-            }
-        });
-    })();
-</script>
 </body>
 </html>

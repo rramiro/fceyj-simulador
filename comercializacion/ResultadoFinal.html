@@ -27,6 +27,28 @@
     </tbody>
 </table>
 
+<h5 class="mt-4">Devolución de {{ nombre }}</h5>
+<div class="devolucion mb-3">
+    {{ for o in devolucion }}
+    <div class="devolucion-item devolucion-{{ o.tipo }}">
+        <span class="devolucion-tema">{{ o.tema }}</span>
+        <span>{{ o.texto }}</span>
+    </div>
+    {{ endfor }}
+</div>
+
+{{ if comentario_docente }}
+<div class="comentario-docente mb-3">
+    <div class="comentario-titulo">Comentario del docente</div>
+    <div class="comentario-texto">{{ comentario_docente }}</div>
+</div>
+{{ else }}
+<p class="small text-muted" id="sin-comentario">
+    El docente todavía no dejó un comentario. Si lo hace, aparecerá aquí al
+    <a href="">recargar la página</a>.
+</p>
+{{ endif }}
+
 <h5 class="mt-4">Evolución de {{ nombre }}</h5>
 {{ include "comercializacion/incluir_graficos.html" }}
 

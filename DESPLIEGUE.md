@@ -111,6 +111,29 @@ Probar en `https://testing.simulador.<dominio>/` y `https://simulador.<dominio>/
   `sudo -u despliegue /opt/simulador/bin/desplegar.sh produccion ghcr.io/rramiro/fceyj-simulador:sha-<commit>`.
 - **Si la versión nueva no arranca**, `desplegar.sh` vuelve solo a la anterior y el workflow falla.
 
+## Tablero docente
+
+En `https://<dominio>/static/docente/` (también desde la portada: *Soy docente* → *Tablero docente*). Pide usuario
+`admin` y la contraseña de administración del ambiente.
+
+- Lista las sesiones del simulador (las partidas de *Demo* no aparecen: se abren por código).
+- Para cada mercado muestra en qué trimestre y en qué pantalla está cada equipo, quién está
+  demorando al mercado, la participación, el resultado acumulado y el puesto. Se actualiza solo
+  cada 10 segundos.
+- Al elegir un equipo: su historial trimestre a trimestre, la **devolución automática**
+  (reglas en `comercializacion/devolucion.py`) y un cuadro para el **comentario del docente**.
+  El equipo ve la devolución y el comentario en su pantalla de resultado final.
+
+Cómo funciona: el juego guarda el estado de cada equipo en `participant.vars['tablero']` y el
+tablero lo lee con la API REST de oTree. En el servidor, Caddy protege `/static/docente/` y `/api/`
+con la contraseña y agrega la clave REST (`OTREE_REST_KEY`) que exige oTree; la clave nunca llega
+al navegador. `preparar.sh` genera la clave y guarda la contraseña cifrada (bcrypt) en
+`/opt/simulador/proxy/.env`. Si se cambia la contraseña de administración de un ambiente, borrar
+la línea `DOCENTE_HASH_<AMBIENTE>` de ese archivo y volver a correr `preparar.sh`.
+
+En la computadora (`otree devserver`) la API no pide clave: el tablero funciona directamente en
+`http://localhost:8000/static/docente/index.html`.
+
 ## Cambios en el modelo (columnas de la base)
 
 oTree **no tiene migraciones**: si cambian los campos de `Player`, `Group` o `Subsession`
@@ -150,7 +173,7 @@ Conviene copiar periódicamente la carpeta de respaldos fuera del servidor.
 | Error en un ambiente | `cd /opt/simulador/produccion && docker compose -p simulador-produccion logs --tail 50 app` |
 | Falla "Conectar y desplegar" en Actions | Que los secretos `SSH_*` estén bien copiados (la clave completa, con BEGIN y END) |
 | No sale el certificado HTTPS | Que los dominios ya apunten a la IP; después `docker restart simulador-proxy-caddy-1` |
-| Olvidé la contraseña de administración | Editar `OTREE_ADMIN_PASSWORD` en `/opt/simulador/<ambiente>/.env` y desplegar de nuevo |
+| Olvidé la contraseña de administración | Editar `OTREE_ADMIN_PASSWORD` en `/opt/simulador/<ambiente>/.env`, borrar `DOCENTE_HASH_<AMBIENTE>` de `/opt/simulador/proxy/.env`, correr `preparar.sh` y desplegar de nuevo |
 | Historial de despliegues | `cat /opt/simulador/despliegues.log` |
 
 ## Probar el stack en la computadora

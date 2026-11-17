@@ -85,7 +85,7 @@ ROOMS = [
 DEMO_PAGE_INTRO_HTML = """
 <p>Simulador de comercialización de la Facultad de Ciencias Económicas y Jurídicas (UNLPam).
 Elija una configuración para crear una sesión de prueba.
-<a href="/static/portada/index.html">Volver a la portada</a>.</p>
+<a href="/static/portada/docentes.html">Volver al panel docente</a>.</p>
 """
 
 # En el servidor se toma de la variable de entorno OTREE_SECRET_KEY (ver deploy/).

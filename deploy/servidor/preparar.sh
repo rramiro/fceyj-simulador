@@ -59,7 +59,7 @@ echo "    Se aceptan imágenes de: $IMAGEN_PERMITIDA"
 cp "$ORIGEN/proxy/compose.yaml" "$ORIGEN/proxy/Caddyfile" "$BASE/proxy/"
 docker network inspect web >/dev/null 2>&1 || docker network create web >/dev/null
 
-echo "==> 3/6 Proxy (dominios y HTTPS)"
+echo "==> 3/6 Dominios del proxy"
 if [[ -f "$BASE/proxy/.env" ]]; then
     echo "    Ya configurado ($BASE/proxy/.env); se conserva."
 else
@@ -70,18 +70,21 @@ else
     printf 'DOMINIO_PRODUCCION=%s\nDOMINIO_TESTING=%s\nCORREO=%s\n' "$DOM_PROD" "$DOM_TEST" "$CORREO" > "$BASE/proxy/.env"
     umask 022
 fi
-docker compose -p simulador-proxy -f "$BASE/proxy/compose.yaml" --env-file "$BASE/proxy/.env" \
-    --project-directory "$BASE/proxy" up -d
+chmod 600 "$BASE/proxy/.env"
+
+valor() {   # valor <archivo .env> <variable>
+    grep -E "^$2=" "$1" 2>/dev/null | head -1 | cut -d= -f2- | sed -E "s/^'(.*)'$/\1/"
+}
 
 echo "==> 4/6 Configuración de cada ambiente"
 for AMB in testing produccion; do
-    if [[ -f "$BASE/$AMB/.env" ]]; then
+    ENV_AMB="$BASE/$AMB/.env"
+    if [[ -f "$ENV_AMB" ]]; then
         echo "    $AMB: ya configurado; se conserva."
-        continue
-    fi
-    pedir_clave CLAVE "$AMB"
-    umask 077
-    cat > "$BASE/$AMB/.env" <<EOF
+    else
+        pedir_clave CLAVE "$AMB"
+        umask 077
+        cat > "$ENV_AMB" <<EOF
 # Configuración secreta del ambiente $AMB. No subir a ningún repositorio.
 AMBIENTE=$AMB
 POSTGRES_PASSWORD=$(openssl rand -hex 16)
@@ -90,9 +93,30 @@ OTREE_SECRET_KEY=$(openssl rand -hex 32)
 OTREE_AUTH_LEVEL=STUDY
 RESPALDOS_DIAS=14
 EOF
-    umask 022
-    unset CLAVE
+        umask 022
+        unset CLAVE
+    fi
+
+    # Tablero docente: clave REST de oTree (en el ambiente y en el proxy) y la contraseña
+    # de administración en bcrypt para el proxy. Se completan si faltan (servidores viejos).
+    SUFIJO="$(echo "$AMB" | tr '[:lower:]' '[:upper:]')"
+    if [[ -z "$(valor "$ENV_AMB" OTREE_REST_KEY)" ]]; then
+        echo "OTREE_REST_KEY=$(openssl rand -hex 24)" >> "$ENV_AMB"
+    fi
+    CLAVE_REST="$(valor "$ENV_AMB" OTREE_REST_KEY)"
+    sed -i "/^REST_KEY_$SUFIJO=/d" "$BASE/proxy/.env"
+    echo "REST_KEY_$SUFIJO=$CLAVE_REST" >> "$BASE/proxy/.env"
+    if [[ -z "$(valor "$BASE/proxy/.env" "DOCENTE_HASH_$SUFIJO")" ]]; then
+        HASH="$(docker run --rm caddy:2.8-alpine caddy hash-password --plaintext "$(valor "$ENV_AMB" OTREE_ADMIN_PASSWORD)")"
+        # Entre comillas simples: el hash tiene "$" y docker compose no debe interpretarlos.
+        echo "DOCENTE_HASH_$SUFIJO='$HASH'" >> "$BASE/proxy/.env"
+    fi
+    unset CLAVE_REST HASH
 done
+
+echo "    Levantando el proxy"
+docker compose -p simulador-proxy -f "$BASE/proxy/compose.yaml" --env-file "$BASE/proxy/.env" \
+    --project-directory "$BASE/proxy" up -d --force-recreate
 
 echo "==> 5/6 Usuario de despliegue para GitHub Actions"
 if ! id -u "$USUARIO" &>/dev/null; then

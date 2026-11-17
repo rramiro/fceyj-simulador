@@ -3,23 +3,38 @@
 	email {$CORREO}
 }
 
-# Configuración común a los dos ambientes. {args[0]} es el nombre del contenedor de oTree.
+# Configuración común a los dos ambientes:
+#   {args[0]} contenedor de oTree · {args[1]} clave REST de oTree · {args[2]} contraseña (bcrypt) del docente
 (simulador) {
 	encode gzip
 
 	# La raíz muestra la portada (oTree mandaría a las demos).
 	redir / /static/portada/index.html 302
 
+	# Las páginas estáticas (portada, tablero docente) se revalidan siempre, para que después
+	# de una actualización nadie quede con una copia vieja. Sus estilos y scripts llevan ?v=.
+	@html path *.html
+	header @html Cache-Control "no-cache"
+
+	# Tablero docente y API REST de oTree: piden la contraseña de administración
+	# (usuario "admin") y Caddy agrega la clave REST que exige oTree. Así la clave
+	# nunca llega al navegador y los equipos no pueden usar la API.
+	@docente path /api/* /static/docente/*
+	basic_auth @docente {
+		admin {args[2]}
+	}
+	request_header @docente otree-rest-key {args[1]}
+
 	# Caddy maneja los websockets de oTree (páginas de espera, monitor) sin configuración extra.
 	reverse_proxy {args[0]}:8000
 }
 
 {$DOMINIO_PRODUCCION} {
-	import simulador simulador-produccion
+	import simulador simulador-produccion {$REST_KEY_PRODUCCION} {$DOCENTE_HASH_PRODUCCION}
 }
 
 {$DOMINIO_TESTING} {
-	import simulador simulador-testing
+	import simulador simulador-testing {$REST_KEY_TESTING} {$DOCENTE_HASH_TESTING}
 	# Para que los buscadores no indexen el ambiente de pruebas.
 	header X-Robots-Tag "noindex, nofollow"
 }

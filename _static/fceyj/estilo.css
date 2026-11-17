@@ -166,6 +166,33 @@ a:hover { color: var(--fceyj-indigo); }
 .estado-resultados td.total { background: var(--fceyj-celeste-claro); }
 .estado-resultados thead th.total { background: var(--fceyj-indigo-oscuro); color: #fff; }
 
+/* --- Devolución al final del juego --- */
+.devolucion { display: grid; gap: .5rem; }
+.devolucion-item {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: .75rem;
+    padding: .6rem .9rem;
+    border-radius: 6px;
+    border-left: 5px solid;
+    background: var(--fceyj-gris-fondo);
+}
+.devolucion-tema { font-weight: 700; color: var(--fceyj-indigo); }
+.devolucion-fortaleza { border-left-color: #2E8B57; }
+.devolucion-alerta { border-left-color: #C8414B; }
+.devolucion-sugerencia { border-left-color: var(--fceyj-celeste); }
+@media (max-width: 575px) {
+    .devolucion-item { grid-template-columns: 1fr; gap: .2rem; }
+}
+.comentario-docente {
+    border: 2px solid var(--fceyj-indigo);
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    background: #fff;
+}
+.comentario-titulo { font-weight: 700; color: var(--fceyj-indigo); margin-bottom: .3rem; }
+.comentario-texto { white-space: pre-line; }
+
 details summary {
     color: var(--fceyj-azul);
     cursor: pointer;

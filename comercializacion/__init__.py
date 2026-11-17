@@ -1,8 +1,9 @@
 import random
+import time
 
 from otree.api import *
 
-from . import mercado
+from . import devolucion, mercado
 
 
 doc = """
@@ -260,6 +261,10 @@ def calcular_resultados(group: Group):
             ant.group.indice if ant else 1.0,
             p.resultado, group.indice)
 
+    # Recién con todos los acumulados se puede calcular el puesto de cada uno.
+    for p in jugadores:
+        actualizar_tablero(p, 'Resultados listos')
+
 
 # --- Estudios de mercado -------------------------------------------------------
 
@@ -418,6 +423,95 @@ def datos_graficos(player: Player):
     )
 
 
+# --- Tablero del docente y devolución -----------------------------------------
+#
+# El tablero del docente (_static/docente/) lee estos datos con la API REST de
+# oTree, que solo expone participant.vars. Por eso cada página guarda acá un
+# resumen del estado del equipo (todo en tipos JSON).
+
+def rondas_jugadas(player: Player):
+    """Rondas de este jugador que ya tienen resultados calculados."""
+    return [p for p in player.in_rounds(1, player.round_number)
+            if p.field_maybe_none('resultado') is not None]
+
+
+def historial(player: Player):
+    """Datos por trimestre para la devolución y el tablero."""
+    filas = []
+    for p in rondas_jugadas(player):
+        otros = p.get_others_in_group()
+        filas.append(dict(
+            trimestre=p.round_number,
+            precio=p.precio,
+            precio_medio=p.group.precio_medio,
+            publicidad=p.publicidad,
+            publicidad_rivales=sum(o.publicidad for o in otros) / len(otros) if otros else 0,
+            produccion=p.produccion,
+            demanda=p.demanda,
+            unidades=p.unidades,
+            faltante=p.faltante,
+            stock_final=p.stock_final,
+            participacion=p.participacion,
+            ventas=p.ventas,
+            costo_ventas=p.costo_ventas,
+            costo_almacenamiento=p.costo_almacenamiento,
+            costo_financiero=p.costo_financiero,
+            costo_investigacion=p.costo_investigacion,
+            baja_stock=p.baja_stock,
+            resultado=p.resultado,
+            resultado_acumulado=p.resultado_acumulado,
+            inflacion=p.group.inflacion,
+            indice=p.group.indice,
+            estudios=int(bool(p.compra_competencia)) + int(bool(p.compra_pronostico))
+            + int(bool(p.compra_sensibilidad)),
+        ))
+    return filas
+
+
+def puesto_en_mercado(player: Player):
+    """Posición por resultado acumulado en la última ronda con resultados."""
+    jugadas = rondas_jugadas(player)
+    if not jugadas:
+        return None
+    ultima = jugadas[-1]
+    acumulados = sorted((p.resultado_acumulado for p in ultima.group.get_players()), reverse=True)
+    return acumulados.index(ultima.resultado_acumulado) + 1
+
+
+def devolucion_de(player: Player):
+    filas = historial(player)
+    puesto = puesto_en_mercado(player)
+    if puesto is None:
+        return []
+    terminado = filas[-1]['trimestre'] == num_rondas(player.session)
+    return devolucion.diagnosticar(filas, puesto, C.PLAYERS_PER_GROUP, terminado)
+
+
+def actualizar_tablero(player: Player, pagina: str):
+    """Guarda en participant.vars el estado del equipo para el tablero del docente."""
+    decidio = player.field_maybe_none('precio') is not None
+    player.participant.vars['tablero'] = dict(
+        empresa=nombre(player),
+        mercado=player.group.id_in_subsession,
+        empresas_por_mercado=C.PLAYERS_PER_GROUP,
+        id_en_mercado=player.id_in_group,
+        trimestre=player.round_number,
+        num_trimestres=num_rondas(player.session),
+        pagina=pagina,
+        decision=dict(precio=player.precio, publicidad=player.publicidad, produccion=player.produccion,
+                      estudios=[e for e, v in (('competencia', player.compra_competencia),
+                                               ('pronóstico', player.compra_pronostico),
+                                               ('sensibilidad', player.compra_sensibilidad)) if v])
+        if decidio else None,
+        inflacion=player.group.inflacion,
+        indice=player.group.indice,
+        puesto=puesto_en_mercado(player),
+        historial=historial(player),
+        devolucion=devolucion_de(player),
+        actualizado=time.time(),
+    )
+
+
 # --- Páginas ----------------------------------------------------------------
 
 class Instrucciones(Page):
@@ -430,6 +524,7 @@ class Instrucciones(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
+        actualizar_tablero(player, 'Instrucciones')
         cfg = player.session.config
         estudios = costos_estudios(player)
         return dict(
@@ -484,6 +579,7 @@ class Investigacion(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
+        actualizar_tablero(player, 'Investigación de mercado')
         estudios = costos_estudios(player)
         return dict(
             nombre=nombre(player),
@@ -515,7 +611,12 @@ class Decision(Page):
         return ronda_activa(player)
 
     @staticmethod
+    def before_next_page(player: Player, timeout_happened):
+        actualizar_tablero(player, 'Esperando a las demás empresas')
+
+    @staticmethod
     def vars_for_template(player: Player):
+        actualizar_tablero(player, 'Decisión')
         cfg = player.session.config
         g = player.group
         ant = anterior(player)
@@ -594,6 +695,7 @@ class Resultados(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
+        actualizar_tablero(player, 'Viendo resultados')
         g = player.group
         # Información pública: participación en ventas de cada empresa.
         mercado_filas = [
@@ -655,6 +757,7 @@ class ResultadoFinal(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
+        actualizar_tablero(player, 'Terminó')
         ranking = sorted(player.group.get_players(),
                          key=lambda p: p.resultado_acumulado, reverse=True)
         filas = [
@@ -673,6 +776,9 @@ class ResultadoFinal(Page):
             trimestre_final=f'T{player.round_number}',
             inflacion_acumulada=porcentaje(player.group.indice - 1),
             estado=estado_resultados(player),
+            devolucion=devolucion_de(player),
+            # Lo escribe el docente desde su tablero (se guarda en participant.vars por la API).
+            comentario_docente=(player.participant.vars.get('comentario_docente') or '').strip(),
         )
 
     @staticmethod

@@ -3,6 +3,7 @@ Bots de prueba: recorren todas las páginas con decisiones aleatorias y
 compras de estudios al azar.
 Ejecutar con:  otree test comercializacion
 """
+import json
 import random
 
 from otree.api import Bot, Submission, expect
@@ -39,6 +40,11 @@ class PlayerBot(Bot):
         costo_produccion = self.player.produccion * cfg['costo_variable'] * self.group.indice
         expect(abs(self.player.valor_stock_inicial + costo_produccion
                    - self.player.costo_ventas - self.player.valor_stock_final), '<', 1e-3)
+        # El tablero del docente: tiene que existir y ser JSON (lo lee la API REST).
+        tablero = self.participant.vars['tablero']
+        json.dumps(tablero)
+        expect(len(tablero['historial']), self.round_number)
+        expect(len(tablero['devolucion']), '>', 0)
         yield Resultados
 
         if self.round_number == num_rondas(self.session):

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tablero docente — Simulador FCEyJ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
+    <link rel="stylesheet" href="docente.css?v=4">
+</head>
+<body>
+
+<header class="encabezado">
+    <div class="contenedor encabezado-fila">
+        <a href="../portada/docentes.html" class="logo" title="Volver al panel docente">
+            <img src="../fceyj/logo-fceyj.png"
+                 alt="Facultad de Ciencias Económicas y Jurídicas - Universidad Nacional de La Pampa">
+        </a>
+        <div class="titulo-sistema">
+            Tablero docente
+            <small><a href="../portada/docentes.html">← Panel docente</a></small>
+        </div>
+    </div>
+</header>
+
+<main class="contenedor">
+
+    <!-- Elección de la sesión -->
+    <section class="panel" id="panel-sesiones">
+        <div class="panel-cabecera">
+            <h1>Sesiones</h1>
+            <form id="form-codigo" class="form-codigo">
+                <label for="codigo">Código de sesión</label>
+                <input id="codigo" name="codigo" type="text" placeholder="ej. abcd1234" autocomplete="off" spellcheck="false">
+                <button type="submit" class="boton boton-chico">Abrir</button>
+            </form>
+        </div>
+        <div id="lista-sesiones" class="lista-sesiones"><p class="nota">Cargando sesiones…</p></div>
+    </section>
+
+    <!-- Sesión elegida -->
+    <section id="vista-sesion" hidden>
+        <div class="barra-sesion">
+            <div>
+                <button type="button" class="enlace" id="volver">← Sesiones</button>
+                <h1 id="titulo-sesion">Sesión</h1>
+            </div>
+            <div class="estado-actualizacion">
+                <span id="actualizado" class="nota"></span>
+                <button type="button" class="boton boton-chico boton-secundario" id="actualizar">Actualizar</button>
+            </div>
+        </div>
+
+        <div id="resumen" class="resumen"></div>
+        <div id="mercados" class="mercados"></div>
+    </section>
+
+    <!-- Detalle de un equipo -->
+    <div id="fondo-detalle" class="fondo-detalle" hidden></div>
+    <aside id="detalle" class="detalle" hidden aria-labelledby="detalle-titulo">
+        <div class="detalle-cabecera">
+            <div>
+                <p class="antetitulo" id="detalle-mercado"></p>
+                <h2 id="detalle-titulo"></h2>
+                <p class="nota" id="detalle-estado"></p>
+            </div>
+            <button type="button" class="cerrar" id="cerrar-detalle" aria-label="Cerrar">×</button>
+        </div>
+
+        <h3>Enlace del equipo</h3>
+        <p class="nota">Si se les cerró el navegador o cambiaron de dispositivo, con este enlace vuelven a la pantalla donde quedaron.</p>
+        <div class="enlace-equipo" id="detalle-enlace"></div>
+
+        <h3>Trimestre a trimestre</h3>
+        <div class="tabla-desplazable"><table class="tabla" id="detalle-historial"></table></div>
+        <p class="nota" id="detalle-nota-historial"></p>
+
+        <h3>Devolución automática</h3>
+        <div id="detalle-devolucion" class="devolucion"></div>
+
+        <h3>Comentario del docente</h3>
+        <p class="nota">El equipo lo verá en su pantalla de resultado final.</p>
+        <textarea id="comentario" rows="5" maxlength="2000"
+                  placeholder="Escriba aquí la devolución para este equipo…"></textarea>
+        <div class="acciones-comentario">
+            <span id="estado-comentario" class="nota" role="status"></span>
+            <button type="button" class="boton" id="guardar-comentario">Guardar comentario</button>
+        </div>
+    </aside>
+
+    <p id="error" class="aviso-error" role="alert" hidden></p>
+    <div id="aviso-copia" class="aviso-copia" role="status" hidden></div>
+</main>
+
+<footer class="pie">
+    <div class="contenedor">
+        Facultad de Ciencias Económicas y Jurídicas · Universidad Nacional de La Pampa
+    </div>
+</footer>
+
+<script src="docente.js?v=5"></script>
+</body>
+</html>
