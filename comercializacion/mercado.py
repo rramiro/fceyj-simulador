@@ -6,41 +6,48 @@ decisiones y el estado de las empresas y los parámetros, y devuelven los
 resultados. Así se pueden probar y calibrar con scripts
 (ver scripts/simular_mercado.py) sin pasar por la interfaz.
 
-Modelo (Versión 2)
+Modelo (Versión 3)
 ------------------
-1) Stock publicitario (efecto acumulado de la publicidad):
-       S_i = A_i + λ * S_i,anterior          (λ = retención por trimestre)
+0) Inflación. I_t es el índice de precios del trimestre (I = 1 en el primero).
+   Todos los montos de los parámetros están en pesos del primer trimestre y
+   se multiplican por I_t: costo de producción, costo fijo, almacenamiento,
+   precio de referencia. Así la demanda responde al precio REAL.
+
+1) Stock publicitario (efecto acumulado de la publicidad, en pesos reales):
+       S_i = A_i / I_t + λ * S_i,anterior          (λ = retención por trimestre)
 
 2) Precio medio del mercado (promedio simple):
        p_medio = (1/n) * Σ p_i
 
 3) Demanda total, con estacionalidad, shock aleatorio y elasticidad:
-       D = D0 * f_t * (1 + shock) * (p_medio / p_ref) ^ (-ε)
-   f_t es el factor estacional del trimestre del año (verano alto, invierno bajo).
+       D = D0 * f_t * (1 + shock) * (p_medio / (p_ref * I_t)) ^ (-ε)
 
 4) Atractivo y participación en la demanda (logit):
        a_i = -βp * (p_i / p_medio - 1) + βa * ln(1 + S_i / escala_A)
        s_i = exp(a_i) / Σ_j exp(a_j)
-   La demanda que "le toca" a cada empresa es s_i * D.
 
 5) Ventas limitadas por el stock disponible (stock inicial + producción).
-   La demanda que una empresa no puede atender pasa a las que tienen stock,
-   en proporción a su participación (ver asignar_ventas).
+   La demanda no atendida pasa a las empresas con stock (ver asignar_ventas).
 
-6) Resultado del trimestre (criterio de costo de ventas):
-       ventas $ - c * unidades vendidas - publicidad - almacenamiento
-       - costo fijo - estudios de mercado
-   El stock final queda valuado al costo; en el último trimestre se da de
-   baja (pérdida = c * stock final).
+6) Stock valuado a precio promedio ponderado (PPP):
+       costo unitario = (valor del stock inicial + producción * c * I_t)
+                        / (stock inicial + producción)
+
+7) Resultado del trimestre (criterio de costo de ventas):
+       ventas - costo de ventas - publicidad - almacenamiento
+       - costo financiero del stock - costo fijo - estudios de mercado
+   Costo financiero = tasa del trimestre * valor del stock final.
+   En el último trimestre el stock final se da de baja (pérdida = su valor).
 """
 
 import math
 
 # Parámetros que necesita el modelo (todos deben estar en `params`).
+# Los montos están en pesos del primer trimestre (se indexan por inflación).
 PARAMETROS = [
     'demanda_base',          # D0: unidades por trimestre si todas cobran p_ref (trimestre promedio)
     'precio_referencia',     # p_ref: $ por unidad
-    'elasticidad',           # ε: elasticidad de la demanda total al precio medio
+    'elasticidad',           # ε: elasticidad de la demanda total al precio medio real
     'beta_precio',           # βp: sensibilidad de la participación al precio relativo
     'beta_publicidad',       # βa: sensibilidad de la participación a la publicidad
     'escala_publicidad',     # escala_A: $ (normaliza el stock publicitario dentro del log)
@@ -52,10 +59,26 @@ PARAMETROS = [
 ]
 
 
+# --- Inflación ---------------------------------------------------------------
+
+def siguiente_indice(indice_anterior, inflacion):
+    return indice_anterior * (1 + inflacion)
+
+
+def reexpresar(monto, indice_origen, indice_destino):
+    """Lleva un monto en pesos de un trimestre a pesos de otro (moneda constante)."""
+    return monto * indice_destino / indice_origen
+
+
+def acumular_constante(acumulado_anterior, indice_anterior, resultado, indice):
+    """Resultado acumulado en pesos del trimestre actual."""
+    return reexpresar(acumulado_anterior, indice_anterior, indice) + resultado
+
+
 # --- Componentes del modelo --------------------------------------------------
 
-def stock_publicitario(publicidad, stock_anterior, retencion):
-    return publicidad + retencion * stock_anterior
+def stock_publicitario(publicidad, stock_anterior, retencion, indice=1.0):
+    return publicidad / indice + retencion * stock_anterior
 
 
 def factores_estacionales(texto):
@@ -72,10 +95,11 @@ def precio_medio(precios):
     return sum(precios) / len(precios)
 
 
-def demanda_total(p_medio, params, factor=1.0):
+def demanda_total(p_medio, params, factor=1.0, indice=1.0):
     """`factor` agrupa estacionalidad y shock: f_t * (1 + shock)."""
+    precio_real = p_medio / indice
     return factor * params['demanda_base'] * \
-        (p_medio / params['precio_referencia']) ** (-params['elasticidad'])
+        (precio_real / params['precio_referencia']) ** (-params['elasticidad'])
 
 
 def atractivo(precio, stock_pub, p_medio, params):
@@ -124,19 +148,33 @@ def asignar_ventas(demandas, disponibles, partes, traspaso=1.0):
     return ventas, faltantes
 
 
+def costo_promedio(stock_inicial, valor_stock_inicial, produccion, costo_unitario_actual):
+    """Costo unitario del stock disponible por precio promedio ponderado."""
+    unidades = stock_inicial + produccion
+    if unidades <= 0:
+        return costo_unitario_actual
+    return (valor_stock_inicial + produccion * costo_unitario_actual) / unidades
+
+
 # --- Ronda completa ----------------------------------------------------------
 
-def simular_ronda(decisiones, estados, params, factor_demanda=1.0, ultima_ronda=False):
+def simular_ronda(decisiones, estados, params, factor_demanda=1.0, ultima_ronda=False,
+                  indice=1.0, tasa_financiera=0.0):
     """
     Calcula el resultado de un trimestre para todas las empresas de un mercado.
 
     decisiones: lista de dicts (uno por empresa) con
-        'precio', 'publicidad', 'produccion' y opcionalmente 'costo_investigacion'.
+        'precio', 'publicidad', 'produccion' y opcionalmente 'costo_investigacion'
+        (montos nominales, en pesos del trimestre).
     estados: lista de dicts (mismo orden) con
-        'stock_inicial' (unidades) y 'stock_publicidad_anterior' ($).
-    params: dict con los parámetros de PARAMETROS.
+        'stock_inicial' (unidades), 'stock_publicidad_anterior' ($ reales) y
+        opcionalmente 'valor_stock_inicial' ($ nominales; si falta, se valúa
+        al costo de producción del trimestre).
+    params: dict con los parámetros de PARAMETROS (en pesos del primer trimestre).
     factor_demanda: estacionalidad * (1 + shock) del trimestre.
     ultima_ronda: si es True, el stock final se da de baja como pérdida.
+    indice: índice de precios del trimestre (1 = primer trimestre).
+    tasa_financiera: costo financiero del trimestre sobre el valor del stock final.
 
     Devuelve un dict con:
       'mercado': precio_medio, demanda_total, unidades_vendidas
@@ -146,12 +184,12 @@ def simular_ronda(decisiones, estados, params, factor_demanda=1.0, ultima_ronda=
     if faltan:
         raise KeyError(f'Faltan parámetros del modelo: {faltan}')
 
-    c = params['costo_variable']
+    c = params['costo_variable'] * indice
     pm = precio_medio([d['precio'] for d in decisiones])
-    D = demanda_total(pm, params, factor_demanda)
+    D = demanda_total(pm, params, factor_demanda, indice)
 
     stocks_pub = [stock_publicitario(d['publicidad'], e['stock_publicidad_anterior'],
-                                     params['retencion_publicidad'])
+                                     params['retencion_publicidad'], indice)
                   for d, e in zip(decisiones, estados)]
     atractivos = [atractivo(d['precio'], s, pm, params) for d, s in zip(decisiones, stocks_pub)]
     partes = participaciones(atractivos)
@@ -164,16 +202,21 @@ def simular_ronda(decisiones, estados, params, factor_demanda=1.0, ultima_ronda=
     empresas = []
     for d, e, sp, s, dem, disp, u, f in zip(decisiones, estados, stocks_pub, partes,
                                             demandas, disponibles, vendidas, faltantes):
+        valor_inicial = e.get('valor_stock_inicial', e['stock_inicial'] * c)
+        cpp = costo_promedio(e['stock_inicial'], valor_inicial, d['produccion'], c)
         stock_final = disp - u
+        valor_stock_final = stock_final * cpp
+
         ventas = u * d['precio']
-        costo_ventas = u * c
+        costo_ventas = u * cpp
         costo_publicidad = d['publicidad']
-        costo_almacenamiento = stock_final * params['costo_almacenamiento']
+        costo_almacenamiento = stock_final * params['costo_almacenamiento'] * indice
+        costo_financiero = valor_stock_final * tasa_financiera
         costo_investigacion = d.get('costo_investigacion', 0)
-        costo_fijo = params['costo_fijo']
-        baja_stock = stock_final * c if ultima_ronda else 0
+        costo_fijo = params['costo_fijo'] * indice
+        baja_stock = valor_stock_final if ultima_ronda else 0
         resultado = (ventas - costo_ventas - costo_publicidad - costo_almacenamiento
-                     - costo_investigacion - costo_fijo - baja_stock)
+                     - costo_financiero - costo_investigacion - costo_fijo - baja_stock)
         empresas.append(dict(
             stock_publicidad=sp,
             preferencia=s,                                   # participación en la demanda (logit)
@@ -182,10 +225,13 @@ def simular_ronda(decisiones, estados, params, factor_demanda=1.0, ultima_ronda=
             faltante=f,                                      # demanda propia no atendida
             participacion=u / total_vendidas if total_vendidas else 0,  # participación en ventas
             stock_final=stock_final,
+            costo_unitario=cpp,                              # costo promedio ponderado
+            valor_stock_final=valor_stock_final,
             ventas=ventas,
             costo_ventas=costo_ventas,
             costo_publicidad=costo_publicidad,
             costo_almacenamiento=costo_almacenamiento,
+            costo_financiero=costo_financiero,
             costo_investigacion=costo_investigacion,
             costo_fijo=costo_fijo,
             baja_stock=baja_stock,
@@ -200,29 +246,29 @@ def simular_ronda(decisiones, estados, params, factor_demanda=1.0, ultima_ronda=
 
 # --- Estudios de mercado -----------------------------------------------------
 
-def pronostico_demanda(p_medio_anterior, params, factor_demanda, error_relativo):
+def pronostico_demanda(p_medio, params, factor_demanda, error_relativo, indice=1.0):
     """
-    Pronóstico de la demanda total del próximo trimestre si el precio medio
-    se mantiene. `error_relativo` es el desvío del estudio (se sortea afuera).
+    Pronóstico de la demanda total del trimestre si el precio medio es `p_medio`
+    (nominal). `error_relativo` es el desvío del estudio (se sortea afuera).
     """
-    return demanda_total(p_medio_anterior, params, factor_demanda) * (1 + error_relativo)
+    return demanda_total(p_medio, params, factor_demanda, indice) * (1 + error_relativo)
 
 
-def sensibilidad_precio(i, precios_propios, decisiones_rivales, estados, params):
+def sensibilidad_precio(i, precios_propios, decisiones_rivales, estados, params, indice=1.0):
     """
     Unidades que demandarían a la empresa i para cada precio de `precios_propios`,
-    si las demás repiten `decisiones_rivales` (la de i se toma de ahí para la
+    si las demás eligen `decisiones_rivales` (la de i se toma de ahí para la
     publicidad) en un trimestre promedio (sin estacionalidad ni shock) y sin
-    límite de stock.
+    límite de stock. Precios y publicidad nominales del trimestre `indice`.
     """
     filas = []
     for p in precios_propios:
         dec = [dict(x) for x in decisiones_rivales]
         dec[i]['precio'] = p
         pm = precio_medio([d['precio'] for d in dec])
-        D = demanda_total(pm, params)
+        D = demanda_total(pm, params, indice=indice)
         sp = [stock_publicitario(d['publicidad'], e['stock_publicidad_anterior'],
-                                 params['retencion_publicidad'])
+                                 params['retencion_publicidad'], indice)
               for d, e in zip(dec, estados)]
         partes = participaciones([atractivo(d['precio'], s, pm, params) for d, s in zip(dec, sp)])
         filas.append(dict(precio=p, unidades=partes[i] * D, participacion=partes[i]))

@@ -51,15 +51,36 @@
     </li>
     <li>
         Lo que no se vende queda en <b>stock</b> para el trimestre siguiente, pagando
-        {{ costo_almacenamiento }} por unidad por trimestre. <b>Al terminar el juego,
+        almacenamiento y un <b>costo financiero</b> sobre su valor. <b>Al terminar el juego,
         el stock sobrante se pierde.</b>
     </li>
 </ul>
 
-<h5>Costos de su empresa</h5>
+<h5>Inflación</h5>
+<ul>
+    <li>
+        Hay inflación: en promedio <b>{{ inflacion_media }} por trimestre</b> (cerca de {{ inflacion_anual }} anual),
+        con variaciones. La inflación de cada trimestre se informa al momento de decidir.
+    </li>
+    <li>
+        Los costos, los límites de precio y publicidad y los estudios suben con la inflación.
+        Los consumidores miran el <b>precio real</b>: si su precio no acompaña la inflación,
+        en términos reales lo están bajando.
+    </li>
+    <li>
+        El stock inmoviliza dinero: cada trimestre paga un costo financiero igual a la inflación
+        más {{ tasa_real }} sobre el valor del stock.
+    </li>
+    <li>
+        Como los pesos de cada trimestre valen distinto, el <b>resultado acumulado se mide en moneda
+        constante</b>: lo ganado antes se actualiza por la inflación.
+    </li>
+</ul>
+
+<h5>Costos de su empresa (valores del primer trimestre)</h5>
 <ul>
     <li>Costo de producción: {{ costo_variable }} por unidad. Se registra como <i>costo de ventas</i>
-        cuando la unidad se vende; mientras tanto queda en el stock valuada al costo.</li>
+        cuando la unidad se vende; mientras tanto queda en el stock, valuada a <i>precio promedio ponderado</i>.</li>
     <li>Almacenamiento: {{ costo_almacenamiento }} por unidad en stock al cierre del trimestre.</li>
     <li>Costo fijo: {{ costo_fijo }} por trimestre (se paga aunque no venda nada).</li>
     <li>La publicidad y los estudios de mercado son gastos del trimestre.</li>
@@ -67,9 +88,9 @@
 </ul>
 
 <p class="alert alert-info">
-    <b>Resultado del trimestre</b> = ventas − costo de ventas − publicidad − almacenamiento
-    − estudios − costo fijo.<br>
-    Gana la empresa con mayor <b>resultado acumulado</b> al final del juego.
+    <b>Resultado del trimestre</b> = ventas − costo de ventas − publicidad − estudios − almacenamiento
+    − costo financiero − costo fijo.<br>
+    Gana la empresa con mayor <b>resultado acumulado en moneda constante</b> al final del juego.
 </p>
 
 <h5>Qué información reciben</h5>
@@ -84,11 +105,12 @@
     <div class="mt-2">
         <p>Con <i>p<sub>i</sub></i> el precio y <i>A<sub>i</sub></i> la publicidad de la empresa <i>i</i>:</p>
         <ul>
-            <li>Stock publicitario: S<sub>i</sub> = A<sub>i</sub> + {{ lambda_pub }} · S<sub>i</sub><sup>anterior</sup></li>
+            <li>Índice de precios: I<sub>t</sub> = I<sub>t−1</sub> · (1 + π<sub>t</sub>), con I<sub>1</sub> = 1</li>
+            <li>Stock publicitario (real): S<sub>i</sub> = A<sub>i</sub> / I<sub>t</sub> + {{ lambda_pub }} · S<sub>i</sub><sup>anterior</sup></li>
             <li>Precio medio: p̄ = (1/n) · Σ p<sub>i</sub></li>
             <li>
                 Demanda total: D = {{ demanda_base }} · f<sub>t</sub> · (1 + ε<sub>t</sub>) ·
-                (p̄ / {{ precio_referencia }})<sup>−{{ elasticidad }}</sup>,
+                (p̄ / ({{ precio_referencia }} · I<sub>t</sub>))<sup>−{{ elasticidad }}</sup>,
                 con f<sub>t</sub> el factor estacional y ε<sub>t</sub> una variación aleatoria.
             </li>
             <li>

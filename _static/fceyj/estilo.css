@@ -144,6 +144,28 @@ a:hover { color: var(--fceyj-indigo); }
     background-color: var(--fceyj-celeste) !important;
 }
 
+/* --- Gráficos (ver graficos.js) --- */
+.grafico { margin-bottom: 1.25rem; }
+.grafico h6 { color: var(--fceyj-indigo); font-weight: 700; margin-bottom: .25rem; }
+.grafico-svg { width: 100%; height: auto; display: block; }
+.grafico-svg .grilla { stroke: #E6EAF0; stroke-width: 1; }
+.grafico-svg .eje-cero { stroke: #9AA5B1; stroke-width: 1.2; }
+.grafico-svg .eje-texto { fill: #6B6B6B; font-size: 12px; font-family: 'PT Sans', Arial, sans-serif; }
+.grafico-svg .barra-positiva { fill: var(--fceyj-azul); }
+.grafico-svg .barra-negativa { fill: #C8414B; }
+.grafico-leyenda { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .85rem; margin-top: .25rem; }
+.grafico-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.grafico-leyenda i { display: inline-block; width: 16px; height: 4px; border-radius: 2px; }
+.grafico-leyenda i.punteada { height: 0; border-top: 3px dashed; }
+.grafico-leyenda i.punto { width: 10px; height: 10px; border-radius: 50%; }
+
+/* --- Estado de resultados --- */
+.estado-resultados td:first-child { white-space: nowrap; }
+.estado-resultados tr.subtotal td { font-weight: 700; border-top: 2px solid var(--fceyj-indigo); }
+.estado-resultados tr.memo td { color: #6B6B6B; font-size: .85rem; }
+.estado-resultados td.total { background: var(--fceyj-celeste-claro); }
+.estado-resultados thead th.total { background: var(--fceyj-indigo-oscuro); color: #fff; }
+
 details summary {
     color: var(--fceyj-azul);
     cursor: pointer;

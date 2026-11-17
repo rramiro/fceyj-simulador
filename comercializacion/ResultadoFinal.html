@@ -6,6 +6,12 @@
 
 {{ block content }}
 
+<p>
+    El ranking se ordena por el <b>resultado acumulado en moneda constante</b>: cada resultado
+    trimestral está reexpresado en pesos de {{ trimestre_final }}
+    (inflación acumulada del juego: {{ inflacion_acumulada }}).
+</p>
+
 <table class="table table-sm w-auto">
     <thead>
         <tr><th>Puesto</th><th>Empresa</th><th class="text-end">Resultado acumulado</th></tr>
@@ -20,6 +26,12 @@
         {{ endfor }}
     </tbody>
 </table>
+
+<h5 class="mt-4">Evolución de {{ nombre }}</h5>
+{{ include "comercializacion/incluir_graficos.html" }}
+
+<h5 class="mt-4">Estado de resultados de {{ nombre }}</h5>
+{{ include "comercializacion/incluir_estado.html" }}
 
 <p>¡Gracias por participar!</p>
 

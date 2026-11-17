@@ -8,6 +8,7 @@
 
 <p>
     Época: <b>{{ estacion }}</b> ·
+    {{ if hay_inflacion }}Inflación del trimestre: <b>{{ inflacion }}</b> ·{{ endif }}
     Precio medio del mercado: <b>{{ precio_medio }}</b> ·
     Demanda total: <b>{{ demanda_total }}</b> unidades ·
     Vendidas: <b>{{ unidades_vendidas }}</b>
@@ -37,6 +38,8 @@
         <p class="small text-muted">
             Demanda que les correspondía: {{ demanda }} unidades.
             {{ if hubo_faltante }}<span class="text-danger">No pudieron atender {{ faltante }} unidades por falta de stock.</span>{{ endif }}
+            Costo unitario (promedio ponderado): {{ costo_unitario }}.
+            Valor del stock final: {{ valor_stock_final }}.
             Stock publicitario: {{ stock_publicidad }}.
         </p>
     </div>
@@ -47,8 +50,9 @@
             <tr><td>Ventas</td><td class="text-end">{{ ventas }}</td></tr>
             <tr><td>− Costo de ventas</td><td class="text-end">{{ costo_ventas }}</td></tr>
             <tr><td>− Publicidad</td><td class="text-end">{{ costo_publicidad }}</td></tr>
-            <tr><td>− Almacenamiento</td><td class="text-end">{{ costo_almacenamiento }}</td></tr>
             <tr><td>− Estudios de mercado</td><td class="text-end">{{ costo_investigacion }}</td></tr>
+            <tr><td>− Almacenamiento</td><td class="text-end">{{ costo_almacenamiento }}</td></tr>
+            <tr><td>− Costo financiero del stock ({{ tasa_financiera }})</td><td class="text-end">{{ costo_financiero }}</td></tr>
             <tr><td>− Costo fijo</td><td class="text-end">{{ costo_fijo }}</td></tr>
             {{ if hubo_baja }}
             <tr class="text-danger"><td>− Baja del stock sobrante (fin del juego)</td><td class="text-end">{{ baja_stock }}</td></tr>
@@ -58,12 +62,24 @@
                 <td class="text-end {{ if resultado_negativo }}text-danger{{ endif }}">{{ resultado }}</td>
             </tr>
             <tr class="fw-bold">
-                <td>Resultado acumulado</td>
+                <td>Resultado acumulado <span class="fw-normal small">(en pesos de este trimestre)</span></td>
                 <td class="text-end {{ if acumulado_negativo }}text-danger{{ endif }}">{{ resultado_acumulado }}</td>
             </tr>
         </table>
     </div>
 </div>
+
+{{ if mostrar_evolucion }}
+<h5 class="mt-2">Evolución</h5>
+{{ include "comercializacion/incluir_graficos.html" }}
+{{ endif }}
+
+<details class="mb-3">
+    <summary>Ver el estado de resultados de todos los trimestres</summary>
+    <div class="mt-2">
+        {{ include "comercializacion/incluir_estado.html" }}
+    </div>
+</details>
 
 {{ next_button }}
 

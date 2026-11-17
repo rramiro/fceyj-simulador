@@ -29,12 +29,16 @@ class PlayerBot(Bot):
 
         if compras.get('compra_pronostico'):
             expect(self.player.pronostico, '>', 0)
-        yield Decision, self.decision(cfg)
+        yield Decision, self.decision(cfg, self.group.indice)
 
         expect(self.player.unidades, '>=', 0)
         expect(self.player.stock_final, '>=', 0)
         expect(abs(self.player.stock_inicial + self.player.produccion
                    - self.player.unidades - self.player.stock_final), '<', 1e-6)
+        # Valor del stock: lo que había + lo producido = costo de ventas + valor final (PPP).
+        costo_produccion = self.player.produccion * cfg['costo_variable'] * self.group.indice
+        expect(abs(self.player.valor_stock_inicial + costo_produccion
+                   - self.player.costo_ventas - self.player.valor_stock_final), '<', 1e-3)
         yield Resultados
 
         if self.round_number == num_rondas(self.session):
@@ -42,9 +46,10 @@ class PlayerBot(Bot):
             # La página final no tiene botón "Siguiente" (es la última).
             yield Submission(ResultadoFinal, check_html=False)
 
-    def decision(self, cfg):
+    def decision(self, cfg, indice):
+        # Decisiones en términos reales, expresadas en pesos del trimestre.
         return dict(
-            precio=round(random.uniform(1500, 3500), 2),
-            publicidad=round(random.uniform(0, 5_000_000)),
+            precio=round(random.uniform(1500, 3500) * indice, 2),
+            publicidad=round(random.uniform(0, 5_000_000) * indice),
             produccion=random.randint(5000, int(cfg['capacidad'])),
         )

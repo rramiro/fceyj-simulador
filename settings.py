@@ -3,7 +3,7 @@ from os import environ
 SESSION_CONFIGS = [
     dict(
         name='comercializacion',
-        display_name='Simulador de comercialización (gaseosas) - V2',
+        display_name='Simulador de comercialización (gaseosas) - V3',
         app_sequence=['comercializacion'],
         num_demo_participants=4,  # una por empresa; múltiplo de PLAYERS_PER_GROUP
         # --- Desarrollo del juego ---
@@ -23,12 +23,17 @@ SESSION_CONFIGS = [
         # --- V2: producción y stock ---
         capacidad=20_000,             # unidades máximas a producir por trimestre
         stock_inicial=0,              # unidades en stock al empezar el juego
-        costo_almacenamiento=300,     # $ por unidad en stock al cierre de cada trimestre
+        costo_almacenamiento=100,     # $ por unidad en stock al cierre de cada trimestre (sin incluir el costo financiero)
         traspaso_faltantes=1.0,       # parte de la demanda no atendida que compra a otra empresa (0 a 1)
         # --- V2: demanda variable ---
         estacionalidad='1.3, 0.9, 0.7, 1.1',  # factores por trimestre del año (ene-mar = verano); promedian 1
         trimestre_inicial=1,          # trimestre del año en que empieza el juego (1 = ene-mar)
         desvio_shock=0.05,            # desvío del shock aleatorio de demanda (5 %)
+        # --- V3: contexto argentino ---
+        # Los montos de esta configuración están en pesos del primer trimestre y se indexan.
+        inflacion_media=0.08,         # inflación trimestral media (8 % ≈ 36 % anual)
+        inflacion_desvio=0.02,        # desvío de la inflación de cada trimestre (tope ±2 desvíos)
+        tasa_real=0.02,               # tasa real trimestral; costo financiero del stock = inflación + tasa real
         # --- V2: investigación de mercado ---
         costo_estudio_competencia=400_000,   # datos de los rivales del trimestre anterior
         costo_estudio_pronostico=400_000,    # pronóstico de demanda del trimestre

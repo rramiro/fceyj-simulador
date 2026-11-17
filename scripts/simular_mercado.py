@@ -165,7 +165,37 @@ def verificaciones(cfg):
     f = mercado.factores_estacionales(cfg['estacionalidad'])
     assert len(f) == 4 and abs(sum(f) / 4 - 1) < 1e-9, 'los factores estacionales deben promediar 1'
     assert [mercado.trimestre_del_anio(r, 3) for r in range(1, 7)] == [3, 4, 1, 2, 3, 4]
-    print('   OK: logit, publicidad acumulada, faltantes y traspaso, stock y baja final, estacionalidad.\n')
+
+    # Inflación: si todos los montos nominales suben con el índice, las unidades no
+    # cambian y los resultados se multiplican por el índice (neutralidad).
+    I = 1.37
+    est = [dict(stock_inicial=300, valor_stock_inicial=300 * cfg['costo_variable'],
+                stock_publicidad_anterior=1_000_000) for _ in range(N_EMPRESAS)]
+    dec = [dict(precio=pref * (1 + 0.05 * i), publicidad=800_000 * (i + 1), produccion=9000 + 500 * i,
+                costo_investigacion=400_000) for i in range(N_EMPRESAS)]
+    r1 = ronda(dec, est)
+    dec_I = [dict(d, precio=d['precio'] * I, publicidad=d['publicidad'] * I,
+                  costo_investigacion=d['costo_investigacion'] * I) for d in dec]
+    est_I = [dict(e, valor_stock_inicial=e['valor_stock_inicial'] * I) for e in est]
+    rI = ronda(dec_I, est_I, indice=I)
+    for a, b in zip(r1['empresas'], rI['empresas']):
+        assert abs(a['unidades'] - b['unidades']) < 1e-6, 'la inflación pareja no cambia las unidades'
+        assert abs(a['resultado'] * I - b['resultado']) < 1e-3, 'los resultados escalan con el índice'
+
+    # Precio promedio ponderado: 1000 u. a $1200 + 1000 u. producidas a $1500 -> $1350.
+    est = [dict(stock_inicial=1000, valor_stock_inicial=1_200_000, stock_publicidad_anterior=0)
+           for _ in range(N_EMPRESAS)]
+    dec2 = [dict(precio=pref * 1.25, publicidad=0, produccion=1000) for _ in range(N_EMPRESAS)]
+    r = ronda(dec2, est, indice=1.25, tasa_financiera=0.1)
+    x = r['empresas'][0]
+    assert abs(x['costo_unitario'] - 1350) < 1e-9
+    assert abs(x['costo_ventas'] - x['unidades'] * 1350) < 1e-6
+    assert abs(x['costo_financiero'] - 0.1 * x['valor_stock_final']) < 1e-6
+
+    # Moneda constante: $100 de un trimestre con índice 1 valen $110 si el índice pasa a 1,1.
+    assert abs(mercado.acumular_constante(100, 1.0, 50, 1.1) - 160) < 1e-9
+    print('   OK: logit, publicidad acumulada, faltantes, stock y baja final, estacionalidad,\n'
+          '       neutralidad de la inflación, PPP, costo financiero y moneda constante.\n')
 
 
 def informe_equilibrio(cfg):
@@ -205,7 +235,11 @@ def informe_extremos(cfg, p_eq, a_eq, res_eq):
 
 
 def informe_produccion(cfg, p_eq, a_eq, r_eq):
+    tasa = cfg['inflacion_media'] + cfg['tasa_real']
     print('4) Errores de producción (todas en equilibrio de precio y publicidad, trimestre promedio)')
+    print(f'   Penalidad por unidad sobrante y trimestre: almacenamiento $ {fmt(cfg["costo_almacenamiento"])}'
+          f' + costo financiero {tasa:.0%} × $ {fmt(cfg["costo_variable"])}'
+          f' = $ {fmt(cfg["costo_almacenamiento"] + tasa * cfg["costo_variable"])}')
     u = r_eq['unidades']
     lam = cfg['retencion_publicidad']
     estados = [dict(stock_inicial=0, stock_publicidad_anterior=lam * a_eq / (1 - lam))
@@ -215,10 +249,11 @@ def informe_produccion(cfg, p_eq, a_eq, r_eq):
                          ('+30 % (le sobra)', u * 1.3), ('+30 %, último trimestre', u * 1.3)]:
         dec = [dict(precio=p_eq, publicidad=a_eq, produccion=u * 1.5) for _ in range(N_EMPRESAS)]
         dec[0]['produccion'] = prod
-        r = mercado.simular_ronda(dec, estados, cfg, ultima_ronda='último' in nombre)
+        r = mercado.simular_ronda(dec, estados, cfg, ultima_ronda='último' in nombre,
+                                  tasa_financiera=tasa)
         e0, e1 = r['empresas'][0], r['empresas'][1]
         # A los rivales no se les cobra el stock sobrante en esta comparación.
-        rival = e1['resultado'] + e1['costo_almacenamiento'] + e1['baja_stock']
+        rival = e1['resultado'] + e1['costo_almacenamiento'] + e1['costo_financiero'] + e1['baja_stock']
         print(f'   {nombre:30} {fmt(e0["unidades"]):>9} {fmt(e0["stock_final"]):>12} '
               f'{fmt(e0["resultado"]):>14}   {fmt(rival)}')
     print()
@@ -230,26 +265,40 @@ def informe_partidas(cfg, partidas=500, semilla=1):
     f = mercado.factores_estacionales(cfg['estacionalidad'])
     finales, faltantes, stocks = [], 0, []
     total = 0
+    indices_finales = []
     for _ in range(partidas):
         estados = [dict(stock_inicial=cfg['stock_inicial'], stock_publicidad_anterior=0)
                    for _ in range(N_EMPRESAS)]
-        acum = [0.0] * N_EMPRESAS
+        acum = [0.0] * N_EMPRESAS   # en moneda constante (pesos del trimestre corriente)
+        indice = indice_ant = 1.0
         for ronda in range(1, int(cfg['num_rondas']) + 1):
             t = mercado.trimestre_del_anio(ronda, int(cfg['trimestre_inicial']))
             shock = max(-2, min(2, rnd.gauss(0, 1))) * cfg['desvio_shock']
-            dec = [dict(precio=rnd.uniform(1500, 3500),
-                        publicidad=rnd.uniform(0, 5_000_000),
+            infl = 0.0 if ronda == 1 else max(0.0, cfg['inflacion_media']
+                                               + max(-2, min(2, rnd.gauss(0, 1))) * cfg['inflacion_desvio'])
+            indice = mercado.siguiente_indice(indice_ant, infl)
+            tasa = (infl if ronda > 1 else cfg['inflacion_media']) + cfg['tasa_real']
+            # Decisiones "razonables" en términos reales, expresadas en pesos del trimestre.
+            dec = [dict(precio=rnd.uniform(1500, 3500) * indice,
+                        publicidad=rnd.uniform(0, 5_000_000) * indice,
                         produccion=rnd.uniform(6000, 16000)) for _ in range(N_EMPRESAS)]
             r = mercado.simular_ronda(dec, estados, cfg, f[t - 1] * (1 + shock),
-                                      ultima_ronda=(ronda == cfg['num_rondas']))
+                                      ultima_ronda=(ronda == cfg['num_rondas']),
+                                      indice=indice, tasa_financiera=tasa)
             for i, e in enumerate(r['empresas']):
-                acum[i] += e['resultado']
+                acum[i] = mercado.acumular_constante(acum[i], indice_ant, e['resultado'], indice)
                 faltantes += e['faltante'] > 1
                 total += 1
                 stocks.append(e['stock_final'])
-                estados[i] = dict(stock_inicial=e['stock_final'], stock_publicidad_anterior=e['stock_publicidad'])
-        finales.extend(acum)
+                estados[i] = dict(stock_inicial=e['stock_final'], valor_stock_inicial=e['valor_stock_final'],
+                                  stock_publicidad_anterior=e['stock_publicidad'])
+            indice_ant = indice
+        # Para comparar con versiones anteriores, se expresa en pesos del primer trimestre.
+        finales.extend(a / indice for a in acum)
+        indices_finales.append(indice)
     q = statistics.quantiles(finales, n=10)
+    print(f'   Inflación acumulada media: {statistics.mean(indices_finales) - 1:.0%}. '
+          f'Resultados en pesos constantes del primer trimestre.')
     print(f'   Resultado acumulado: mediana $ {fmt(statistics.median(finales))}, '
           f'P10 $ {fmt(q[0])}, P90 $ {fmt(q[-1])}')
     print(f'   Empresas que terminan con pérdida: {sum(x < 0 for x in finales) / len(finales):.0%}')

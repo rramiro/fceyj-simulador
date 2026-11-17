@@ -8,18 +8,23 @@ from . import mercado
 doc = """
 Simulador de comercialización (FCEJ - UNLPam).
 Varias empresas compiten en un mismo mercado de gaseosas durante varios
-trimestres, decidiendo precio, publicidad y producción, y pudiendo comprar
-estudios de mercado.
+trimestres, en un contexto inflacionario, decidiendo precio, publicidad y
+producción, y pudiendo comprar estudios de mercado.
 """
 
 # Parámetros del modelo que se leen de la configuración de la sesión
 # (definidos en SESSION_CONFIGS de settings.py).
 PARAMETROS_MODELO = mercado.PARAMETROS
 
-# Precios relativos al precio medio anterior que muestra el estudio de sensibilidad.
+# Precios relativos al precio medio de referencia que muestra el estudio de sensibilidad.
 PRECIOS_SENSIBILIDAD = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 
 ESTACIONES = {1: 'enero-marzo', 2: 'abril-junio', 3: 'julio-septiembre', 4: 'octubre-diciembre'}
+
+# Colores de los gráficos (identidad de la FCEyJ). El índigo identifica a la empresa propia.
+COLOR_PROPIO = '#2F2E70'
+COLOR_MERCADO = '#3B9AD7'
+COLORES_RIVALES = ['#3B9AD7', '#8FB3DE', '#9AA5B1', '#5FB3B3', '#C9A227', '#B07AA1', '#7F8C8D']
 
 
 class C(BaseConstants):
@@ -40,6 +45,9 @@ class Group(BaseGroup):
     trimestre_anio = models.IntegerField()   # 1 a 4
     shock = models.FloatField()              # variación aleatoria de la demanda (sorteada al crear la sesión)
     factor_demanda = models.FloatField()     # estacionalidad * (1 + shock)
+    inflacion = models.FloatField()          # inflación del trimestre (igual para toda la sesión)
+    indice = models.FloatField()             # índice de precios (1 = primer trimestre)
+    tasa_financiera = models.FloatField()    # costo financiero del stock en el trimestre
     precio_medio = models.FloatField()
     demanda_total = models.FloatField()
     unidades_vendidas = models.FloatField()
@@ -60,15 +68,16 @@ class Player(BasePlayer):
         label='Sensibilidad al precio', widget=widgets.CheckboxInput, blank=True, initial=False)
     pronostico = models.FloatField()  # demanda total pronosticada (si compró el estudio)
 
-    # Decisiones
+    # Decisiones (en pesos del trimestre)
     precio = models.FloatField(label='Precio de venta por unidad ($)')
     publicidad = models.FloatField(label='Inversión en publicidad del trimestre ($)')
     produccion = models.IntegerField(label='Unidades a producir en el trimestre')
 
     # Estado al empezar el trimestre
     stock_inicial = models.FloatField()
+    valor_stock_inicial = models.FloatField()
 
-    # Resultados del trimestre
+    # Resultados del trimestre (pesos nominales del trimestre)
     stock_publicidad = models.FloatField()
     preferencia = models.FloatField()
     demanda = models.FloatField()
@@ -76,14 +85,18 @@ class Player(BasePlayer):
     faltante = models.FloatField()
     participacion = models.FloatField()
     stock_final = models.FloatField()
+    costo_unitario = models.FloatField()
+    valor_stock_final = models.FloatField()
     ventas = models.FloatField()
     costo_ventas = models.FloatField()
     costo_publicidad = models.FloatField()
     costo_almacenamiento = models.FloatField()
+    costo_financiero = models.FloatField()
     costo_investigacion = models.FloatField(initial=0)
     costo_fijo = models.FloatField()
     baja_stock = models.FloatField()
     resultado = models.FloatField()
+    # Acumulado en moneda constante: pesos de este trimestre
     resultado_acumulado = models.FloatField()
 
 
@@ -124,27 +137,34 @@ def numero(x, decimales=0):
     return f'{x:,.{decimales}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
 
 
-def porcentaje(x):
-    return numero(100 * x, 1) + ' %'
+def porcentaje(x, decimales=1):
+    return numero(100 * x, decimales) + ' %'
 
 
-def costos_estudios(session):
-    cfg = session.config
+def indice(player_o_group):
+    g = player_o_group if isinstance(player_o_group, Group) else player_o_group.group
+    return g.indice
+
+
+def costos_estudios(player):
+    """Costo de cada estudio en pesos del trimestre."""
+    cfg = player.session.config
+    i = indice(player)
     return dict(
-        competencia=cfg['costo_estudio_competencia'],
-        pronostico=cfg['costo_estudio_pronostico'],
-        sensibilidad=cfg['costo_estudio_sensibilidad'],
+        competencia=cfg['costo_estudio_competencia'] * i,
+        pronostico=cfg['costo_estudio_pronostico'] * i,
+        sensibilidad=cfg['costo_estudio_sensibilidad'] * i,
     )
 
 
-# Límites dinámicos de los campos (tomados de la configuración de la sesión)
+# Límites dinámicos de los campos (en pesos del trimestre)
 
 def precio_min(player):
-    return player.session.config['precio_min']
+    return round(player.session.config['precio_min'] * indice(player), 2)
 
 
 def precio_max(player):
-    return player.session.config['precio_max']
+    return round(player.session.config['precio_max'] * indice(player), 2)
 
 
 def publicidad_min(player):
@@ -152,7 +172,7 @@ def publicidad_min(player):
 
 
 def publicidad_max(player):
-    return player.session.config['publicidad_max']
+    return round(player.session.config['publicidad_max'] * indice(player))
 
 
 def produccion_min(player):
@@ -163,18 +183,41 @@ def produccion_max(player):
     return int(player.session.config['capacidad'])
 
 
-# --- Creación de la sesión: estacionalidad y shocks ---------------------------
+# --- Creación de la sesión: estacionalidad, shocks e inflación ---------------
+
+def truncada(rnd=random):
+    """Normal estándar truncada en ±2 desvíos."""
+    return max(-2.0, min(2.0, rnd.gauss(0, 1)))
+
 
 def creating_session(subsession: Subsession):
-    cfg = subsession.session.config
+    session = subsession.session
+    cfg = session.config
+
+    # La senda de inflación es una sola para toda la sesión (es macroeconómica).
+    if subsession.round_number == 1:
+        inflaciones, indices = [0.0], [1.0]
+        for _ in range(C.NUM_ROUNDS - 1):
+            pi = max(0.0, cfg['inflacion_media'] + truncada() * cfg['inflacion_desvio'])
+            inflaciones.append(pi)
+            indices.append(mercado.siguiente_indice(indices[-1], pi))
+        session.vars['inflacion'] = inflaciones
+        session.vars['indice'] = indices
+
+    r = subsession.round_number - 1
+    pi = session.vars['inflacion'][r]
+    # En el primer trimestre no hay inflación observada: se usa la media esperada.
+    tasa = (pi if subsession.round_number > 1 else cfg['inflacion_media']) + cfg['tasa_real']
+
     factores = mercado.factores_estacionales(cfg['estacionalidad'])
     t = mercado.trimestre_del_anio(subsession.round_number, int(cfg['trimestre_inicial']))
     for g in subsession.get_groups():
-        # Shock normal truncado en ±2 desvíos, distinto para cada mercado y trimestre.
-        z = max(-2.0, min(2.0, random.gauss(0, 1)))
         g.trimestre_anio = t
-        g.shock = z * cfg['desvio_shock']
+        g.shock = truncada() * cfg['desvio_shock']   # distinto para cada mercado
         g.factor_demanda = factores[t - 1] * (1 + g.shock)
+        g.inflacion = pi
+        g.indice = session.vars['indice'][r]
+        g.tasa_financiera = tasa
 
 
 # --- Cálculo de resultados ----------------------------------------------------
@@ -182,8 +225,12 @@ def creating_session(subsession: Subsession):
 def estado_inicial(p: Player):
     ant = anterior(p)
     if ant is None:
-        return dict(stock_inicial=p.session.config['stock_inicial'], stock_publicidad_anterior=0)
-    return dict(stock_inicial=ant.stock_final, stock_publicidad_anterior=ant.stock_publicidad)
+        cfg = p.session.config
+        return dict(stock_inicial=cfg['stock_inicial'],
+                    valor_stock_inicial=cfg['stock_inicial'] * cfg['costo_variable'],
+                    stock_publicidad_anterior=0)
+    return dict(stock_inicial=ant.stock_final, valor_stock_inicial=ant.valor_stock_final,
+                stock_publicidad_anterior=ant.stock_publicidad)
 
 
 def calcular_resultados(group: Group):
@@ -194,7 +241,9 @@ def calcular_resultados(group: Group):
     estados = [estado_inicial(p) for p in jugadores]
     salida = mercado.simular_ronda(decisiones, estados, parametros(group.session),
                                    factor_demanda=group.factor_demanda,
-                                   ultima_ronda=es_ultima_ronda(group))
+                                   ultima_ronda=es_ultima_ronda(group),
+                                   indice=group.indice,
+                                   tasa_financiera=group.tasa_financiera)
 
     group.precio_medio = salida['mercado']['precio_medio']
     group.demanda_total = salida['mercado']['demanda_total']
@@ -202,16 +251,20 @@ def calcular_resultados(group: Group):
 
     for p, e, r in zip(jugadores, estados, salida['empresas']):
         p.stock_inicial = e['stock_inicial']
+        p.valor_stock_inicial = e['valor_stock_inicial']
         for campo, valor in r.items():
             setattr(p, campo, valor)
         ant = anterior(p)
-        p.resultado_acumulado = (ant.resultado_acumulado if ant else 0) + p.resultado
+        p.resultado_acumulado = mercado.acumular_constante(
+            ant.resultado_acumulado if ant else 0,
+            ant.group.indice if ant else 1.0,
+            p.resultado, group.indice)
 
 
 # --- Estudios de mercado -------------------------------------------------------
 
 def datos_competencia(player: Player):
-    """Decisiones y resultados de los rivales en el trimestre anterior."""
+    """Decisiones y resultados de los rivales en el trimestre anterior (pesos de ese trimestre)."""
     ant = anterior(player)
     filas = []
     for r in ant.get_others_in_group():
@@ -226,30 +279,143 @@ def datos_competencia(player: Player):
     return filas
 
 
-def calcular_pronostico(player: Player):
+def precio_medio_esperado(player: Player):
+    """Precio medio del trimestre anterior actualizado por la inflación (o p_ref en el primero)."""
     cfg = player.session.config
     ant = anterior(player)
-    p_medio = ant.group.precio_medio if ant else cfg['precio_referencia']
+    if ant is None:
+        return cfg['precio_referencia']
+    return ant.group.precio_medio * (1 + player.group.inflacion)
+
+
+def calcular_pronostico(player: Player):
+    cfg = player.session.config
     error = random.uniform(-1, 1) * cfg['error_pronostico']
-    return mercado.pronostico_demanda(p_medio, parametros(player.session),
-                                      player.group.factor_demanda, error)
+    return mercado.pronostico_demanda(precio_medio_esperado(player), parametros(player.session),
+                                      player.group.factor_demanda, error, player.group.indice)
 
 
 def tabla_sensibilidad(player: Player):
+    """Los rivales repiten su decisión anterior actualizada por la inflación."""
     cfg = player.session.config
     ant = anterior(player)
+    ajuste = 1 + player.group.inflacion
+    i_actual = player.group.indice
     rivales_ant = ant.group.get_players()
     i = player.id_in_group - 1
-    decisiones = [dict(precio=r.precio, publicidad=r.publicidad) for r in rivales_ant]
+    decisiones = [dict(precio=r.precio * ajuste, publicidad=r.publicidad * ajuste) for r in rivales_ant]
     estados = [dict(stock_publicidad_anterior=r.stock_publicidad) for r in rivales_ant]
-    precios = sorted({min(max(round(ant.group.precio_medio * k, -1), cfg['precio_min']), cfg['precio_max'])
-                      for k in PRECIOS_SENSIBILIDAD})
-    filas = mercado.sensibilidad_precio(i, precios, decisiones, estados, parametros(player.session))
-    c = cfg['costo_variable']
+    base = precio_medio_esperado(player)
+    pmin, pmax = cfg['precio_min'] * i_actual, cfg['precio_max'] * i_actual
+    precios = sorted({min(max(round(base * k, -1), pmin), pmax) for k in PRECIOS_SENSIBILIDAD})
+    filas = mercado.sensibilidad_precio(i, precios, decisiones, estados,
+                                        parametros(player.session), i_actual)
+    c = cfg['costo_variable'] * i_actual
     return [dict(precio=pesos(f['precio'], 2), unidades=numero(f['unidades']),
                  participacion=porcentaje(f['participacion']),
                  margen=pesos(f['unidades'] * (f['precio'] - c)))
             for f in filas]
+
+
+# --- Estado de resultados y gráficos -------------------------------------------
+
+FILAS_ESTADO = [
+    # (clave, rótulo, signo, tipo)  tipo: '' normal, 'subtotal', 'resultado'
+    ('ventas', 'Ventas', 1, ''),
+    ('costo_ventas', '− Costo de ventas', -1, ''),
+    ('margen_bruto', 'Margen bruto', 1, 'subtotal'),
+    ('costo_publicidad', '− Publicidad', -1, ''),
+    ('costo_investigacion', '− Estudios de mercado', -1, ''),
+    ('costo_almacenamiento', '− Almacenamiento', -1, ''),
+    ('costo_financiero', '− Costo financiero del stock', -1, ''),
+    ('costo_fijo', '− Costo fijo', -1, ''),
+    ('baja_stock', '− Baja del stock sobrante', -1, ''),
+    ('resultado', 'Resultado', 1, 'resultado'),
+]
+
+
+def estado_resultados(player: Player):
+    """
+    Estado de resultados de los trimestres jugados: una columna nominal por
+    trimestre y una columna total reexpresada en pesos del último trimestre.
+    """
+    rondas = [p for p in player.in_rounds(1, player.round_number)]
+    i_final = player.group.indice
+
+    def valor(p, clave):
+        if clave == 'margen_bruto':
+            return p.ventas - p.costo_ventas
+        return getattr(p, clave)
+
+    filas = []
+    for clave, rotulo, signo, tipo in FILAS_ESTADO:
+        nominales = [signo * valor(p, clave) for p in rondas]
+        if clave == 'baja_stock' and not any(nominales):
+            continue
+        total = sum(mercado.reexpresar(v, p.group.indice, i_final) for v, p in zip(nominales, rondas))
+        filas.append(dict(
+            rotulo=rotulo, tipo=tipo,
+            valores=[dict(texto=pesos(v), negativo=v < 0) for v in nominales],
+            total=pesos(total), total_negativo=total < 0,
+        ))
+    return dict(
+        columnas=[f'T{p.round_number}' for p in rondas],
+        filas=filas,
+        inflacion=[porcentaje(p.group.inflacion) if p.round_number > 1 else '—' for p in rondas],
+        indices=[numero(p.group.indice, 3) for p in rondas],
+        trimestre_final=f'T{player.round_number}',
+    )
+
+
+def datos_graficos(player: Player):
+    """Series para los gráficos de evolución (respetan la información pública)."""
+    rondas = player.in_rounds(1, player.round_number)
+    i_final = player.group.indice
+    etiquetas = [f'T{p.round_number}' for p in rondas]
+
+    # Precio: propio y medio del mercado; precios de rivales solo donde se compró el estudio.
+    precio = [
+        dict(nombre='Su precio', valores=[p.precio for p in rondas], color=COLOR_PROPIO, ancho=3),
+        dict(nombre='Precio medio', valores=[p.group.precio_medio for p in rondas],
+             color=COLOR_MERCADO, punteada=True),
+    ]
+    rivales = [r for r in player.group.get_players() if r.id_in_group != player.id_in_group]
+    for k, rival in enumerate(rivales):
+        valores = []
+        for p in rondas:
+            # El estudio del trimestre t+1 revela el precio del trimestre t.
+            siguiente = p.round_number + 1
+            visto = siguiente <= player.round_number and player.in_round(siguiente).compra_competencia
+            valores.append(rival.in_round(p.round_number).precio if visto else None)
+        if any(v is not None for v in valores):
+            precio.append(dict(nombre=f'{nombre(rival)} (estudio)', valores=valores,
+                               color=COLORES_RIVALES[k % len(COLORES_RIVALES)], solo_puntos=True))
+
+    # Participación en ventas: pública para todas las empresas.
+    participacion = []
+    for k, emp in enumerate(player.group.get_players()):
+        propia = emp.id_in_group == player.id_in_group
+        participacion.append(dict(
+            nombre=nombre(emp) + (' (ustedes)' if propia else ''),
+            valores=[emp.in_round(p.round_number).participacion for p in rondas],
+            color=COLOR_PROPIO if propia else COLORES_RIVALES[k % len(COLORES_RIVALES)],
+            ancho=3 if propia else 2,
+        ))
+    participacion.sort(key=lambda s: s['color'] != COLOR_PROPIO)
+
+    # Resultado propio en moneda constante (pesos del último trimestre).
+    resultado = [mercado.reexpresar(p.resultado, p.group.indice, i_final) for p in rondas]
+    acumulado = [mercado.reexpresar(p.resultado_acumulado, p.group.indice, i_final) for p in rondas]
+
+    return dict(
+        etiquetas=etiquetas,
+        precio=precio,
+        participacion=participacion,
+        resultado=resultado,
+        acumulado=acumulado,
+        color_acumulado=COLOR_PROPIO,
+        trimestre_final=f'T{player.round_number}',
+    )
 
 
 # --- Páginas ----------------------------------------------------------------
@@ -265,7 +431,7 @@ class Instrucciones(Page):
     @staticmethod
     def vars_for_template(player: Player):
         cfg = player.session.config
-        estudios = costos_estudios(player.session)
+        estudios = costos_estudios(player)
         return dict(
             num_rondas=num_rondas(player.session),
             num_empresas=C.PLAYERS_PER_GROUP,
@@ -274,7 +440,10 @@ class Instrucciones(Page):
             costo_almacenamiento=pesos(cfg['costo_almacenamiento']),
             capacidad=numero(cfg['capacidad']),
             stock_inicial=numero(cfg['stock_inicial']),
-            retencion=porcentaje(cfg['retencion_publicidad']).replace(',0', ''),
+            retencion=porcentaje(cfg['retencion_publicidad'], 0),
+            inflacion_media=porcentaje(cfg['inflacion_media'], 0),
+            inflacion_anual=porcentaje((1 + cfg['inflacion_media']) ** 4 - 1, 0),
+            tasa_real=porcentaje(cfg['tasa_real'], 0),
             precio_min=pesos(cfg['precio_min'], 2),
             precio_max=pesos(cfg['precio_max'], 2),
             publicidad_max=pesos(cfg['publicidad_max']),
@@ -315,7 +484,7 @@ class Investigacion(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
-        estudios = costos_estudios(player.session)
+        estudios = costos_estudios(player)
         return dict(
             nombre=nombre(player),
             num_rondas=num_rondas(player.session),
@@ -327,7 +496,7 @@ class Investigacion(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
-        estudios = costos_estudios(player.session)
+        estudios = costos_estudios(player)
         player.costo_investigacion = (
             (estudios['competencia'] if player.compra_competencia else 0)
             + (estudios['pronostico'] if player.compra_pronostico else 0)
@@ -348,23 +517,33 @@ class Decision(Page):
     @staticmethod
     def vars_for_template(player: Player):
         cfg = player.session.config
+        g = player.group
         ant = anterior(player)
         estado = estado_inicial(player)
         lam = cfg['retencion_publicidad']
         error = cfg['error_pronostico']
+        i_t = g.indice
         datos = dict(
             nombre=nombre(player),
             num_rondas=num_rondas(player.session),
-            estacion=ESTACIONES[player.group.trimestre_anio],
-            costo_variable=pesos(cfg['costo_variable'], 2),
-            costo_fijo=pesos(cfg['costo_fijo']),
-            costo_almacenamiento=pesos(cfg['costo_almacenamiento']),
-            precio_min=pesos(cfg['precio_min'], 2),
-            precio_max=pesos(cfg['precio_max'], 2),
-            publicidad_max=pesos(cfg['publicidad_max']),
+            estacion=ESTACIONES[g.trimestre_anio],
+            inflacion=porcentaje(g.inflacion),
+            hay_inflacion=player.round_number > 1,
+            inflacion_acumulada=porcentaje(i_t - 1),
+            tasa_financiera=porcentaje(g.tasa_financiera),
+            costo_variable=pesos(cfg['costo_variable'] * i_t, 2),
+            costo_fijo=pesos(cfg['costo_fijo'] * i_t),
+            costo_almacenamiento=pesos(cfg['costo_almacenamiento'] * i_t, 2),
+            precio_min=pesos(precio_min(player), 2),
+            precio_max=pesos(precio_max(player), 2),
+            publicidad_max=pesos(publicidad_max(player)),
             capacidad=numero(cfg['capacidad']),
             stock_inicial=numero(estado['stock_inicial']),
-            publicidad_arrastre=pesos(lam * estado['stock_publicidad_anterior']),
+            valor_stock=pesos(estado['valor_stock_inicial']),
+            hay_stock=estado['stock_inicial'] > 0.5,
+            costo_unitario_stock=pesos(estado['valor_stock_inicial'] / estado['stock_inicial'], 2)
+            if estado['stock_inicial'] > 0.5 else None,
+            publicidad_arrastre=pesos(lam * estado['stock_publicidad_anterior'] * i_t),
             ultima=es_ultima_ronda(player),
             anterior=ant,
             costo_investigacion=pesos(player.costo_investigacion),
@@ -391,7 +570,7 @@ class Decision(Page):
                 pronostico_min=numero(player.pronostico * (1 - error)),
                 pronostico_max=numero(player.pronostico * (1 + error)),
                 pronostico_por_empresa=numero(player.pronostico / C.PLAYERS_PER_GROUP),
-                pronostico_precio=pesos(ant.group.precio_medio if ant else cfg['precio_referencia'], 2),
+                pronostico_precio=pesos(precio_medio_esperado(player), 2),
             )
         if player.compra_sensibilidad:
             datos['sensibilidad'] = tabla_sensibilidad(player)
@@ -426,6 +605,8 @@ class Resultados(Page):
             nombre=nombre(player),
             num_rondas=num_rondas(player.session),
             estacion=ESTACIONES[g.trimestre_anio],
+            inflacion=porcentaje(g.inflacion),
+            hay_inflacion=player.round_number > 1,
             precio_medio=pesos(g.precio_medio, 2),
             demanda_total=numero(g.demanda_total),
             unidades_vendidas=numero(g.unidades_vendidas),
@@ -439,13 +620,17 @@ class Resultados(Page):
             faltante=numero(player.faltante),
             hubo_faltante=player.faltante > 0.5,
             stock_final=numero(player.stock_final),
-            stock_publicidad=pesos(player.stock_publicidad),
+            valor_stock_final=pesos(player.valor_stock_final),
+            costo_unitario=pesos(player.costo_unitario, 2),
+            stock_publicidad=pesos(player.stock_publicidad * g.indice),
             participacion=porcentaje(player.participacion),
             # Resultado
             ventas=pesos(player.ventas),
             costo_ventas=pesos(player.costo_ventas),
             costo_publicidad=pesos(player.costo_publicidad),
             costo_almacenamiento=pesos(player.costo_almacenamiento),
+            costo_financiero=pesos(player.costo_financiero),
+            tasa_financiera=porcentaje(g.tasa_financiera),
             costo_investigacion=pesos(player.costo_investigacion),
             costo_fijo=pesos(player.costo_fijo),
             baja_stock=pesos(player.baja_stock),
@@ -454,7 +639,13 @@ class Resultados(Page):
             resultado_negativo=player.resultado < 0,
             resultado_acumulado=pesos(player.resultado_acumulado),
             acumulado_negativo=player.resultado_acumulado < 0,
+            mostrar_evolucion=player.round_number > 1,
+            estado=estado_resultados(player),
         )
+
+    @staticmethod
+    def js_vars(player: Player):
+        return dict(graficos=datos_graficos(player))
 
 
 class ResultadoFinal(Page):
@@ -476,7 +667,17 @@ class ResultadoFinal(Page):
             )
             for i, p in enumerate(ranking)
         ]
-        return dict(filas=filas)
+        return dict(
+            filas=filas,
+            nombre=nombre(player),
+            trimestre_final=f'T{player.round_number}',
+            inflacion_acumulada=porcentaje(player.group.indice - 1),
+            estado=estado_resultados(player),
+        )
+
+    @staticmethod
+    def js_vars(player: Player):
+        return dict(graficos=datos_graficos(player))
 
 
 page_sequence = [Instrucciones, Investigacion, Decision, EsperaResultados, Resultados, ResultadoFinal]

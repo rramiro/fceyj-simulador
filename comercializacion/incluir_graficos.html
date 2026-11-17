@@ -1,0 +1,35 @@
+<div class="row g-4">
+    <div class="col-lg-6 grafico">
+        <h6>Precio (pesos de cada trimestre)</h6>
+        <div id="grafico-precio"></div>
+    </div>
+    <div class="col-lg-6 grafico">
+        <h6>Participación en las ventas</h6>
+        <div id="grafico-participacion"></div>
+    </div>
+    <div class="col-lg-12 grafico">
+        <h6>Resultado por trimestre y acumulado (pesos de <span id="grafico-moneda"></span>)</h6>
+        <div id="grafico-resultado"></div>
+    </div>
+</div>
+<p class="small text-muted">
+    Los precios de los rivales aparecen solo en los trimestres en que compraron el estudio de la competencia.
+    Pasen el cursor sobre los puntos para ver los valores.
+</p>
+
+<script src="{{ static 'fceyj/graficos.js' }}?v=4"></script>
+<script>
+    (function () {
+        var d = js_vars.graficos, F = Graficos.formatos;
+        document.getElementById('grafico-moneda').textContent = d.trimestre_final;
+        Graficos.lineas(document.getElementById('grafico-precio'),
+            {etiquetas: d.etiquetas, series: d.precio, formato: F.pesos});
+        Graficos.lineas(document.getElementById('grafico-participacion'),
+            {etiquetas: d.etiquetas, series: d.participacion, formato: F.porcentaje, cero: true});
+        Graficos.barras(document.getElementById('grafico-resultado'), {
+            etiquetas: d.etiquetas, valores: d.resultado, nombre: 'Resultado del trimestre',
+            formato: F.millones,
+            linea: {nombre: 'Resultado acumulado', valores: d.acumulado, color: d.color_acumulado}
+        });
+    })();
+</script>

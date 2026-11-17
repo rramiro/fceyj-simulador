@@ -1,0 +1,37 @@
+<div class="table-responsive">
+<table class="table table-sm estado-resultados">
+    <thead>
+        <tr>
+            <th>Concepto</th>
+            {{ for c in estado.columnas }}<th class="text-end">{{ c }}</th>{{ endfor }}
+            <th class="text-end total">Total en pesos de {{ estado.trimestre_final }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ for f in estado.filas }}
+        <tr class="{{ if f.tipo }}subtotal{{ endif }}">
+            <td>{{ f.rotulo }}</td>
+            {{ for v in f.valores }}
+            <td class="text-end {{ if v.negativo }}{{ if f.tipo }}text-danger{{ endif }}{{ endif }}">{{ v.texto }}</td>
+            {{ endfor }}
+            <td class="text-end total {{ if f.total_negativo }}{{ if f.tipo }}text-danger{{ endif }}{{ endif }}">{{ f.total }}</td>
+        </tr>
+        {{ endfor }}
+        <tr class="memo">
+            <td>Inflación del trimestre</td>
+            {{ for v in estado.inflacion }}<td class="text-end">{{ v }}</td>{{ endfor }}
+            <td class="total"></td>
+        </tr>
+        <tr class="memo">
+            <td>Índice de precios (T1 = 1)</td>
+            {{ for v in estado.indices }}<td class="text-end">{{ v }}</td>{{ endfor }}
+            <td class="total"></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+<p class="small text-muted">
+    Cada columna está en pesos de su trimestre. La última reexpresa cada importe en pesos de
+    {{ estado.trimestre_final }} multiplicándolo por el índice de {{ estado.trimestre_final }} y
+    dividiéndolo por el de su trimestre: así se suman pesos del mismo poder adquisitivo.
+</p>
