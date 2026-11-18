@@ -13,6 +13,11 @@ push a main ─► Pruebas (bots + modelo) ─► Imagen Docker (ghcr.io) ─►
 
 A producción va **exactamente la misma imagen** que se probó en testing.
 
+> **Producción desactivada por ahora.** El pase a producción solo se ofrece si la variable del
+> repositorio `PRODUCCION_ACTIVA` vale `true`. Mientras no exista, cada push despliega solo testing
+> y no quedan despliegues a producción esperando aprobación. Para activarla: *Settings → Secrets
+> and variables → Actions → Variables → New repository variable* `PRODUCCION_ACTIVA` = `true`.
+
 ## Cómo está armado
 
 En el servidor, todo vive en `/opt/simulador/`:
@@ -96,6 +101,8 @@ En el repositorio → **Settings**:
    `SSH_HOST`, `SSH_KNOWN_HOSTS` y `SSH_KEY`.
 2. **Secrets and variables → Actions → Variables** → crear:
    - `DESPLIEGUE_ACTIVO` = `true` (mientras no exista, los push a `main` solo corren las pruebas);
+   - `PRODUCCION_ACTIVA` = `true` cuando se quiera usar producción (mientras no exista, solo se
+     despliega testing);
    - `DOMINIO_TESTING` = `test.simulador.eco.unlpam.edu.ar` y `DOMINIO_PRODUCCION` = `simulador.eco.unlpam.edu.ar`
      (opcionales: muestran el enlace en cada despliegue).
 3. **Environments** → crear `testing` (sin reglas) y `produccion` con

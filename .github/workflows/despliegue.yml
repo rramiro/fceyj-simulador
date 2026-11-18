@@ -1,8 +1,9 @@
 # Cada push a main: pruebas → imagen Docker → testing (automático) → producción (con aprobación).
 # A producción va exactamente la misma imagen que se probó en testing.
 #
-# Mientras la variable del repositorio DESPLIEGUE_ACTIVO no valga "true" (es decir,
-# mientras no esté preparado el servidor), solo se corren las pruebas.
+# Interruptores (variables del repositorio):
+#   DESPLIEGUE_ACTIVO = "true"   construye la imagen y despliega testing (si no, solo pruebas).
+#   PRODUCCION_ACTIVA = "true"   además deja el pase a producción esperando aprobación.
 name: Despliegue
 
 on:
@@ -79,6 +80,9 @@ jobs:
 
   produccion:
     needs: [imagen, testing]
+    # Producción se activa con la variable del repositorio PRODUCCION_ACTIVA = "true".
+    # Mientras no exista (o valga otra cosa), cada push solo despliega testing.
+    if: vars.PRODUCCION_ACTIVA == 'true'
     # Un despliegue de producción a la vez. Mientras uno espera aprobación, la versión más
     # nueva queda en cola (GitHub conserva solo la última en cola). No se cancela el que está
     # en curso, para no cortar un despliegue a la mitad: para pasar directo a la versión
