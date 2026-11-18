@@ -117,6 +117,33 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus { outline: no
 .boton-peligro:hover { background: #A8323B; border-color: #A8323B; }
 @media (prefers-reduced-motion: reduce) { .modal[open] { animation: none; } }
 
+/* Nueva sesión en el aula */
+.acciones-sesiones { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 14px; }
+.panel-avanzado { margin-top: 14px; }
+.enlace-aula-sesion { background: #fff; border-radius: var(--radio); padding: 10px 14px; margin-bottom: 14px; }
+#vista-nueva h1 { margin-top: 8px; }
+.form-nueva { margin-top: 16px; }
+.campos-basicos, .campos-parametros {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px 18px;
+}
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo > span { font-weight: 700; color: var(--indigo); font-size: .92rem; }
+.campo-ancho { grid-column: 1 / -1; }
+.campo input, .campo select {
+    font: inherit; color: var(--texto); border: 1px solid var(--borde); border-radius: 6px;
+    padding: .45em .7em; background: #fff; width: 100%;
+}
+.campo input:focus, .campo select:focus { outline: none; border-color: var(--celeste); box-shadow: 0 0 0 3px rgba(59,154,215,.2); }
+.vista-previa {
+    margin: 16px 0; padding: 12px 16px; border-radius: var(--radio);
+    background: var(--celeste-claro); color: var(--indigo); border-left: 5px solid var(--celeste);
+}
+.vista-previa .advertencia { color: #7A4E0B; }
+.parametros { margin: 6px 0 4px; background: var(--gris-fondo); border-radius: var(--radio); padding: 12px 16px; }
+.parametros summary { cursor: pointer; color: var(--azul); font-weight: 700; }
+.parametros > .nota { margin: 10px 0 12px; }
+.acciones-nueva { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
 /* Ventana de ingreso */
 .modal-ingreso { text-align: left; width: min(400px, calc(100% - 32px)); padding: 28px 30px 24px; }
 .modal-ingreso::backdrop { background: rgba(35, 34, 90, .55); backdrop-filter: blur(2px); }

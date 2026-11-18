@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="docente.css?v=8">
+    <link rel="stylesheet" href="docente.css?v=9">
 </head>
 <body>
 
@@ -35,13 +35,73 @@
                 <h1 id="titulo-sesiones">Sesiones</h1>
                 <button type="button" class="enlace" id="ver-papelera">Papelera</button>
             </div>
-            <form id="form-codigo" class="form-codigo">
-                <label for="codigo">Código de sesión</label>
-                <input id="codigo" name="codigo" type="text" placeholder="ej. abcd1234" autocomplete="off" spellcheck="false">
-                <button type="submit" class="boton boton-chico">Abrir</button>
-            </form>
+            <div class="acciones-sesiones">
+                <button type="button" class="boton" id="nueva-sesion">+ Nueva sesión en el aula</button>
+                <form id="form-codigo" class="form-codigo">
+                    <label for="codigo">Código de sesión</label>
+                    <input id="codigo" name="codigo" type="text" placeholder="ej. abcd1234" autocomplete="off" spellcheck="false">
+                    <button type="submit" class="boton boton-chico boton-secundario">Abrir</button>
+                </form>
+            </div>
         </div>
         <div id="lista-sesiones" class="lista-sesiones"><p class="nota">Cargando sesiones…</p></div>
+        <p class="nota panel-avanzado">
+            Opciones avanzadas en el <a href="/sessions" target="_blank" rel="noopener">panel de oTree</a>
+            (en inglés): partidas de prueba, monitor y exportaciones completas.
+        </p>
+    </section>
+
+    <!-- Nueva sesión en el aula -->
+    <section class="panel" id="vista-nueva" hidden>
+        <button type="button" class="enlace" id="cancelar-nueva">← Sesiones</button>
+        <h1>Nueva sesión en el aula</h1>
+        <p class="nota">Los equipos entran por el enlace del aula y se reparten solos en los mercados.</p>
+
+        <div class="aviso-papelera" id="aviso-aula-ocupada" role="status" hidden></div>
+
+        <form id="form-nueva" class="form-nueva" novalidate>
+            <div class="campos-basicos">
+                <label class="campo campo-ancho">
+                    <span>Nombre de la sesión</span>
+                    <input type="text" id="nueva-nombre" maxlength="60" placeholder="ej. Comercialización — Comisión A — martes">
+                </label>
+                <label class="campo">
+                    <span>Cantidad de equipos</span>
+                    <input type="number" id="nueva-equipos" min="1" max="200" step="1" value="8" required>
+                </label>
+                <label class="campo">
+                    <span>Empresas por mercado (máximo)</span>
+                    <input type="number" id="nueva-por-mercado" min="1" max="12" step="1" value="4" required>
+                </label>
+                <label class="campo">
+                    <span>Trimestres</span>
+                    <input type="number" id="nueva-trimestres" min="1" max="6" step="1" value="4" required>
+                </label>
+                <label class="campo">
+                    <span>Empieza en</span>
+                    <select id="nueva-inicio">
+                        <option value="1">Enero-marzo (verano)</option>
+                        <option value="2">Abril-junio (otoño)</option>
+                        <option value="3">Julio-septiembre (invierno)</option>
+                        <option value="4">Octubre-diciembre (primavera)</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="vista-previa" id="vista-mercados" aria-live="polite"></div>
+
+            <details class="parametros">
+                <summary>Parámetros del mercado (opcional)</summary>
+                <p class="nota">Valores por defecto del simulador. Si cambia alguno, vale solo para esta sesión.</p>
+                <div class="campos-parametros" id="campos-parametros"><p class="nota">Cargando…</p></div>
+            </details>
+
+            <p id="nueva-error" class="ingreso-error" role="alert" hidden></p>
+            <div class="acciones-nueva">
+                <button type="button" class="boton boton-secundario" id="cancelar-nueva-2">Cancelar</button>
+                <button type="submit" class="boton" id="crear-sesion">Crear la sesión</button>
+            </div>
+        </form>
     </section>
 
     <!-- Sesión elegida -->
@@ -54,8 +114,15 @@
             <div class="estado-actualizacion">
                 <span id="actualizado" class="nota"></span>
                 <button type="button" class="boton boton-chico boton-secundario" id="actualizar">Actualizar</button>
+                <button type="button" class="boton boton-chico boton-secundario" id="descargar-datos">Descargar datos (CSV)</button>
                 <button type="button" class="boton-eliminar" id="eliminar-sesion" hidden>Mover a la papelera</button>
             </div>
+        </div>
+
+        <div class="enlace-equipo enlace-aula-sesion" id="enlace-aula-sesion" hidden>
+            <span class="nota">Enlace del aula para proyectar:</span>
+            <code id="enlace-aula-texto"></code>
+            <button type="button" class="boton-enlace" id="copiar-enlace-aula">Copiar</button>
         </div>
 
         <div class="aviso-papelera" id="aviso-papelera" role="status" hidden>
@@ -140,6 +207,6 @@
     </div>
 </footer>
 
-<script src="docente.js?v=9"></script>
+<script src="docente.js?v=11"></script>
 </body>
 </html>

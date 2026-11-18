@@ -147,6 +147,185 @@
     // Sin sesión el tablero no puede mostrar nada: Esc no cierra la ventana de ingreso.
     $('modal-ingreso').addEventListener('cancel', function (ev) { ev.preventDefault(); });
 
+    // ------------------------------------------------------------ nueva sesión
+    // Crea la sesión en el aula con la API de oTree (/api/sessions con room_name) y los
+    // cambios de configuración que haga el docente (modified_session_config_fields).
+    var CONFIG = 'comercializacion';
+    var AULA = 'aula';
+    var PARAMETROS_EDITABLES = [
+        {clave: 'demanda_por_empresa', rotulo: 'Demanda por empresa', unidad: 'unidades por trimestre', paso: 100},
+        {clave: 'precio_referencia', rotulo: 'Precio de referencia', unidad: '$ por unidad', paso: 10},
+        {clave: 'costo_variable', rotulo: 'Costo de producción', unidad: '$ por unidad', paso: 10},
+        {clave: 'costo_fijo', rotulo: 'Costo fijo', unidad: '$ por trimestre', paso: 10000},
+        {clave: 'capacidad', rotulo: 'Capacidad de producción', unidad: 'unidades por trimestre', paso: 100},
+        {clave: 'costo_almacenamiento', rotulo: 'Almacenamiento', unidad: '$ por unidad en stock', paso: 10},
+        {clave: 'publicidad_max', rotulo: 'Publicidad máxima', unidad: '$ por trimestre', paso: 10000},
+        {clave: 'inflacion_media', rotulo: 'Inflación media', unidad: '% trimestral', porcentaje: true, paso: 0.5},
+        {clave: 'tasa_real', rotulo: 'Tasa real', unidad: '% trimestral', porcentaje: true, paso: 0.5},
+        {clave: 'costo_estudio_pronostico', rotulo: 'Estudio: pronóstico', unidad: '$', paso: 10000},
+        {clave: 'costo_estudio_competencia', rotulo: 'Estudio: competencia', unidad: '$', paso: 10000},
+        {clave: 'costo_estudio_sensibilidad', rotulo: 'Estudio: sensibilidad', unidad: '$', paso: 10000}
+    ];
+    var configBase = null;   // valores por defecto, de /api/session_configs
+
+    /* Igual que mercado.repartir_mercados (Python): parejos y sin superar el objetivo. */
+    function repartirMercados(total, objetivo) {
+        if (total < 1) { return []; }
+        objetivo = Math.max(1, objetivo);
+        var mercados = Math.ceil(total / objetivo), base = Math.floor(total / mercados), resto = total % mercados;
+        var tamanos = [];
+        for (var i = 0; i < mercados; i++) { tamanos.push(i < resto ? base + 1 : base); }
+        return tamanos;
+    }
+
+    function enteroDe(id) { return parseInt($(id).value, 10); }
+
+    function actualizarVistaPrevia() {
+        var equipos = enteroDe('nueva-equipos'), objetivo = enteroDe('nueva-por-mercado');
+        var caja = $('vista-mercados');
+        vaciar(caja);
+        if (!(equipos >= 1) || !(objetivo >= 1)) {
+            caja.appendChild(el('span', null, 'Indique la cantidad de equipos y de empresas por mercado.'));
+            return;
+        }
+        var t = repartirMercados(equipos, objetivo);
+        var lista = t.length === 1 ? 'un mercado de ' + t[0] + (t[0] === 1 ? ' empresa' : ' empresas')
+            : t.length + ' mercados, de ' + t.slice(0, -1).join(', ') + ' y ' + t[t.length - 1] + ' empresas';
+        caja.appendChild(el('b', null, 'Se arma' + (t.length === 1 ? ' ' : 'n ') + lista + '.'));
+        if (t.indexOf(1) >= 0) {
+            caja.appendChild(el('span', {class: 'advertencia'}, ' Un mercado de una sola empresa no tiene competencia.'));
+        }
+    }
+
+    function dibujarParametros() {
+        var caja = $('campos-parametros');
+        vaciar(caja);
+        PARAMETROS_EDITABLES.forEach(function (p) {
+            if (!(p.clave in configBase)) { return; }
+            var valor = configBase[p.clave];
+            var mostrado = p.porcentaje ? Math.round(valor * 1000) / 10 : valor;
+            var input = el('input', {type: 'number', step: String(p.paso), min: '0', value: String(mostrado),
+                                     'data-clave': p.clave, 'data-porcentaje': p.porcentaje ? '1' : '0'});
+            var ayuda = el('small', {class: 'nota'});
+            // Debajo, el valor con separador de miles (6000000 -> $ 6.000.000), para leerlo fácil.
+            var describir = function () {
+                var v = parseFloat(input.value);
+                var texto = !(v >= 0) ? 'Valor inválido'
+                    : p.porcentaje ? nf2.format(v) + ' % trimestral'
+                    : p.unidad.charAt(0) === '$' ? pesos(v) + p.unidad.slice(1)
+                    : numero(v) + ' ' + p.unidad;
+                ayuda.textContent = texto;
+            };
+            input.addEventListener('input', describir);
+            describir();
+            caja.appendChild(el('label', {class: 'campo'}, [el('span', null, p.rotulo), input, ayuda]));
+        });
+    }
+
+    function abrirNueva() {
+        clearInterval(estado.temporizador);
+        estado.codigo = null;
+        history.replaceState(null, '', '#nueva');
+        $('panel-sesiones').hidden = true;
+        $('vista-sesion').hidden = true;
+        $('vista-nueva').hidden = false;
+        $('nueva-error').hidden = true;
+        mostrarError(null);
+        actualizarVistaPrevia();
+        $('nueva-nombre').focus();
+
+        // Valores por defecto de la configuración (una sola vez).
+        if (!configBase) {
+            api('/api/session_configs').then(function (configs) {
+                configBase = configs.filter(function (c) { return c.name === CONFIG; })[0] || {};
+                ['empresas_por_mercado', 'num_rondas', 'trimestre_inicial'].forEach(function (k, i) {
+                    if (k in configBase) { $(['nueva-por-mercado', 'nueva-trimestres', 'nueva-inicio'][i]).value = configBase[k]; }
+                });
+                dibujarParametros();
+                actualizarVistaPrevia();
+            }).catch(function (e) { mostrarError(e.message); });
+        }
+
+        // ¿El aula ya tiene una sesión abierta? La nueva la reemplaza para quienes entren por el enlace.
+        var aviso = $('aviso-aula-ocupada');
+        aviso.hidden = true;
+        api('/api/rooms').then(function (aulas) {
+            var aula = aulas.filter(function (a) { return a.name === AULA; })[0];
+            if (!aula || !aula.session_code) { return; }
+            return api('/api/get_session/' + encodeURIComponent(aula.session_code), {participant_labels: []}).then(function (s) {
+                vaciar(aviso);
+                aviso.appendChild(el('span', null, [
+                    'El aula tiene abierta la sesión ', el('b', null, s.label || s.code),
+                    ' (' + s.num_participants + ' equipos). Al crear una nueva, los equipos que entren por el ' +
+                    'enlace del aula irán a la nueva; la anterior sigue en la lista con sus datos.'
+                ]));
+                aviso.hidden = false;
+            });
+        }).catch(function () { /* el aviso es opcional */ });
+    }
+
+    function crearSesion(ev) {
+        ev.preventDefault();
+        var error = $('nueva-error'), boton = $('crear-sesion');
+        var equipos = enteroDe('nueva-equipos'), objetivo = enteroDe('nueva-por-mercado'), trimestres = enteroDe('nueva-trimestres');
+        var problema = !(equipos >= 1 && equipos <= 200) ? 'La cantidad de equipos tiene que estar entre 1 y 200.'
+            : !(objetivo >= 1 && objetivo <= 12) ? 'Las empresas por mercado tienen que estar entre 1 y 12.'
+            : !(trimestres >= 1 && trimestres <= 6) ? 'Los trimestres tienen que estar entre 1 y 6.' : null;
+        if (problema) { error.textContent = problema; error.hidden = false; return; }
+
+        var cambios = {empresas_por_mercado: objetivo, num_rondas: trimestres, trimestre_inicial: enteroDe('nueva-inicio')};
+        var invalido = null;
+        [].forEach.call(document.querySelectorAll('#campos-parametros input'), function (inp) {
+            var v = parseFloat(inp.value);
+            if (!(v >= 0)) { invalido = inp.parentNode.querySelector('span').textContent; return; }
+            if (inp.getAttribute('data-porcentaje') === '1') { v = v / 100; }
+            var clave = inp.getAttribute('data-clave');
+            if (configBase && Math.abs(v - configBase[clave]) > 1e-9) { cambios[clave] = v; }
+        });
+        if (invalido) { error.textContent = 'Revise el valor de "' + invalido + '".'; error.hidden = false; return; }
+
+        error.hidden = true;
+        boton.disabled = true;
+        boton.textContent = 'Creando…';
+        api('/api/sessions', {
+            session_config_name: CONFIG, num_participants: equipos, room_name: AULA,
+            label: $('nueva-nombre').value.trim(), modified_session_config_fields: cambios
+        }).then(function (s) {
+            avisar('Sesión creada: los equipos ya pueden entrar por el enlace del aula');
+            $('form-nueva').reset();
+            abrirSesion(s.code);
+        }).catch(function (e) {
+            error.textContent = 'No se pudo crear la sesión. ' + e.message;
+            error.hidden = false;
+        }).then(function () {
+            boton.disabled = false;
+            boton.textContent = 'Crear la sesión';
+        });
+    }
+
+    // ---------------------------------------------------------- descarga de datos
+    function descargarDatos() {
+        var codigo = estado.codigo;
+        if (!codigo) { return; }
+        var url = '/api/export_app?app=' + CONFIG + '&session_code=' + encodeURIComponent(codigo) + '&format=csv_bom';
+        var bajar = function () {
+            return fetch(url, {headers: {'X-Tablero': '1'}, credentials: 'same-origin'}).then(function (r) {
+                if (r.status === 401) { return pedirIngreso().then(bajar); }
+                if (!r.ok) { throw new Error('No se pudieron descargar los datos (error ' + r.status + ').'); }
+                return r.blob().then(function (blob) {
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'simulador-' + codigo + '.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+                    avisar('Datos descargados');
+                });
+            });
+        };
+        bajar().catch(function (e) { mostrarError(e.message); });
+    }
+
     // ----------------------------------------------------------------- estados
     var ETAPAS = {
         'Instrucciones': ['decidiendo', 'Leyendo instrucciones'],
@@ -338,6 +517,7 @@
         estado.firma = null;
         if (location.hash !== '#sesion=' + codigo) { history.replaceState(null, '', '#sesion=' + codigo); }
         $('panel-sesiones').hidden = true;
+        $('vista-nueva').hidden = true;
         $('vista-sesion').hidden = false;
         $('titulo-sesion').textContent = 'Sesión ' + codigo;
         vaciar($('mercados'));
@@ -353,6 +533,7 @@
         cerrarDetalle();
         history.replaceState(null, '', location.pathname);
         $('vista-sesion').hidden = true;
+        $('vista-nueva').hidden = true;
         $('panel-sesiones').hidden = false;
         mostrarError(null);
         estado.verPapelera = false;   // "← Sesiones" vuelve siempre a la lista de sesiones
@@ -368,6 +549,9 @@
             $('actualizado').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-AR');
             // Papelera: aviso con "Recuperar" si la sesión está eliminada; si no, botón para eliminarla.
             estado.sesionActual = {code: codigo, label: datos.label, papelera: datos.papelera || null};
+            // Si la sesión es la del aula, su enlace para proyectar.
+            $('enlace-aula-sesion').hidden = !datos.room_url;
+            if (datos.room_url) { $('enlace-aula-texto').textContent = datos.room_url; }
             $('aviso-papelera').hidden = !datos.papelera;
             $('eliminar-sesion').hidden = !!datos.papelera;
             if (datos.papelera) {
@@ -615,6 +799,23 @@
         if (ev.key === 'Escape' && estado.abierto && !$('modal').open) { cerrarDetalle(); }
     });
 
+    $('nueva-sesion').addEventListener('click', abrirNueva);
+    $('cancelar-nueva').addEventListener('click', volver);
+    $('cancelar-nueva-2').addEventListener('click', volver);
+    $('form-nueva').addEventListener('submit', crearSesion);
+    $('nueva-equipos').addEventListener('input', actualizarVistaPrevia);
+    $('nueva-por-mercado').addEventListener('input', actualizarVistaPrevia);
+    $('descargar-datos').addEventListener('click', descargarDatos);
+    $('copiar-enlace-aula').addEventListener('click', function () {
+        var url = $('enlace-aula-texto').textContent;
+        var listo = function () { avisar('Enlace del aula copiado'); };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(listo, function () { window.prompt('Copiar el enlace del aula:', url); });
+        } else { window.prompt('Copiar el enlace del aula:', url); }
+    });
+
     var m = location.hash.match(/sesion=([\w-]+)/);
-    if (m) { abrirSesion(m[1]); } else { cargarSesiones(); }
+    if (m) { abrirSesion(m[1]); }
+    else if (location.hash === '#nueva') { cargarSesiones(); abrirNueva(); }
+    else { cargarSesiones(); }
 })();
