@@ -9,13 +9,17 @@ import random
 from otree.api import Bot, Submission, expect
 
 from . import (Instrucciones, Investigacion, Decision, Resultados, ResultadoFinal,
-               num_rondas)
+               mercado, num_rondas)
 
 
 class PlayerBot(Bot):
     def play_round(self):
         cfg = self.session.config
         if self.round_number == 1:
+            # Mercados repartidos parejos según el tamaño objetivo de la configuración.
+            tamanos = sorted((len(g.get_players()) for g in self.subsession.get_groups()), reverse=True)
+            esperado = mercado.repartir_mercados(len(self.subsession.get_players()), cfg['empresas_por_mercado'])
+            expect(tamanos, esperado)
             yield Instrucciones, dict(nombre_empresa=f'Bot {self.player.id_in_group}')
 
         if self.round_number > num_rondas(self.session):

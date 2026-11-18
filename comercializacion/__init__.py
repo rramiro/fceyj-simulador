@@ -33,7 +33,9 @@ COLORES_RIVALES = ['#3B9AD7', '#8FB3DE', '#9AA5B1', '#5FB3B3', '#C9A227', '#B07A
 
 class C(BaseConstants):
     NAME_IN_URL = 'comercializacion'
-    PLAYERS_PER_GROUP = 4  # empresas por mercado
+    # Los mercados se arman en creating_session con el tamaño objetivo de la configuración
+    # ('empresas_por_mercado'), así la sesión admite cualquier cantidad de equipos.
+    PLAYERS_PER_GROUP = None
     # Máximo de rondas (trimestres). La cantidad efectiva se define con
     # 'num_rondas' en la configuración de la sesión (no puede superar este valor).
     NUM_ROUNDS = 6
@@ -118,8 +120,21 @@ def es_ultima_ronda(player_o_group):
     return player_o_group.round_number == num_rondas(player_o_group.session)
 
 
-def parametros(session):
-    return {k: session.config[k] for k in PARAMETROS_MODELO}
+def empresas_en_mercado(player_o_group):
+    g = player_o_group if isinstance(player_o_group, Group) else player_o_group.group
+    return len(g.get_players())
+
+
+def parametros(group):
+    """Parámetros del modelo para un mercado: la demanda base depende de cuántas empresas tiene."""
+    cfg = group.session.config
+    datos = {k: cfg[k] for k in PARAMETROS_MODELO if k != 'demanda_base'}
+    if 'demanda_por_empresa' in cfg:
+        datos['demanda_base'] = mercado.demanda_del_mercado(cfg['demanda_por_empresa'], empresas_en_mercado(group))
+    else:
+        # Sesiones creadas antes de esta versión: demanda del mercado fija, como entonces.
+        datos['demanda_base'] = cfg['demanda_base']
+    return datos
 
 
 def nombre(player):
@@ -198,6 +213,19 @@ def creating_session(subsession: Subsession):
     session = subsession.session
     cfg = session.config
 
+    # Mercados: en el primer trimestre se reparten las empresas en mercados lo más parejos
+    # posible (sin superar el tamaño objetivo); después se mantienen los mismos.
+    if subsession.round_number == 1:
+        jugadores = sorted(subsession.get_players(), key=lambda p: p.id_in_subsession)
+        tamanos = mercado.repartir_mercados(len(jugadores), cfg.get('empresas_por_mercado', 4))
+        matriz, inicio = [], 0
+        for tam in tamanos:
+            matriz.append(jugadores[inicio:inicio + tam])
+            inicio += tam
+        subsession.set_group_matrix(matriz)
+    else:
+        subsession.group_like_round(1)
+
     # La senda de inflación es una sola para toda la sesión (es macroeconómica).
     if subsession.round_number == 1:
         inflaciones, indices = [0.0], [1.0]
@@ -243,7 +271,7 @@ def calcular_resultados(group: Group):
     decisiones = [dict(precio=p.precio, publicidad=p.publicidad, produccion=p.produccion,
                        costo_investigacion=p.costo_investigacion) for p in jugadores]
     estados = [estado_inicial(p) for p in jugadores]
-    salida = mercado.simular_ronda(decisiones, estados, parametros(group.session),
+    salida = mercado.simular_ronda(decisiones, estados, parametros(group),
                                    factor_demanda=group.factor_demanda,
                                    ultima_ronda=es_ultima_ronda(group),
                                    indice=group.indice,
@@ -299,7 +327,7 @@ def precio_medio_esperado(player: Player):
 def calcular_pronostico(player: Player):
     cfg = player.session.config
     error = random.uniform(-1, 1) * cfg['error_pronostico']
-    return mercado.pronostico_demanda(precio_medio_esperado(player), parametros(player.session),
+    return mercado.pronostico_demanda(precio_medio_esperado(player), parametros(player.group),
                                       player.group.factor_demanda, error, player.group.indice)
 
 
@@ -317,7 +345,7 @@ def tabla_sensibilidad(player: Player):
     pmin, pmax = cfg['precio_min'] * i_actual, cfg['precio_max'] * i_actual
     precios = sorted({min(max(round(base * k, -1), pmin), pmax) for k in PRECIOS_SENSIBILIDAD})
     filas = mercado.sensibilidad_precio(i, precios, decisiones, estados,
-                                        parametros(player.session), i_actual)
+                                        parametros(player.group), i_actual)
     c = cfg['costo_variable'] * i_actual
     return [dict(precio=pesos(f['precio'], 2), unidades=numero(f['unidades']),
                  participacion=porcentaje(f['participacion']),
@@ -487,7 +515,7 @@ def devolucion_de(player: Player):
     if puesto is None:
         return []
     terminado = filas[-1]['trimestre'] == num_rondas(player.session)
-    return devolucion.diagnosticar(filas, puesto, C.PLAYERS_PER_GROUP, terminado)
+    return devolucion.diagnosticar(filas, puesto, empresas_en_mercado(player), terminado)
 
 
 def actualizar_tablero(player: Player, pagina: str):
@@ -496,7 +524,7 @@ def actualizar_tablero(player: Player, pagina: str):
     player.participant.vars['tablero'] = dict(
         empresa=nombre(player),
         mercado=player.group.id_in_subsession,
-        empresas_por_mercado=C.PLAYERS_PER_GROUP,
+        empresas_por_mercado=empresas_en_mercado(player),
         id_en_mercado=player.id_in_group,
         trimestre=player.round_number,
         num_trimestres=num_rondas(player.session),
@@ -532,7 +560,7 @@ class Instrucciones(Page):
         estudios = costos_estudios(player)
         return dict(
             num_rondas=num_rondas(player.session),
-            num_empresas=C.PLAYERS_PER_GROUP,
+            num_empresas=empresas_en_mercado(player),
             costo_variable=pesos(cfg['costo_variable'], 2),
             costo_fijo=pesos(cfg['costo_fijo']),
             costo_almacenamiento=pesos(cfg['costo_almacenamiento']),
@@ -550,7 +578,7 @@ class Instrucciones(Page):
             estudio_sensibilidad=pesos(estudios['sensibilidad']),
             estacion_inicial=ESTACIONES[int(cfg['trimestre_inicial'])],
             # Para el desplegable con el modelo matemático
-            demanda_base=numero(cfg['demanda_base']),
+            demanda_base=numero(parametros(player.group)['demanda_base']),
             precio_referencia=numero(cfg['precio_referencia']),
             elasticidad=numero(cfg['elasticidad'], 2),
             beta_precio=numero(cfg['beta_precio'], 2),
@@ -673,7 +701,7 @@ class Decision(Page):
             datos.update(
                 pronostico_min=numero(player.pronostico * (1 - error)),
                 pronostico_max=numero(player.pronostico * (1 + error)),
-                pronostico_por_empresa=numero(player.pronostico / C.PLAYERS_PER_GROUP),
+                pronostico_por_empresa=numero(player.pronostico / empresas_en_mercado(player)),
                 pronostico_precio=pesos(precio_medio_esperado(player), 2),
             )
         if player.compra_sensibilidad:

@@ -38,6 +38,11 @@ def leer_parametros(argv):
         if k not in cfg:
             sys.exit(f'Parámetro desconocido: {k}')
         cfg[k] = v if isinstance(cfg[k], str) else float(v)
+    # Cantidad de empresas por mercado (se puede probar otra: empresas_por_mercado=6) y la
+    # demanda del mercado, que crece con ella (igual que en la app).
+    global N_EMPRESAS
+    N_EMPRESAS = int(cfg.get('empresas_por_mercado', 4))
+    cfg['demanda_base'] = mercado.demanda_del_mercado(cfg['demanda_por_empresa'], N_EMPRESAS)
     return cfg
 
 
@@ -66,8 +71,8 @@ def resultado_de(i, decisiones, cfg):
     return estacionario(cfg, decisiones)['empresas'][i]
 
 
-def iguales(precio, publicidad, n=N_EMPRESAS):
-    return [dict(precio=precio, publicidad=publicidad) for _ in range(n)]
+def iguales(precio, publicidad, n=None):
+    return [dict(precio=precio, publicidad=publicidad) for _ in range(n or N_EMPRESAS)]
 
 
 def mejor_respuesta(p_rival, a_rival, cfg, p0, a0):
@@ -123,11 +128,11 @@ def verificaciones(cfg):
 
     dec2 = [dict(d) for d in dec]
     dec2[0]['precio'] = pref * 1.1
-    assert ronda(dec2)['empresas'][0]['preferencia'] < 0.25, 'subir el precio baja la participación'
+    assert ronda(dec2)['empresas'][0]['preferencia'] < 1 / N_EMPRESAS, 'subir el precio baja la participación'
 
     dec2 = [dict(d) for d in dec]
     dec2[0]['publicidad'] = 2_000_000
-    assert ronda(dec2)['empresas'][0]['preferencia'] > 0.25, 'más publicidad sube la participación'
+    assert ronda(dec2)['empresas'][0]['preferencia'] > 1 / N_EMPRESAS, 'más publicidad sube la participación'
 
     # Publicidad acumulada: el stock anterior suma atractivo aunque hoy no invierta.
     est = [dict(e) for e in sin_estado]
@@ -135,7 +140,7 @@ def verificaciones(cfg):
     dec2 = [dict(d, publicidad=0) for d in dec]
     r = ronda(dec2, est)
     assert abs(r['empresas'][0]['stock_publicidad'] - cfg['retencion_publicidad'] * 4_000_000) < 1e-6
-    assert r['empresas'][0]['preferencia'] > 0.25, 'el stock publicitario anterior suma atractivo'
+    assert r['empresas'][0]['preferencia'] > 1 / N_EMPRESAS, 'el stock publicitario anterior suma atractivo'
 
     # Faltantes: la empresa 0 sin stock -> su demanda pasa a las demás.
     D = r_base = ronda(dec)['mercado']['demanda_total']
@@ -143,9 +148,9 @@ def verificaciones(cfg):
     dec2[0]['produccion'] = 0
     r = ronda(dec2)
     e = r['empresas']
-    assert e[0]['unidades'] == 0 and abs(e[0]['faltante'] - D / 4) < 1e-6
+    assert e[0]['unidades'] == 0 and abs(e[0]['faltante'] - D / N_EMPRESAS) < 1e-6
     vendidas = sum(x['unidades'] for x in e)
-    esperado = D if cfg['traspaso_faltantes'] == 1 else D * (1 - 0.25 * (1 - cfg['traspaso_faltantes']))
+    esperado = D if cfg['traspaso_faltantes'] == 1 else D * (1 - (1 / N_EMPRESAS) * (1 - cfg['traspaso_faltantes']))
     assert abs(vendidas - esperado) < 1e-6, 'la demanda no atendida pasa a la competencia'
 
     # Nadie tiene stock suficiente -> se vende todo lo disponible.
@@ -154,7 +159,7 @@ def verificaciones(cfg):
     assert all(abs(x['unidades'] - 1000) < 1e-6 for x in r['empresas'])
 
     # Stock: lo no vendido queda en stock, paga almacenamiento y en la última ronda se da de baja.
-    dec2 = [dict(d, produccion=D / 4 + 500) for d in dec]
+    dec2 = [dict(d, produccion=D / N_EMPRESAS + 500) for d in dec]
     r = ronda(dec2, ultima_ronda=True)
     x = r['empresas'][0]
     assert abs(x['stock_final'] - 500) < 1e-6
@@ -191,6 +196,19 @@ def verificaciones(cfg):
     assert abs(x['costo_unitario'] - 1350) < 1e-9
     assert abs(x['costo_ventas'] - x['unidades'] * 1350) < 1e-6
     assert abs(x['costo_financiero'] - 0.1 * x['valor_stock_final']) < 1e-6
+
+    # Reparto de equipos en mercados: parejos y sin superar el tamaño objetivo.
+    assert mercado.repartir_mercados(10, 4) == [4, 3, 3]
+    assert mercado.repartir_mercados(8, 4) == [4, 4]
+    assert mercado.repartir_mercados(9, 4) == [3, 3, 3]
+    assert mercado.repartir_mercados(7, 4) == [4, 3]
+    assert mercado.repartir_mercados(3, 4) == [3]
+    assert mercado.repartir_mercados(13, 5) == [5, 4, 4]
+    for total in range(1, 41):
+        for objetivo in range(1, 9):
+            t = mercado.repartir_mercados(total, objetivo)
+            assert sum(t) == total and max(t) <= objetivo and max(t) - min(t) <= 1
+    assert mercado.demanda_del_mercado(10_000, 3) == 30_000
 
     # Moneda constante: $100 de un trimestre con índice 1 valen $110 si el índice pasa a 1,1.
     assert abs(mercado.acumular_constante(100, 1.0, 50, 1.1) - 160) < 1e-9

@@ -5,12 +5,17 @@ SESSION_CONFIGS = [
         name='comercializacion',
         display_name='Simulador de comercialización (gaseosas) - V3',
         app_sequence=['comercializacion'],
-        num_demo_participants=4,  # una por empresa; múltiplo de PLAYERS_PER_GROUP
+        num_demo_participants=4,  # una por empresa (equipo); puede ser cualquier cantidad
         # --- Desarrollo del juego ---
         num_rondas=4,  # trimestres (máximo: C.NUM_ROUNDS = 6)
+        # Tamaño objetivo de cada mercado: los equipos se reparten en mercados lo más parejos
+        # posible sin superarlo (ej.: 10 equipos con 4 -> mercados de 4, 3 y 3).
+        empresas_por_mercado=4,
         # --- Parámetros del modelo (ver comercializacion/mercado.py) ---
-        # PROPUESTA INICIAL, a revisar. Calibrar con: python scripts/simular_mercado.py
-        demanda_base=40_000,          # D0: unidades/trimestre del mercado si todas cobran p_ref
+        # Calibrar con: python scripts/simular_mercado.py
+        # D0 del mercado = demanda_por_empresa × empresas del mercado (con 4 empresas, 40.000 u.):
+        # así el negocio de cada empresa es comparable sin importar cuántas compitan.
+        demanda_por_empresa=10_000,   # unidades/trimestre por empresa si todas cobran p_ref
         precio_referencia=2500,       # p_ref: $ por unidad
         elasticidad=1.5,              # ε: elasticidad de la demanda total al precio medio (>1)
         beta_precio=2.2,            # βp: sensibilidad de la participación al precio relativo

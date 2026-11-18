@@ -59,6 +59,27 @@ PARAMETROS = [
 ]
 
 
+# --- Armado de los mercados --------------------------------------------------
+
+def repartir_mercados(cantidad_empresas, tamano_objetivo):
+    """
+    Tamaños de los mercados para `cantidad_empresas`, lo más parejos posible y sin
+    superar `tamano_objetivo`. Ej.: 10 empresas con objetivo 4 -> [4, 3, 3].
+    """
+    if cantidad_empresas < 1:
+        return []
+    tamano_objetivo = max(1, int(tamano_objetivo))
+    mercados = -(-cantidad_empresas // tamano_objetivo)          # división hacia arriba
+    base, resto = divmod(cantidad_empresas, mercados)
+    return [base + 1] * resto + [base] * (mercados - resto)
+
+
+def demanda_del_mercado(demanda_por_empresa, empresas):
+    """D0 del mercado: crece con la cantidad de empresas para que el negocio de cada una
+    sea comparable sin importar cuántas compitan (lo que cambia es la competencia)."""
+    return demanda_por_empresa * empresas
+
+
 # --- Inflación ---------------------------------------------------------------
 
 def siguiente_indice(indice_anterior, inflacion):
