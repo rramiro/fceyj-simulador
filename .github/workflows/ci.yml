@@ -33,6 +33,9 @@ jobs:
       - name: Verificaciones y calibración del modelo
         run: python scripts/simular_mercado.py
 
+      - name: Catálogo de juegos (portada y tablero) coincide con settings.py
+        run: python scripts/verificar_catalogo.py
+
       - name: Esquema de la base
         run: |
           python scripts/esquema.py

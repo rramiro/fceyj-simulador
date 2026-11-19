@@ -36,6 +36,9 @@ COLORES_RIVALES = ['#3B9AD7', '#8FB3DE', '#9AA5B1', '#5FB3B3', '#C9A227', '#B07A
 
 class C(BaseConstants):
     NAME_IN_URL = 'comercializacion'
+    # Nombre del juego en el encabezado de las pantallas (_templates/global/encabezado.html).
+    TITULO_JUEGO = 'Simulador de comercialización'
+    SUBTITULO_JUEGO = 'Mercado de gaseosas'
     # Los mercados se arman en creating_session con el tamaño objetivo de la configuración
     # ('empresas_por_mercado'), así la sesión admite cualquier cantidad de equipos.
     PLAYERS_PER_GROUP = None

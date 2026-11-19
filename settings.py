@@ -77,18 +77,18 @@ ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
 
 # Aulas ("rooms" de oTree): enlace fijo por el que los equipos entran a la sesión
-# que abre el docente. Los alumnos usan /room/aula; el docente crea la sesión
-# desde /room_without_session/aula (o Rooms en el panel).
+# que abre el docente (/room/aula, /room/aula2, /room/aula3). Cada aula tiene una
+# sola sesión abierta a la vez, de cualquier juego: con tres aulas puede haber
+# tres clases en paralelo. El docente elige el aula al crear la sesión en el tablero.
+# Si se agrega una, sumarla también en _static/juegos/catalogo.json.
 ROOMS = [
-    dict(
-        name='aula',
-        display_name='Aula de la FCEyJ',
-        welcome_page='global/BienvenidaAula.html',
-    ),
+    dict(name='aula', display_name='Aula 1', welcome_page='global/BienvenidaAula.html'),
+    dict(name='aula2', display_name='Aula 2', welcome_page='global/BienvenidaAula.html'),
+    dict(name='aula3', display_name='Aula 3', welcome_page='global/BienvenidaAula.html'),
 ]
 
 DEMO_PAGE_INTRO_HTML = """
-<p>Simulador de comercialización de la Facultad de Ciencias Económicas y Jurídicas (UNLPam).
+<p>Simuladores de negocios de la Facultad de Ciencias Económicas y Jurídicas (UNLPam).
 Elija una configuración para crear una sesión de prueba.
 <a href="/static/portada/docentes.html">Volver al panel docente</a>.</p>
 """

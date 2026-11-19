@@ -169,26 +169,32 @@
     // Sin sesión el tablero no puede mostrar nada: Esc no cierra la ventana de ingreso.
     $('modal-ingreso').addEventListener('cancel', function (ev) { ev.preventDefault(); });
 
+    // ------------------------------------------------------- catálogo de juegos
+    // Los juegos, sus campos y las aulas están en /static/juegos/catalogo.json (lo usa
+    // también la portada). scripts/verificar_catalogo.py controla que coincida con settings.py.
+    var catalogo = null;
+    function cargarCatalogo() {
+        if (!catalogo) {
+            catalogo = fetch('/static/juegos/catalogo.json', {cache: 'no-cache'}).then(function (r) {
+                if (!r.ok) { throw new Error('No se pudo leer el catálogo de juegos.'); }
+                return r.json();
+            }).catch(function (e) { catalogo = null; throw e; });
+        }
+        return catalogo;
+    }
+    function juegoDe(cat, config) {
+        return cat.juegos.filter(function (j) { return j.config === config; })[0] || null;
+    }
+    function rotuloSala(cat, nombre) {
+        var sala = cat.salas.filter(function (s) { return s.nombre === nombre; })[0];
+        return sala ? sala.rotulo : nombre;
+    }
+
     // ------------------------------------------------------------ nueva sesión
-    // Crea la sesión en el aula con la API de oTree (/api/sessions con room_name) y los
-    // cambios de configuración que haga el docente (modified_session_config_fields).
-    var CONFIG = 'comercializacion';
-    var AULA = 'aula';
-    var PARAMETROS_EDITABLES = [
-        {clave: 'demanda_por_empresa', rotulo: 'Demanda por empresa', unidad: 'unidades por trimestre', paso: 100},
-        {clave: 'precio_referencia', rotulo: 'Precio de referencia', unidad: '$ por unidad', paso: 10},
-        {clave: 'costo_variable', rotulo: 'Costo de producción', unidad: '$ por unidad', paso: 10},
-        {clave: 'costo_fijo', rotulo: 'Costo fijo', unidad: '$ por trimestre', paso: 10000},
-        {clave: 'capacidad', rotulo: 'Capacidad de producción', unidad: 'unidades por trimestre', paso: 100},
-        {clave: 'costo_almacenamiento', rotulo: 'Almacenamiento', unidad: '$ por unidad en stock', paso: 10},
-        {clave: 'publicidad_max', rotulo: 'Publicidad máxima', unidad: '$ por trimestre', paso: 10000},
-        {clave: 'inflacion_media', rotulo: 'Inflación media', unidad: '% trimestral', porcentaje: true, paso: 0.5},
-        {clave: 'tasa_real', rotulo: 'Tasa real', unidad: '% trimestral', porcentaje: true, paso: 0.5},
-        {clave: 'costo_estudio_pronostico', rotulo: 'Estudio: pronóstico', unidad: '$', paso: 10000},
-        {clave: 'costo_estudio_competencia', rotulo: 'Estudio: competencia', unidad: '$', paso: 10000},
-        {clave: 'costo_estudio_sensibilidad', rotulo: 'Estudio: sensibilidad', unidad: '$', paso: 10000}
-    ];
-    var configBase = null;   // valores por defecto, de /api/session_configs
+    // Crea la sesión en el aula elegida con la API de oTree (/api/sessions con room_name) y
+    // los cambios de configuración que haga el docente (modified_session_config_fields).
+    var configs = null;      // valores por defecto de cada juego, de /api/session_configs (por nombre)
+    var nueva = {cat: null, juego: null, base: {}};
 
     /* Igual que mercado.repartir_mercados (Python): parejos y sin superar el objetivo. */
     function repartirMercados(total, objetivo) {
@@ -203,28 +209,60 @@
     function enteroDe(id) { return parseInt($(id).value, 10); }
 
     function actualizarVistaPrevia() {
-        var equipos = enteroDe('nueva-equipos'), objetivo = enteroDe('nueva-por-mercado');
         var caja = $('vista-mercados');
         vaciar(caja);
+        var g = nueva.juego && nueva.juego.grupo;
+        if (!g || !g.campo || !$('nueva-grupo')) { return; }
+        var equipos = enteroDe('nueva-equipos'), objetivo = enteroDe('nueva-grupo');
         if (!(equipos >= 1) || !(objetivo >= 1)) {
-            caja.appendChild(el('span', null, 'Indique la cantidad de equipos y de empresas por mercado.'));
+            caja.appendChild(el('span', null, 'Indique la cantidad de equipos y el tamaño de cada ' + g.tipo + '.'));
             return;
         }
-        var t = repartirMercados(equipos, objetivo);
-        var lista = t.length === 1 ? 'un mercado de ' + t[0] + (t[0] === 1 ? ' empresa' : ' empresas')
-            : t.length + ' mercados, de ' + t.slice(0, -1).join(', ') + ' y ' + t[t.length - 1] + ' empresas';
+        var t = repartirMercados(equipos, objetivo), u = g.unidad || ['equipo', 'equipos'];
+        var lista = t.length === 1 ? 'un ' + g.tipo + ' de ' + t[0] + ' ' + (t[0] === 1 ? u[0] : u[1])
+            : t.length + ' ' + g.tipo + 's, de ' + t.slice(0, -1).join(', ') + ' y ' + t[t.length - 1] + ' ' + u[1];
         caja.appendChild(el('b', null, 'Se arma' + (t.length === 1 ? ' ' : 'n ') + lista + '.'));
         if (t.indexOf(1) >= 0) {
-            caja.appendChild(el('span', {class: 'advertencia'}, ' Un mercado de una sola empresa no tiene competencia.'));
+            caja.appendChild(el('span', {class: 'advertencia'}, ' Un ' + g.tipo + ' de un solo equipo no tiene competencia.'));
         }
     }
 
-    function dibujarParametros() {
-        var caja = $('campos-parametros');
+    function campoNumero(id, rotulo, valor, min, max) {
+        var input = el('input', {type: 'number', id: id, min: String(min), max: String(max), step: '1', value: String(valor), required: 'required'});
+        input.addEventListener('input', actualizarVistaPrevia);
+        return el('label', {class: 'campo'}, [el('span', null, rotulo), input]);
+    }
+
+    /* Campos propios del juego elegido: tamaño de los grupos, rondas y opciones. */
+    function dibujarCamposJuego() {
+        var juego = nueva.juego, base = nueva.base, caja = $('campos-juego');
         vaciar(caja);
-        PARAMETROS_EDITABLES.forEach(function (p) {
-            if (!(p.clave in configBase)) { return; }
-            var valor = configBase[p.clave];
+        $('nueva-juego-resumen').textContent = juego.resumen || '';
+        if (juego.grupo && juego.grupo.campo) {
+            caja.appendChild(campoNumero('nueva-grupo', juego.grupo.rotulo, base[juego.grupo.campo] || juego.grupo.max,
+                                         juego.grupo.min, juego.grupo.max));
+        }
+        caja.appendChild(campoNumero('nueva-rondas', juego.rondas.rotulo, base[juego.rondas.campo] || juego.rondas.max,
+                                     juego.rondas.min, juego.rondas.max));
+        (juego.campos || []).forEach(function (c) {
+            var select = el('select', {'data-clave': c.clave}, c.opciones.map(function (o) {
+                return el('option', {value: String(o[0])}, o[1]);
+            }));
+            if (c.clave in base) { select.value = String(base[c.clave]); }
+            caja.appendChild(el('label', {class: 'campo'}, [el('span', null, c.rotulo), select]));
+        });
+        $('parametros-titulo').textContent = (juego.parametros_titulo || 'Parámetros') + ' (opcional)';
+        dibujarParametros();
+        actualizarVistaPrevia();
+    }
+
+    function dibujarParametros() {
+        var caja = $('campos-parametros'), base = nueva.base;
+        vaciar(caja);
+        var lista = (nueva.juego.parametros || []).filter(function (p) { return p.clave in base; });
+        if (!lista.length) { caja.appendChild(el('p', {class: 'nota'}, 'Este juego no tiene parámetros para cambiar.')); }
+        lista.forEach(function (p) {
+            var valor = base[p.clave];
             var mostrado = p.porcentaje ? Math.round(valor * 1000) / 10 : valor;
             var input = el('input', {type: 'number', step: String(p.paso), min: '0', value: String(mostrado),
                                      'data-clave': p.clave, 'data-porcentaje': p.porcentaje ? '1' : '0'});
@@ -233,7 +271,7 @@
             var describir = function () {
                 var v = parseFloat(input.value);
                 var texto = !(v >= 0) ? 'Valor inválido'
-                    : p.porcentaje ? nf2.format(v) + ' % trimestral'
+                    : p.porcentaje ? nf2.format(v) + ' ' + p.unidad
                     : p.unidad.charAt(0) === '$' ? pesos(v) + p.unidad.slice(1)
                     : numero(v) + ' ' + p.unidad;
                 ayuda.textContent = texto;
@@ -242,6 +280,12 @@
             describir();
             caja.appendChild(el('label', {class: 'campo'}, [el('span', null, p.rotulo), input, ayuda]));
         });
+    }
+
+    function elegirJuego() {
+        nueva.juego = juegoDe(nueva.cat, $('nueva-juego').value);
+        nueva.base = configs[nueva.juego.config] || {};
+        dibujarCamposJuego();
     }
 
     function abrirNueva() {
@@ -253,68 +297,102 @@
         $('vista-nueva').hidden = false;
         $('nueva-error').hidden = true;
         mostrarError(null);
-        actualizarVistaPrevia();
         $('nueva-nombre').focus();
 
-        // Valores por defecto de la configuración (una sola vez).
-        if (!configBase) {
-            api('/api/session_configs').then(function (configs) {
-                configBase = configs.filter(function (c) { return c.name === CONFIG; })[0] || {};
-                ['empresas_por_mercado', 'num_rondas', 'trimestre_inicial'].forEach(function (k, i) {
-                    if (k in configBase) { $(['nueva-por-mercado', 'nueva-trimestres', 'nueva-inicio'][i]).value = configBase[k]; }
-                });
-                dibujarParametros();
-                actualizarVistaPrevia();
-            }).catch(function (e) { mostrarError(e.message); });
-        }
+        Promise.all([cargarCatalogo(), configs ? configs : api('/api/session_configs'), api('/api/rooms')]).then(function (r) {
+            var cat = r[0], aulas = r[2];
+            if (!configs) {
+                configs = {};
+                r[1].forEach(function (c) { configs[c.name] = c; });
+            }
+            nueva.cat = cat;
 
-        // ¿El aula ya tiene una sesión abierta? La nueva la reemplaza para quienes entren por el enlace.
-        var aviso = $('aviso-aula-ocupada');
-        aviso.hidden = true;
-        api('/api/rooms').then(function (aulas) {
-            var aula = aulas.filter(function (a) { return a.name === AULA; })[0];
-            if (!aula || !aula.session_code) { return; }
-            return api('/api/get_session/' + encodeURIComponent(aula.session_code), {participant_labels: []}).then(function (s) {
-                vaciar(aviso);
-                aviso.appendChild(el('span', null, [
-                    'El aula tiene abierta la sesión ', el('b', null, s.label || s.code),
-                    ' (' + s.num_participants + ' equipos). Al crear una nueva, los equipos que entren por el ' +
-                    'enlace del aula irán a la nueva; la anterior sigue en la lista con sus datos.'
-                ]));
-                aviso.hidden = false;
+            // Juegos: los disponibles se pueden elegir; los próximos se ven, deshabilitados.
+            var anterior = $('nueva-juego').value;
+            var selJuego = $('nueva-juego');
+            vaciar(selJuego);
+            cat.juegos.forEach(function (j) {
+                var disponible = j.estado === 'disponible' && configs[j.config];
+                selJuego.appendChild(el('option', disponible ? {value: j.config} : {value: j.config, disabled: 'disabled'},
+                    j.nombre + ' — ' + j.subtitulo + (disponible ? '' : ' (próximamente)')));
             });
+            var elegible = juegoDe(cat, anterior);
+            selJuego.value = elegible && elegible.estado === 'disponible' && configs[anterior] ? anterior
+                : cat.juegos.filter(function (j) { return j.estado === 'disponible' && configs[j.config]; })[0].config;
+            elegirJuego();
+
+            // Aulas, con su estado: una sesión nueva reemplaza a la que tenga abierta el aula.
+            var selSala = $('nueva-sala'), salaAnterior = selSala.value;
+            vaciar(selSala);
+            nueva.ocupadas = {};
+            aulas.forEach(function (a) { if (a.session_code) { nueva.ocupadas[a.name] = a.session_code; } });
+            cat.salas.forEach(function (s) {
+                selSala.appendChild(el('option', {value: s.nombre}, s.rotulo + (nueva.ocupadas[s.nombre] ? ' (con una sesión abierta)' : ' (libre)')));
+            });
+            var libre = cat.salas.filter(function (s) { return !nueva.ocupadas[s.nombre]; })[0];
+            selSala.value = salaAnterior && cat.salas.some(function (s) { return s.nombre === salaAnterior; })
+                ? salaAnterior : (libre || cat.salas[0]).nombre;
+            avisoAulaOcupada();
+        }).catch(function (e) { mostrarError(e.message); });
+    }
+
+    // ¿El aula elegida ya tiene una sesión abierta? La nueva la reemplaza para quienes entren por el enlace.
+    function avisoAulaOcupada() {
+        var aviso = $('aviso-aula-ocupada'), sala = $('nueva-sala').value, codigo = (nueva.ocupadas || {})[sala];
+        aviso.hidden = true;
+        if (!codigo) { return; }
+        api('/api/get_session/' + encodeURIComponent(codigo), {participant_labels: []}).then(function (s) {
+            if ($('nueva-sala').value !== sala) { return; }
+            var juego = juegoDe(nueva.cat, s.config_name);
+            vaciar(aviso);
+            aviso.appendChild(el('span', null, [
+                rotuloSala(nueva.cat, sala) + ' tiene abierta la sesión ', el('b', null, s.label || s.code),
+                ' (' + (juego ? juego.nombre + ', ' : '') + s.num_participants + ' equipos). Al crear una nueva, ' +
+                'los equipos que entren por el enlace de esa aula irán a la nueva; la anterior sigue en la lista con sus datos.'
+            ]));
+            aviso.hidden = false;
         }).catch(function () { /* el aviso es opcional */ });
     }
 
     function crearSesion(ev) {
         ev.preventDefault();
-        var error = $('nueva-error'), boton = $('crear-sesion');
-        var equipos = enteroDe('nueva-equipos'), objetivo = enteroDe('nueva-por-mercado'), trimestres = enteroDe('nueva-trimestres');
+        var error = $('nueva-error'), boton = $('crear-sesion'), juego = nueva.juego;
+        if (!juego) { return; }
+        var fuera = function (v, d) { return !(v >= d.min && v <= d.max); };
+        var equipos = enteroDe('nueva-equipos'), rondas = enteroDe('nueva-rondas');
+        var grupo = juego.grupo && juego.grupo.campo ? enteroDe('nueva-grupo') : null;
         var problema = !(equipos >= 1 && equipos <= 200) ? 'La cantidad de equipos tiene que estar entre 1 y 200.'
-            : !(objetivo >= 1 && objetivo <= 12) ? 'Las empresas por mercado tienen que estar entre 1 y 12.'
-            : !(trimestres >= 1 && trimestres <= 6) ? 'Los trimestres tienen que estar entre 1 y 6.' : null;
+            : grupo !== null && fuera(grupo, juego.grupo) ? '"' + juego.grupo.rotulo + '" tiene que estar entre ' + juego.grupo.min + ' y ' + juego.grupo.max + '.'
+            : fuera(rondas, juego.rondas) ? '"' + juego.rondas.rotulo + '" tiene que estar entre ' + juego.rondas.min + ' y ' + juego.rondas.max + '.'
+            : null;
         if (problema) { error.textContent = problema; error.hidden = false; return; }
 
-        var cambios = {empresas_por_mercado: objetivo, num_rondas: trimestres, trimestre_inicial: enteroDe('nueva-inicio')};
+        var cambios = {};
+        cambios[juego.rondas.campo] = rondas;
+        if (grupo !== null) { cambios[juego.grupo.campo] = grupo; }
+        [].forEach.call(document.querySelectorAll('#campos-juego select'), function (sel) {
+            cambios[sel.getAttribute('data-clave')] = parseInt(sel.value, 10);
+        });
         var invalido = null;
         [].forEach.call(document.querySelectorAll('#campos-parametros input'), function (inp) {
             var v = parseFloat(inp.value);
             if (!(v >= 0)) { invalido = inp.parentNode.querySelector('span').textContent; return; }
             if (inp.getAttribute('data-porcentaje') === '1') { v = v / 100; }
             var clave = inp.getAttribute('data-clave');
-            if (configBase && Math.abs(v - configBase[clave]) > 1e-9) { cambios[clave] = v; }
+            if (Math.abs(v - nueva.base[clave]) > 1e-9) { cambios[clave] = v; }
         });
         if (invalido) { error.textContent = 'Revise el valor de "' + invalido + '".'; error.hidden = false; return; }
 
+        var sala = $('nueva-sala').value;
         error.hidden = true;
         boton.disabled = true;
         boton.textContent = 'Creando…';
         api('/api/sessions', {
-            session_config_name: CONFIG, num_participants: equipos, room_name: AULA,
+            session_config_name: juego.config, num_participants: equipos, room_name: sala,
             label: $('nueva-nombre').value.trim(), modified_session_config_fields: cambios
         }).then(function (s) {
-            avisar('Sesión creada: los equipos ya pueden entrar por el enlace del aula');
-            $('form-nueva').reset();
+            avisar('Sesión creada: los equipos ya pueden entrar por el enlace de ' + rotuloSala(nueva.cat, sala));
+            $('nueva-nombre').value = '';
             abrirSesion(s.code);
         }).catch(function (e) {
             error.textContent = 'No se pudo crear la sesión. ' + e.message;
@@ -329,7 +407,9 @@
     function descargarDatos() {
         var codigo = estado.codigo;
         if (!codigo) { return; }
-        var url = '/api/export_app?app=' + CONFIG + '&session_code=' + encodeURIComponent(codigo) + '&format=csv_bom';
+        var app = estado.app;
+        if (!app) { return; }
+        var url = '/api/export_app?app=' + encodeURIComponent(app) + '&session_code=' + encodeURIComponent(codigo) + '&format=csv_bom';
         var bajar = function () {
             return fetch(url, {headers: {'X-Tablero': '1'}, credentials: 'same-origin'}).then(function (r) {
                 if (r.status === 401) { return pedirIngreso().then(bajar); }
@@ -337,7 +417,7 @@
                 return r.blob().then(function (blob) {
                     var a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = 'simulador-' + codigo + '.csv';
+                    a.download = app + '-' + codigo + '.csv';
                     document.body.appendChild(a);
                     a.click();
                     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -468,7 +548,8 @@
         if (enPapelera) { info += ' · eliminada ' + fecha(s.papelera.eliminada); }
         return el('div', {class: 'tarjeta-sesion' + (enPapelera ? ' en-papelera' : '')}, [
             el('button', {class: 'abrir-sesion', type: 'button', onclick: function () { abrirSesion(s.code); }}, [
-                el('b', null, s.label || s.code), el('span', {class: 'nota'}, info)
+                el('b', null, [s.juego ? el('span', {class: 'etiqueta-juego'}, s.juego.nombre) : null, s.label || s.code]),
+                el('span', {class: 'nota'}, info)
             ]),
             enPapelera
                 ? el('button', {class: 'boton-enlace', type: 'button', title: 'Recuperar la sesión',
@@ -482,8 +563,10 @@
     function cargarSesiones() {
         var lista = $('lista-sesiones');
         var verPapelera = estado.verPapelera;
-        api('/api/sessions').then(function (sesiones) {
-            sesiones = sesiones.filter(function (s) { return s.config_name === 'comercializacion'; }).reverse();
+        var cat = null;
+        cargarCatalogo().then(function (c) { cat = c; return api('/api/sessions'); }).then(function (sesiones) {
+            sesiones = sesiones.filter(function (s) { return juegoDe(cat, s.config_name); }).reverse();
+            sesiones.forEach(function (s) { s.juego = juegoDe(cat, s.config_name); });
             // La marca de papelera vive en session.vars: hay que pedirla sesión por sesión.
             return Promise.all(sesiones.map(function (s) {
                 return api('/api/get_session/' + encodeURIComponent(s.code), {participant_labels: [], session_vars: ['papelera']})
@@ -522,6 +605,7 @@
         codigo = (codigo || '').trim();
         if (!codigo) { return; }
         estado.codigo = codigo;
+        estado.app = null;
         estado.datos = null;
         estado.firma = null;
         if (location.hash !== '#sesion=' + codigo) { history.replaceState(null, '', '#sesion=' + codigo); }
@@ -558,6 +642,7 @@
             $('actualizado').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-AR');
             // Papelera: aviso con "Recuperar" si la sesión está eliminada; si no, botón para eliminarla.
             estado.sesionActual = {code: codigo, label: datos.label, papelera: datos.papelera || null};
+            estado.app = (datos.config && datos.config.app_sequence || [])[0] || null;
             // Si la sesión es la del aula, su enlace para proyectar.
             $('enlace-aula-sesion').hidden = !datos.room_url;
             if (datos.room_url) { $('enlace-aula-texto').textContent = datos.room_url; }
@@ -814,7 +899,8 @@
     $('cancelar-nueva-2').addEventListener('click', volver);
     $('form-nueva').addEventListener('submit', crearSesion);
     $('nueva-equipos').addEventListener('input', actualizarVistaPrevia);
-    $('nueva-por-mercado').addEventListener('input', actualizarVistaPrevia);
+    $('nueva-juego').addEventListener('change', elegirJuego);
+    $('nueva-sala').addEventListener('change', avisoAulaOcupada);
     $('descargar-datos').addEventListener('click', descargarDatos);
     $('copiar-enlace-aula').addEventListener('click', function () {
         var url = $('enlace-aula-texto').textContent;

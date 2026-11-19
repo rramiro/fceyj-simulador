@@ -90,7 +90,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 1 | Acordar las decisiones de diseño. | Hecho (sección 5). |
 | 2 | Sacar a `nucleo/` lo común, sin cambiar comportamiento. | Hecho: `nucleo/` con formato, inflación y ajustes de oTree; bots, simulación idéntica y huella `96a288a9b1ed499a` sin cambios. |
 | 3 | Resumen y tablero genéricos, con gaseosas migrado al nuevo formato. | Hecho: `nucleo/tablero.py` define el resumen común (versión 2) y el tablero lo muestra sin código propio de cada juego; se ve igual que antes. |
-| 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Se puede crear una sesión de gaseosas desde el selector. |
+| 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Hecho: catálogo `_static/juegos/catalogo.json` (verificado en CI), selector de juego y aula en el tablero, aulas `aula`, `aula2` y `aula3` (oTree no admite guiones), portada con los dos juegos y encabezado según el juego. |
 | 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | El docente revisa los números y la calibración. |
 | 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Se juega de punta a punta. |
 | 7 | Integración y prueba en testing. | CI corre los bots de los dos juegos. Prueba en el aula antes de unir a `main`. |
@@ -108,7 +108,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 6 | Restricciones | Pasos de 5 %, de 0 a 100 % por activo. Sin venta en descubierto ni endeudamiento. |
 | 7 | Información | Inflación y tipo de cambio del trimestre anterior, tasas vigentes, rendimientos pasados y un titular de noticias que anticipa con error. Sin investigación paga en la primera versión. |
 | 8 | Ritmo | Sincronizado: todos pasan juntos de trimestre (el escenario es común). |
-| 9 | Salas | `aula`, `aula-2` y `aula-3`; el docente elige la sala al crear la sesión; cualquier juego en cualquier sala. |
+| 9 | Salas | `aula`, `aula2` y `aula3`; el docente elige la sala al crear la sesión; cualquier juego en cualquier sala. |
 | 10 | Despliegue de la rama | Disparo manual que despliega una rama elegida solo en testing. |
 
 ### Parámetros iniciales de la cartera (a calibrar en la fase 5)

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="docente.css?v=9">
+    <link rel="stylesheet" href="docente.css?v=11">
 </head>
 <body>
 
@@ -55,43 +55,36 @@
     <section class="panel" id="vista-nueva" hidden>
         <button type="button" class="enlace" id="cancelar-nueva">← Sesiones</button>
         <h1>Nueva sesión en el aula</h1>
-        <p class="nota">Los equipos entran por el enlace del aula y se reparten solos en los mercados.</p>
+        <p class="nota">Elija el juego y el aula: los equipos entran por el enlace de esa aula y el juego los agrupa solo.</p>
 
         <div class="aviso-papelera" id="aviso-aula-ocupada" role="status" hidden></div>
 
         <form id="form-nueva" class="form-nueva" novalidate>
             <div class="campos-basicos">
                 <label class="campo campo-ancho">
+                    <span>Juego</span>
+                    <select id="nueva-juego"><option>Cargando…</option></select>
+                    <small class="nota" id="nueva-juego-resumen"></small>
+                </label>
+                <label class="campo campo-ancho">
                     <span>Nombre de la sesión</span>
                     <input type="text" id="nueva-nombre" maxlength="60" placeholder="ej. Comercialización — Comisión A — martes">
+                </label>
+                <label class="campo">
+                    <span>Aula</span>
+                    <select id="nueva-sala"></select>
                 </label>
                 <label class="campo">
                     <span>Cantidad de equipos</span>
                     <input type="number" id="nueva-equipos" min="1" max="200" step="1" value="8" required>
                 </label>
-                <label class="campo">
-                    <span>Empresas por mercado (máximo)</span>
-                    <input type="number" id="nueva-por-mercado" min="1" max="12" step="1" value="4" required>
-                </label>
-                <label class="campo">
-                    <span>Trimestres</span>
-                    <input type="number" id="nueva-trimestres" min="1" max="6" step="1" value="4" required>
-                </label>
-                <label class="campo">
-                    <span>Empieza en</span>
-                    <select id="nueva-inicio">
-                        <option value="1">Enero-marzo (verano)</option>
-                        <option value="2">Abril-junio (otoño)</option>
-                        <option value="3">Julio-septiembre (invierno)</option>
-                        <option value="4">Octubre-diciembre (primavera)</option>
-                    </select>
-                </label>
+                <div class="campos-juego" id="campos-juego"></div>
             </div>
 
             <div class="vista-previa" id="vista-mercados" aria-live="polite"></div>
 
             <details class="parametros">
-                <summary>Parámetros del mercado (opcional)</summary>
+                <summary id="parametros-titulo">Parámetros (opcional)</summary>
                 <p class="nota">Valores por defecto del simulador. Si cambia alguno, vale solo para esta sesión.</p>
                 <div class="campos-parametros" id="campos-parametros"><p class="nota">Cargando…</p></div>
             </details>
@@ -207,6 +200,6 @@
     </div>
 </footer>
 
-<script src="docente.js?v=12"></script>
+<script src="docente.js?v=13"></script>
 </body>
 </html>

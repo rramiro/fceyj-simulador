@@ -1,0 +1,62 @@
+{
+  "_comentario": "Catálogo de juegos: lo leen la portada y el tablero docente. Cada juego 'disponible' tiene que coincidir con su SESSION_CONFIG de settings.py (lo verifica scripts/verificar_catalogo.py).",
+  "salas": [
+    {"nombre": "aula", "rotulo": "Aula 1"},
+    {"nombre": "aula2", "rotulo": "Aula 2"},
+    {"nombre": "aula3", "rotulo": "Aula 3"}
+  ],
+  "juegos": [
+    {
+      "config": "comercializacion",
+      "app": "comercializacion",
+      "estado": "disponible",
+      "nombre": "Comercialización",
+      "subtitulo": "Mercado de gaseosas",
+      "resumen": "Precio, publicidad, producción e investigación de mercado, compitiendo con otras empresas en un contexto con inflación.",
+      "grupo": {
+        "tipo": "mercado",
+        "campo": "empresas_por_mercado",
+        "rotulo": "Empresas por mercado (máximo)",
+        "min": 1,
+        "max": 12,
+        "unidad": ["empresa", "empresas"]
+      },
+      "rondas": {"campo": "num_rondas", "rotulo": "Trimestres", "min": 1, "max": 6},
+      "campos": [
+        {
+          "clave": "trimestre_inicial",
+          "rotulo": "Empieza en",
+          "opciones": [
+            [1, "Enero-marzo (verano)"],
+            [2, "Abril-junio (otoño)"],
+            [3, "Julio-septiembre (invierno)"],
+            [4, "Octubre-diciembre (primavera)"]
+          ]
+        }
+      ],
+      "parametros_titulo": "Parámetros del mercado",
+      "parametros": [
+        {"clave": "demanda_por_empresa", "rotulo": "Demanda por empresa", "unidad": "unidades por trimestre", "paso": 100},
+        {"clave": "precio_referencia", "rotulo": "Precio de referencia", "unidad": "$ por unidad", "paso": 10},
+        {"clave": "costo_variable", "rotulo": "Costo de producción", "unidad": "$ por unidad", "paso": 10},
+        {"clave": "costo_fijo", "rotulo": "Costo fijo", "unidad": "$ por trimestre", "paso": 10000},
+        {"clave": "capacidad", "rotulo": "Capacidad de producción", "unidad": "unidades por trimestre", "paso": 100},
+        {"clave": "costo_almacenamiento", "rotulo": "Almacenamiento", "unidad": "$ por unidad en stock", "paso": 10},
+        {"clave": "publicidad_max", "rotulo": "Publicidad máxima", "unidad": "$ por trimestre", "paso": 10000},
+        {"clave": "inflacion_media", "rotulo": "Inflación media", "unidad": "% trimestral", "porcentaje": true, "paso": 0.5},
+        {"clave": "tasa_real", "rotulo": "Tasa real", "unidad": "% trimestral", "porcentaje": true, "paso": 0.5},
+        {"clave": "costo_estudio_pronostico", "rotulo": "Estudio: pronóstico", "unidad": "$", "paso": 10000},
+        {"clave": "costo_estudio_competencia", "rotulo": "Estudio: competencia", "unidad": "$", "paso": 10000},
+        {"clave": "costo_estudio_sensibilidad", "rotulo": "Estudio: sensibilidad", "unidad": "$", "paso": 10000}
+      ]
+    },
+    {
+      "config": "cartera",
+      "app": "cartera",
+      "estado": "proximamente",
+      "nombre": "Cartera de inversión",
+      "subtitulo": "Acciones, bonos y liquidez",
+      "resumen": "Cada trimestre se reparte la cartera entre acciones internacionales, bonos de renta fija y liquidez; cada año se evalúa la rentabilidad real."
+    }
+  ]
+}
