@@ -1,6 +1,11 @@
 # Cada push a main: pruebas → imagen Docker → testing (automático) → producción (con aprobación).
 # A producción va exactamente la misma imagen que se probó en testing.
 #
+# Probar una rama en testing antes de unirla a main: Actions → Despliegue → Run workflow,
+# elegir la rama. Desde una rama que no es main se despliega SOLO en testing (nunca en
+# producción) y la imagen se etiqueta con el nombre de la rama, no con "main". El próximo
+# push a main vuelve a poner main en testing.
+#
 # Interruptores (variables del repositorio):
 #   DESPLIEGUE_ACTIVO = "true"   construye la imagen y despliega testing (si no, solo pruebas).
 #   PRODUCCION_ACTIVA = "true"   además deja el pase a producción esperando aprobación.
@@ -38,8 +43,12 @@ jobs:
         id: nombre
         run: |
           repo="ghcr.io/${GITHUB_REPOSITORY,,}"
+          # Etiqueta móvil: "main" para main; para otra rama, su nombre (solo letras, números, . _ -).
+          rama="${GITHUB_REF_NAME,,}"
+          movil="${rama//[^a-z0-9._-]/-}"
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "imagen=$repo:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "movil=$repo:$movil" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -56,7 +65,7 @@ jobs:
           build-args: VERSION=${{ github.sha }}
           tags: |
             ${{ steps.nombre.outputs.imagen }}
-            ${{ steps.nombre.outputs.repo }}:main
+            ${{ steps.nombre.outputs.movil }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -82,7 +91,8 @@ jobs:
     needs: [imagen, testing]
     # Producción se activa con la variable del repositorio PRODUCCION_ACTIVA = "true".
     # Mientras no exista (o valga otra cosa), cada push solo despliega testing.
-    if: vars.PRODUCCION_ACTIVA == 'true'
+    # Solo desde main: una rama de prueba nunca llega a producción.
+    if: vars.PRODUCCION_ACTIVA == 'true' && github.ref == 'refs/heads/main'
     # Un despliegue de producción a la vez. Mientras uno espera aprobación, la versión más
     # nueva queda en cola (GitHub conserva solo la última en cola). No se cancela el que está
     # en curso, para no cortar un despliegue a la mitad: para pasar directo a la versión
