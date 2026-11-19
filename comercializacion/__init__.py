@@ -3,9 +3,13 @@ import time
 
 from otree.api import *
 
-from . import ajustes_otree, devolucion, mercado
+from nucleo import ajustes_otree, inflacion
+from nucleo.formato import numero, pesos, porcentaje
+from nucleo.inflacion import truncada
 
-# Página propia para "aula completa" (ver ajustes_otree.py).
+from . import devolucion, mercado
+
+# Página propia para "aula completa" (ver nucleo/ajustes_otree.py).
 ajustes_otree.aplicar()
 
 
@@ -146,20 +150,6 @@ def anterior(player):
     return player.in_round(player.round_number - 1) if player.round_number > 1 else None
 
 
-def pesos(x, decimales=0):
-    """Formatea un número como pesos al estilo argentino: $ 1.234.567,89"""
-    s = f'{abs(x):,.{decimales}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-    return ('-$ ' if x < 0 else '$ ') + s
-
-
-def numero(x, decimales=0):
-    return f'{x:,.{decimales}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-
-
-def porcentaje(x, decimales=1):
-    return numero(100 * x, decimales) + ' %'
-
-
 def indice(player_o_group):
     g = player_o_group if isinstance(player_o_group, Group) else player_o_group.group
     return g.indice
@@ -204,11 +194,6 @@ def produccion_max(player):
 
 # --- Creación de la sesión: estacionalidad, shocks e inflación ---------------
 
-def truncada(rnd=random):
-    """Normal estándar truncada en ±2 desvíos."""
-    return max(-2.0, min(2.0, rnd.gauss(0, 1)))
-
-
 def creating_session(subsession: Subsession):
     session = subsession.session
     cfg = session.config
@@ -228,11 +213,8 @@ def creating_session(subsession: Subsession):
 
     # La senda de inflación es una sola para toda la sesión (es macroeconómica).
     if subsession.round_number == 1:
-        inflaciones, indices = [0.0], [1.0]
-        for _ in range(C.NUM_ROUNDS - 1):
-            pi = max(0.0, cfg['inflacion_media'] + truncada() * cfg['inflacion_desvio'])
-            inflaciones.append(pi)
-            indices.append(mercado.siguiente_indice(indices[-1], pi))
+        inflaciones, indices = inflacion.senda_inflacion(
+            cfg['inflacion_media'], cfg['inflacion_desvio'], C.NUM_ROUNDS)
         session.vars['inflacion'] = inflaciones
         session.vars['indice'] = indices
 

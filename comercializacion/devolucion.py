@@ -9,6 +9,8 @@ Cada observación es un dict:
     {'tipo': 'fortaleza' | 'alerta' | 'sugerencia', 'tema': str, 'texto': str}
 """
 
+from nucleo.formato import numero, pesos, porcentaje
+
 # --- Umbrales -----------------------------------------------------------------
 PRECIO_ALTO = 1.10            # precio medio relativo al mercado considerado "caro"
 PRECIO_BAJO = 0.90            # ... considerado "barato"
@@ -21,16 +23,15 @@ REZAGO_INFLACION = 0.01       # el precio subió al menos 1 punto menos que la i
 
 
 def _pesos(x):
-    s = f'{abs(x):,.0f}'.replace(',', '.')
-    return ('-$ ' if x < 0 else '$ ') + s
+    return pesos(x, 0)
 
 
 def _numero(x):
-    return f'{x:,.0f}'.replace(',', '.')
+    return numero(x, 0)
 
 
 def _pct(x):
-    return f'{x * 100:.0f} %'
+    return porcentaje(x, 0)
 
 
 def _obs(tipo, tema, texto):

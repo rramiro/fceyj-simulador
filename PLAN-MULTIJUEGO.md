@@ -87,8 +87,8 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | # | Fase | Cuándo está terminada |
 |---|---|---|
 | 0 | Crear la rama `multijuego` desde `main`. | Hecho. |
-| 1 | Acordar las decisiones de diseño. | El docente aprueba. |
-| 2 | Sacar a `nucleo/` lo común, sin cambiar comportamiento. | Pasan los bots y la huella del esquema queda igual. |
+| 1 | Acordar las decisiones de diseño. | Hecho (sección 5). |
+| 2 | Sacar a `nucleo/` lo común, sin cambiar comportamiento. | Hecho: `nucleo/` con formato, inflación y ajustes de oTree; bots, simulación idéntica y huella `96a288a9b1ed499a` sin cambios. |
 | 3 | Resumen y tablero genéricos, con gaseosas migrado al nuevo formato. | El tablero se ve exactamente igual que hoy. |
 | 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Se puede crear una sesión de gaseosas desde el selector. |
 | 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | El docente revisa los números y la calibración. |
@@ -96,19 +96,30 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 7 | Integración y prueba en testing. | CI corre los bots de los dos juegos. Prueba en el aula antes de unir a `main`. |
 | 8 | Documentación: portada y `DESPLIEGUE.md`. | — |
 
-## 5. Decisiones pendientes (del docente)
+## 5. Decisiones (aprobadas el 2026-11-19)
 
-1. **Horizonte:** ¿cuántos años y trimestres? ¿El docente lo configura?
-2. **Datos:** ¿rendimientos simulados con parámetros, o históricos reales, por ejemplo un período
-   elegido al azar?
-3. **Moneda de evaluación:** pesos reales, dólares o ambas.
-4. **Métrica del ranking:** rentabilidad real, Sharpe o una combinación.
-5. **Costos:** ¿hay comisión por rebalancear?
-6. **Restricciones:** ¿hay mínimos o máximos por activo? ¿Los porcentajes van en pasos de 5 %?
-7. **Información:** ¿noticias o pronósticos por trimestre? ¿Investigación paga, como en gaseosas?
-8. **Ritmo:** ¿cada equipo avanza libre, o todos esperan para pasar juntos de trimestre, como en
-   los mercados?
-9. **Salas:** ¿una sola `aula` para todo, o una por comisión o docente, para que haya clases en
-   paralelo?
-10. **Despliegue de la rama:** ¿la subimos a testing antes de unirla a `main`? Hoy el despliegue
-    solo corre desde `main`; habría que agregar un disparo manual por rama.
+| # | Decisión | Aprobado |
+|---|---|---|
+| 1 | Horizonte | 3 años (12 trimestres) por defecto; el docente elige de 1 a 4 años. Informe anual cada 4 trimestres. |
+| 2 | Datos | Rendimientos simulados con parámetros de tipo histórico y semilla por sesión (escenario repetible). Datos reales, más adelante. |
+| 3 | Moneda | Principal: pesos constantes (rentabilidad real). También se muestra en dólares. |
+| 4 | Ranking | Rentabilidad real anual efectiva (TEA real) del período. Sharpe y caída máxima: informativos y en la devolución. |
+| 5 | Costos | Comisión del 0,5 % sobre el monto comprado o vendido al rebalancear (configurable). |
+| 6 | Restricciones | Pasos de 5 %, de 0 a 100 % por activo. Sin venta en descubierto ni endeudamiento. |
+| 7 | Información | Inflación y tipo de cambio del trimestre anterior, tasas vigentes, rendimientos pasados y un titular de noticias que anticipa con error. Sin investigación paga en la primera versión. |
+| 8 | Ritmo | Sincronizado: todos pasan juntos de trimestre (el escenario es común). |
+| 9 | Salas | `aula`, `aula-2` y `aula-3`; el docente elige la sala al crear la sesión; cualquier juego en cualquier sala. |
+| 10 | Despliegue de la rama | Disparo manual que despliega una rama elegida solo en testing. |
+
+### Parámetros iniciales de la cartera (a calibrar en la fase 5)
+
+| Concepto | Valor |
+|---|---|
+| Capital inicial | $10.000.000 |
+| Inflación | Misma trayectoria configurable que gaseosas |
+| Acciones internacionales | Media 2 % trimestral en dólares (≈ 8 % anual); volatilidad 8 % trimestral (≈ 16 % anual) |
+| Tipo de cambio | Depreciación igual a la inflación, con desvío de ± 6 % trimestral |
+| Bonos de renta fija | Inflación + 1 % real trimestral; duración 3 años |
+| Liquidez (plazo fijo) | Inflación esperada − 0,5 % trimestral |
+| Crisis | 8 % por trimestre: acciones −20 % en dólares, dólar +15 %, bonos −5 % |
+| Carteras de referencia | 60/30/10, todo liquidez, todo acciones |
