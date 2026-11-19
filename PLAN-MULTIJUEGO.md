@@ -91,7 +91,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 2 | Sacar a `nucleo/` lo común, sin cambiar comportamiento. | Hecho: `nucleo/` con formato, inflación y ajustes de oTree; bots, simulación idéntica y huella `96a288a9b1ed499a` sin cambios. |
 | 3 | Resumen y tablero genéricos, con gaseosas migrado al nuevo formato. | Hecho: `nucleo/tablero.py` define el resumen común (versión 2) y el tablero lo muestra sin código propio de cada juego; se ve igual que antes. |
 | 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Hecho: catálogo `_static/juegos/catalogo.json` (verificado en CI), selector de juego y aula en el tablero, aulas `aula`, `aula2` y `aula3` (oTree no admite guiones), portada con los dos juegos y encabezado según el juego. |
-| 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | El docente revisa los números y la calibración. |
+| 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | Hecho: `cartera/modelo.py` y `scripts/simular_cartera.py` (en CI); calibración revisada (sección 6). |
 | 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Se juega de punta a punta. |
 | 7 | Integración y prueba en testing. | CI corre los bots de los dos juegos. Prueba en el aula antes de unir a `main`. |
 | 8 | Documentación: portada y `DESPLIEGUE.md`. | — |
@@ -123,3 +123,30 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | Liquidez (plazo fijo) | Inflación esperada − 0,5 % trimestral |
 | Crisis | 8 % por trimestre: acciones −20 % en dólares, dólar +15 %, bonos −5 % |
 | Carteras de referencia | 60/30/10, todo liquidez, todo acciones |
+
+## 6. Calibración de la cartera (fase 5, 2026-11-19)
+
+Revisada con `python scripts/simular_cartera.py` (2.000 partidas de 12 trimestres):
+
+- **Las medias incluyen las crisis.** Fuera de una crisis, la media de las acciones y la
+  variación del dólar se corrigen para que el promedio de todos los trimestres sea el del
+  parámetro (el dólar se atrasa un poco en tiempos normales y salta en las crisis). Sin esta
+  corrección las acciones rendían menos de 2 % anual en dólares.
+- **Bonos:** se mantiene la calibración aprobada (tasa real 1 % trimestral, la tasa del
+  mercado se mueve ±0,5 pp por trimestre): 3,8 % real anual con volatilidad 3,7 %.
+- **Ranking:** el principal es la TEA real; al final se muestra también un ranking por Sharpe
+  y la devolución señala si un equipo ganó por apostar todo a lo más volátil (con solo TEA
+  real, "todo en acciones" sale primero en 41 % de las partidas).
+- **Parámetros agregados:** desvío de la tasa real de los bonos (0,5 pp por trimestre) y
+  precisión de los titulares (65 %).
+
+Resultados de referencia (mediana de las partidas, pesos constantes):
+
+| Estrategia | TEA real | Volatilidad | Sharpe | Caída máx. |
+|---|---|---|---|---|
+| Todo liquidez | −1,8 % | 3,5 % | 0,00 | 7,6 % |
+| Todo bonos | 3,7 % | 3,4 % | 1,55 | 2,9 % |
+| Todo acciones | 5,1 % | 18,9 % | 0,45 | 20,2 % |
+| Equilibrada 60/30/10 | 4,5 % | 11,6 % | 0,58 | 11,9 % |
+| Sigue las noticias | 4,4 % | 9,6 % | 0,69 | 8,1 % (comisiones: 4,3 % del capital) |
+| Persigue el rendimiento | 1,0 % | 12,9 % | 0,30 | 14,8 % (comisiones: 8,9 %) |
