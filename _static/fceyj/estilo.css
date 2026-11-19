@@ -215,3 +215,10 @@ details summary {
 }
 
 .powered-by-otree { opacity: .6; }
+
+/* Juego de cartera: barra con el reparto elegido */
+.barra-reparto { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: #E6EAF0; }
+.barra-reparto span { display: block; height: 100%; transition: width .2s; }
+.barra-acciones { background: var(--fceyj-indigo); }
+.barra-bonos { background: var(--fceyj-celeste); }
+.barra-liquidez { background: #9AA5B1; }

@@ -26,6 +26,7 @@
     // ---------------------------------------------------------------- utilidades
     var $ = function (id) { return document.getElementById(id); };
     var nf0 = new Intl.NumberFormat('es-AR', {maximumFractionDigits: 0});
+    var nf1 = new Intl.NumberFormat('es-AR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
     var nf2 = new Intl.NumberFormat('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     function pesos(x, dec) { return x == null ? '—' : (x < 0 ? '-$ ' : '$ ') + (dec ? nf2 : nf0).format(Math.abs(x)); }
     function numero(x) { return x == null ? '—' : nf0.format(x); }
@@ -39,6 +40,7 @@
             case 'pesos2': return pesos(valor, true);
             case 'numero': return numero(valor);
             case 'pct': return pct(valor);
+            case 'pct1': return nf1.format(valor * 100) + ' %';
             case 'ronda': return tab.ronda.abrev + valor;
             default: return String(valor);
         }
@@ -212,6 +214,7 @@
         var caja = $('vista-mercados');
         vaciar(caja);
         var g = nueva.juego && nueva.juego.grupo;
+        if (g && g.texto && !g.campo) { caja.appendChild(el('b', null, g.texto)); return; }
         if (!g || !g.campo || !$('nueva-grupo')) { return; }
         var equipos = enteroDe('nueva-equipos'), objetivo = enteroDe('nueva-grupo');
         if (!(equipos >= 1) || !(objetivo >= 1)) {
@@ -264,13 +267,14 @@
         lista.forEach(function (p) {
             var valor = base[p.clave];
             var mostrado = p.porcentaje ? Math.round(valor * 1000) / 10 : valor;
-            var input = el('input', {type: 'number', step: String(p.paso), min: '0', value: String(mostrado),
-                                     'data-clave': p.clave, 'data-porcentaje': p.porcentaje ? '1' : '0'});
+            var minimo = p.min == null ? 0 : p.min;   // en las unidades que se muestran (p. ej. % trimestral)
+            var input = el('input', {type: 'number', step: String(p.paso), min: String(minimo), value: String(mostrado),
+                                     'data-clave': p.clave, 'data-porcentaje': p.porcentaje ? '1' : '0', 'data-min': String(minimo)});
             var ayuda = el('small', {class: 'nota'});
             // Debajo, el valor con separador de miles (6000000 -> $ 6.000.000), para leerlo fácil.
             var describir = function () {
                 var v = parseFloat(input.value);
-                var texto = !(v >= 0) ? 'Valor inválido'
+                var texto = !(v >= minimo) ? 'Valor inválido'
                     : p.porcentaje ? nf2.format(v) + ' ' + p.unidad
                     : p.unidad.charAt(0) === '$' ? pesos(v) + p.unidad.slice(1)
                     : numero(v) + ' ' + p.unidad;
@@ -376,7 +380,7 @@
         var invalido = null;
         [].forEach.call(document.querySelectorAll('#campos-parametros input'), function (inp) {
             var v = parseFloat(inp.value);
-            if (!(v >= 0)) { invalido = inp.parentNode.querySelector('span').textContent; return; }
+            if (!(v >= parseFloat(inp.getAttribute('data-min')))) { invalido = inp.parentNode.querySelector('span').textContent; return; }
             if (inp.getAttribute('data-porcentaje') === '1') { v = v / 100; }
             var clave = inp.getAttribute('data-clave');
             if (Math.abs(v - nueva.base[clave]) > 1e-9) { cambios[clave] = v; }
@@ -764,7 +768,7 @@
                 (faltan === 1 ? 'Falta que ingrese 1 equipo' : 'Faltan que ingresen ' + faltan + ' equipos') +
                 ' a este ' + tipo + ': hasta entonces no avanza.') : null,
             el('div', {class: 'tabla-desplazable'}, el('table', {class: 'tabla'}, [
-                el('thead', null, el('tr', null, [el('th', null, 'Empresa'), el('th', null, 'Estado')]
+                el('thead', null, el('tr', null, [el('th', null, primero.rotulo_equipo || 'Equipo'), el('th', null, 'Estado')]
                     .concat((primero.indicadores || []).map(function (d) {
                         return el('th', {class: d.formato === 'texto' ? '' : 'num'}, d.etiqueta);
                     }))
@@ -908,6 +912,12 @@
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(url).then(listo, function () { window.prompt('Copiar el enlace del aula:', url); });
         } else { window.prompt('Copiar el enlace del aula:', url); }
+    });
+
+    // Si cambia el código en la dirección (por ejemplo, desde un enlace), se abre esa sesión.
+    window.addEventListener('hashchange', function () {
+        var h = location.hash.match(/sesion=([\w-]+)/);
+        if (h && h[1] !== estado.codigo) { abrirSesion(h[1]); }
     });
 
     var m = location.hash.match(/sesion=([\w-]+)/);

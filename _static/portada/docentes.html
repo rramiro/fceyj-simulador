@@ -177,19 +177,65 @@
             </details>
         </article>
 
-        <article class="juego juego-proximo">
+        <article class="juego">
             <div class="juego-cabecera">
                 <div>
                     <p class="antetitulo">Cartera de inversión</p>
                     <h3>Acciones, bonos y liquidez</h3>
                 </div>
-                <span class="etiqueta">Próximamente</span>
+                <span class="etiqueta">Versión 1</span>
             </div>
-            <p>Cada trimestre, los equipos reparten su cartera entre <b>acciones internacionales</b>,
-               <b>bonos de renta fija</b> y <b>liquidez</b>, frente a un mismo escenario de mercado con
-               inflación y tipo de cambio. Cada año se evalúa la <b>rentabilidad real</b> de la cartera,
-               con su riesgo, frente a carteras de referencia.</p>
+
+            <ul class="datos">
+                <li><b>Cualquier</b> cantidad de equipos</li>
+                <li><b>Todos</b> frente al mismo mercado</li>
+                <li><b>4 a 16</b> trimestres (informe anual cada 4)</li>
+                <li><b>1</b> dispositivo por equipo</li>
+            </ul>
+
+            <div class="juego-columnas">
+                <div>
+                    <h4>Qué decide cada equipo</h4>
+                    <ul>
+                        <li>Cada trimestre, el <b>porcentaje de la cartera</b> en acciones internacionales,
+                            bonos de renta fija y liquidez (de 5 % en 5 %).</li>
+                        <li>Antes de decidir ven un <b>titular</b> que anticipa, con error, cómo les irá a las
+                            acciones, las tasas vigentes y los rendimientos pasados.</li>
+                        <li>Rebalancear paga <b>comisión</b>.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Qué se aprende</h4>
+                    <ul>
+                        <li>Riesgo y rendimiento; diversificación.</li>
+                        <li>Rentabilidad nominal, real y en dólares; TNA y TEA.</li>
+                        <li>Duración de un bono y riesgo de tasa.</li>
+                        <li>Volatilidad, índice de Sharpe y caída máxima.</li>
+                        <li>El costo de rotar la cartera y de reaccionar a las noticias.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <details class="modelo">
+                <summary>Ver el modelo de mercado</summary>
+                <ul>
+                    <li>Un mismo <b>escenario</b> para toda la sesión, sorteado al crearla (con un número de
+                        escenario que permite repetirlo en otra comisión).</li>
+                    <li><b>Acciones:</b> rendimiento en dólares con media y volatilidad; en pesos suman la
+                        variación del dólar.</li>
+                    <li><b>Bonos:</b> inflación más una tasa real; su precio cae cuando sube la tasa real, según
+                        su duración.</li>
+                    <li><b>Plazo fijo:</b> tasa pactada con la inflación esperada, un poco por debajo de ella.</li>
+                    <li><b>Crisis</b> ocasionales: caen las acciones y los bonos, y salta el dólar. Las medias ya
+                        las incluyen.</li>
+                    <li>Ranking por <b>TEA real</b> y, al final, también por <b>Sharpe</b>; comparación con
+                        tres carteras de referencia.</li>
+                </ul>
+                <p class="nota">Los parámetros se ajustan al crear la sesión, sin tocar el código.</p>
+            </details>
         </article>
+
+        <p class="nota proximamente">Próximamente se sumarán nuevos juegos.</p>
     </div>
 </section>
 

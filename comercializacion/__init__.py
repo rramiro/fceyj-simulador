@@ -548,6 +548,7 @@ def actualizar_tablero(player: Player, pagina: str):
     player.participant.vars['tablero'] = tablero.resumen(
         juego=C.NAME_IN_URL,
         equipo=nombre(player),
+        rotulo_equipo='Empresa',
         grupo_numero=player.group.id_in_subsession,
         grupo_tipo='mercado',
         grupo_tamano=empresas_en_mercado(player),

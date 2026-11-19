@@ -1,0 +1,17 @@
+<div class="grafico">
+    <h6>Valor de la cartera en pesos del inicio del juego (descontada la inflación)</h6>
+    <div id="grafico-valor"></div>
+</div>
+<p class="small text-muted">
+    Las líneas punteadas son las carteras de referencia en el mismo mercado.
+    Pasen el cursor sobre los puntos para ver los valores.
+</p>
+
+<script src="{{ static 'fceyj/graficos.js' }}?v=4"></script>
+<script>
+    (function () {
+        var d = js_vars.graficos;
+        Graficos.lineas(document.getElementById('grafico-valor'),
+            {etiquetas: d.etiquetas, series: d.series, formato: Graficos.formatos.millones});
+    })();
+</script>

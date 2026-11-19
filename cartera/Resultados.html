@@ -1,0 +1,72 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Resultados del trimestre {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+{{ if crisis }}
+<div class="alert alert-danger">
+    <b>Hubo una crisis este trimestre:</b> las acciones cayeron fuerte en dólares, el dólar saltó y los bonos bajaron.
+</div>
+{{ endif }}
+
+<p>
+    Inflación del trimestre: <b>{{ inflacion }}</b> ·
+    Dólar: <b>{{ var_dolar }}</b> ·
+    Acciones en dólares: <b>{{ acciones_usd }}</b>
+</p>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <h5>Cartera de {{ nombre }}</h5>
+        <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr><th>Activo</th><th class="text-end">%</th><th class="text-end">Invertido</th>
+                    <th class="text-end">Rendimiento</th><th class="text-end">Al cierre</th></tr>
+            </thead>
+            <tbody>
+            {{ for a in activos }}
+                <tr>
+                    <td>{{ a.activo }}</td><td class="text-end">{{ a.pct }}</td>
+                    <td class="text-end">{{ a.invertido }}</td>
+                    <td class="text-end {{ if a.negativo }}text-danger{{ endif }}">{{ a.rendimiento }}</td>
+                    <td class="text-end">{{ a.final }}</td>
+                </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+        </div>
+        <table class="table table-sm">
+            <tr><td>Valor al empezar el trimestre</td><td class="text-end">{{ valor_inicial }}</td></tr>
+            {{ if hubo_comision }}<tr><td>− Comisiones por comprar y vender</td><td class="text-end">{{ comision }}</td></tr>{{ endif }}
+            <tr class="fw-bold"><td>Valor al cerrar el trimestre</td><td class="text-end">{{ valor_final }}</td></tr>
+            <tr><td>Rendimiento del trimestre</td>
+                <td class="text-end {{ if rendimiento_neg }}text-danger{{ endif }}">{{ rendimiento }}</td></tr>
+            <tr class="fw-bold"><td>Rendimiento real (descontada la inflación)</td>
+                <td class="text-end {{ if rendimiento_real_neg }}text-danger{{ endif }}">{{ rendimiento_real }}</td></tr>
+        </table>
+    </div>
+
+    <div class="col-lg-5">
+        <h5>Desde el inicio del juego</h5>
+        <table class="table table-sm">
+            <tr><td>Valor en pesos del inicio</td><td class="text-end fw-bold">{{ valor_real }}</td></tr>
+            <tr><td>Variación real</td><td class="text-end {{ if var_real_neg }}text-danger{{ endif }}">{{ var_real }}</td></tr>
+            <tr><td>Variación en dólares</td><td class="text-end {{ if var_dolares_neg }}text-danger{{ endif }}">{{ var_dolares }}</td></tr>
+            <tr><td>Puesto en la clase</td><td class="text-end fw-bold">{{ puesto }}° de {{ num_equipos }}</td></tr>
+        </table>
+        {{ if fin_de_anio }}
+        <p class="small text-muted">En la próxima pantalla verán el informe del año.</p>
+        {{ endif }}
+    </div>
+</div>
+
+<h5 class="mt-2">Evolución</h5>
+{{ include "cartera/incluir_grafico.html" }}
+
+{{ next_button }}
+
+{{ endblock }}

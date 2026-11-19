@@ -11,6 +11,7 @@ Formato (versión 2; todo en tipos JSON):
     version       2
     juego         nombre de la app ('comercializacion', 'cartera', ...)
     equipo        nombre del equipo o empresa
+    rotulo_equipo cómo llama el juego a los equipos en el tablero ('Empresa', 'Equipo')
     grupo         {numero, tipo, tamano, posicion}: equipos que avanzan juntos.
                   `tipo` es un sustantivo masculino ('mercado', 'grupo') que el
                   tablero usa en frases como "este mercado" o "su mercado".
@@ -25,14 +26,14 @@ Formato (versión 2; todo en tipos JSON):
     actualizado   segundos desde 1970
 
 Formatos de número que entiende el tablero: 'pesos', 'pesos2' (con centavos),
-'numero', 'pct' (0.25 -> 25 %), 'ronda' (3 -> T3) y 'texto'. `signo=True`
+'numero', 'pct' (0.25 -> 25 %), 'pct1' (con un decimal: 4,6 %), 'ronda' (3 -> T3) y 'texto'. `signo=True`
 marca en rojo los valores negativos.
 """
 import time
 
 VERSION = 2
 ETAPAS = ('decidiendo', 'esperando', 'resultados', 'termino')
-FORMATOS = ('pesos', 'pesos2', 'numero', 'pct', 'ronda', 'texto')
+FORMATOS = ('pesos', 'pesos2', 'numero', 'pct', 'pct1', 'ronda', 'texto')
 
 
 def columna(clave, etiqueta, formato='texto', signo=False):
@@ -50,13 +51,14 @@ def indicador(etiqueta, valor, formato='texto', signo=False):
 def resumen(*, juego, equipo, grupo_numero, grupo_tipo, grupo_tamano, posicion,
             ronda, rondas, etapa, estado, puesto=None, indicadores=(), decision=None,
             columnas=(), filas=(), nota_historial='', devolucion=(),
-            nombre_ronda='trimestre', abrev_ronda='T'):
+            nombre_ronda='trimestre', abrev_ronda='T', rotulo_equipo='Equipo'):
     assert etapa in ETAPAS, etapa
     claves = [c['clave'] for c in columnas]
     return dict(
         version=VERSION,
         juego=juego,
         equipo=equipo,
+        rotulo_equipo=rotulo_equipo,
         grupo=dict(numero=grupo_numero, tipo=grupo_tipo, tamano=grupo_tamano, posicion=posicion),
         ronda=dict(actual=ronda, total=rondas, nombre=nombre_ronda, abrev=abrev_ronda),
         etapa=etapa,

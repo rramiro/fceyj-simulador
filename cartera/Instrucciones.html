@@ -1,0 +1,69 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Simulador de inversiones
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes administran una <b>cartera de inversión de {{ capital }}</b> durante
+    <b>{{ num_rondas }} trimestres</b> ({{ anios }}).
+    Al empezar, todo el dinero está en liquidez. Los {{ num_equipos }} equipos de la clase
+    enfrentan <b>el mismo mercado</b>: lo que cambia es cómo reparte cada uno su cartera.
+</p>
+
+<h5>Qué deciden cada trimestre</h5>
+<p>Qué porcentaje de la cartera va a cada activo (los tres suman 100 %, de 5 % en 5 %):</p>
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card h-100"><div class="card-header">Acciones internacionales</div>
+        <div class="card-body small">
+            Se compran en dólares. Son las que más rinden en promedio, pero también las que más
+            varían: hay trimestres muy buenos y otros con caídas fuertes. En pesos, además, ganan
+            cuando sube el dólar.
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100"><div class="card-header">Bonos de renta fija</div>
+        <div class="card-body small">
+            Rinden la inflación más {{ bonos_tasa_real }} por trimestre. Su precio cae si suben las
+            tasas del mercado (duración: {{ bonos_duracion }} años, así que una suba de 1 punto en la
+            tasa los hace caer alrededor de {{ bonos_duracion }} %).
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100"><div class="card-header">Liquidez (plazo fijo)</div>
+        <div class="card-body small">
+            Rinde una tasa fija conocida al empezar el trimestre (cerca de {{ tasa_plazo_fijo }}
+            trimestral). No tiene riesgo en pesos, pero si la inflación es alta, pierde en términos reales.
+        </div></div>
+    </div>
+</div>
+
+<h5>Reglas</h5>
+<ul>
+    <li>Al empezar cada trimestre la cartera se lleva a los porcentajes que eligen. <b>Comprar o vender
+        acciones y bonos paga una comisión de {{ comision }}</b> sobre el monto operado; la liquidez no paga.</li>
+    <li>Hay <b>inflación</b>: en promedio {{ inflacion_media }} por trimestre (cerca de {{ inflacion_anual }}
+        anual), con variaciones. El <b>dólar</b> acompaña a la inflación en promedio, con altibajos.</li>
+    <li>Cada tanto hay <b>crisis</b>: las acciones caen fuerte, el dólar salta y los bonos también bajan.</li>
+    <li>Antes de decidir verán un <b>titular de noticias</b> sobre los mercados. A veces anticipa bien lo que
+        viene, y a veces no.</li>
+    <li>El trimestre se cierra cuando todos los equipos decidieron. Cada 4 trimestres hay un <b>informe anual</b>.</li>
+</ul>
+
+<h5>Cómo se evalúa</h5>
+<p>
+    Gana el equipo con mayor <b>rentabilidad real</b> (TEA, descontada la inflación). Al final también verán
+    un ranking por <b>rentabilidad ajustada por riesgo</b> (índice de Sharpe): no es lo mismo ganar
+    diversificando que ganar apostando todo a una sola cosa. Y se compararán con tres carteras de
+    referencia: equilibrada 60/30/10, todo en liquidez y todo en acciones.
+</p>
+
+{{ formfield 'nombre_equipo' }}
+<p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de equipo.</p>
+
+{{ next_button }}
+
+{{ endblock }}

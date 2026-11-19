@@ -33,6 +33,9 @@ jobs:
       - name: Verificaciones y calibración del modelo
         run: python scripts/simular_mercado.py
 
+      - name: Bots de oTree del juego de cartera (6 equipos, 12 trimestres)
+        run: otree test cartera 6
+
       - name: Verificaciones y calibración del modelo de cartera
         run: python scripts/simular_cartera.py
 

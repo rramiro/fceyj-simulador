@@ -92,7 +92,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 3 | Resumen y tablero genéricos, con gaseosas migrado al nuevo formato. | Hecho: `nucleo/tablero.py` define el resumen común (versión 2) y el tablero lo muestra sin código propio de cada juego; se ve igual que antes. |
 | 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Hecho: catálogo `_static/juegos/catalogo.json` (verificado en CI), selector de juego y aula en el tablero, aulas `aula`, `aula2` y `aula3` (oTree no admite guiones), portada con los dos juegos y encabezado según el juego. |
 | 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | Hecho: `cartera/modelo.py` y `scripts/simular_cartera.py` (en CI); calibración revisada (sección 6). |
-| 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Se juega de punta a punta. |
+| 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Hecho: se juega de punta a punta (probado en el navegador); bots en CI; nueva huella del esquema `16850cfe99019762`. |
 | 7 | Integración y prueba en testing. | CI corre los bots de los dos juegos. Prueba en el aula antes de unir a `main`. |
 | 8 | Documentación: portada y `DESPLIEGUE.md`. | — |
 

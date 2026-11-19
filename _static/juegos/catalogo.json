@@ -53,10 +53,28 @@
     {
       "config": "cartera",
       "app": "cartera",
-      "estado": "proximamente",
+      "estado": "disponible",
       "nombre": "Cartera de inversión",
       "subtitulo": "Acciones, bonos y liquidez",
-      "resumen": "Cada trimestre se reparte la cartera entre acciones internacionales, bonos de renta fija y liquidez; cada año se evalúa la rentabilidad real."
+      "resumen": "Cada trimestre se reparte la cartera entre acciones internacionales, bonos de renta fija y liquidez; cada año se evalúa la rentabilidad real.",
+      "grupo": {
+        "tipo": "grupo",
+        "texto": "Todos los equipos enfrentan el mismo mercado y pasan juntos de trimestre."
+      },
+      "rondas": {"campo": "num_rondas", "rotulo": "Trimestres (informe anual cada 4)", "min": 4, "max": 16},
+      "parametros_titulo": "Parámetros del mercado",
+      "parametros": [
+        {"clave": "semilla", "rotulo": "Escenario (0 = al azar)", "unidad": "n.° de escenario: el mismo número repite el mercado", "paso": 1},
+        {"clave": "capital_inicial", "rotulo": "Capital inicial", "unidad": "$", "paso": 100000},
+        {"clave": "comision", "rotulo": "Comisión", "unidad": "% del monto operado", "porcentaje": true, "paso": 0.1},
+        {"clave": "inflacion_media", "rotulo": "Inflación media", "unidad": "% trimestral", "porcentaje": true, "paso": 0.5},
+        {"clave": "acciones_media", "rotulo": "Acciones: rendimiento medio", "unidad": "% trimestral en dólares", "porcentaje": true, "paso": 0.5},
+        {"clave": "acciones_desvio", "rotulo": "Acciones: volatilidad", "unidad": "% trimestral", "porcentaje": true, "paso": 0.5},
+        {"clave": "bonos_tasa_real", "rotulo": "Bonos: tasa real", "unidad": "% trimestral", "porcentaje": true, "paso": 0.1},
+        {"clave": "liquidez_diferencial", "rotulo": "Plazo fijo: diferencia con la inflación", "unidad": "% trimestral", "porcentaje": true, "paso": 0.1, "min": -5},
+        {"clave": "prob_crisis", "rotulo": "Probabilidad de crisis", "unidad": "% por trimestre", "porcentaje": true, "paso": 1},
+        {"clave": "precision_noticias", "rotulo": "Acierto de los titulares", "unidad": "% de las veces", "porcentaje": true, "paso": 5}
+      ]
     }
   ]
 }

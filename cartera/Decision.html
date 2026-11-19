@@ -1,0 +1,124 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Trimestre {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+<p class="text-muted">
+    Año {{ anio }}, trimestre {{ trimestre_del_anio }}.
+    {{ if ultima }}<b class="text-danger">Es el último trimestre del juego.</b>{{ endif }}
+</p>
+
+<div class="alert alert-info">
+    <small class="d-block text-uppercase fw-bold">Titular del día</small>
+    <span class="fs-5">«{{ titular }}»</span>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">Su cartera hoy</div>
+            <div class="card-body">
+                <table class="table table-sm mb-2">
+                    {{ for c in composicion }}
+                    <tr><td>{{ c.activo }}</td><td class="text-end">{{ c.monto }}</td><td class="text-end">{{ c.pct }}</td></tr>
+                    {{ endfor }}
+                    <tr class="fw-bold"><td>Total</td><td class="text-end">{{ valor }}</td><td></td></tr>
+                </table>
+                {{ if hay_anterior }}
+                <small class="text-muted">En pesos del inicio del juego: {{ valor_real }}.
+                    Los porcentajes cambiaron con lo que rindió cada activo.</small>
+                {{ endif }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">Tasas de este trimestre</div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Plazo fijo: <b>{{ tasa_plazo_fijo }}</b> en el trimestre (TNA {{ tna_plazo_fijo }}), ya pactada.</li>
+                    <li>Bonos: la inflación del trimestre más <b>{{ bonos_tasa_real }}</b>, salvo que cambien las tasas del mercado.</li>
+                    <li>Acciones: en dólares, sin rendimiento asegurado.</li>
+                    <li>Comisión por comprar o vender acciones y bonos: <b>{{ comision }}</b> del monto operado.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ if rendimientos }}
+<h5>Lo que pasó en los trimestres anteriores</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead>
+        <tr><th>Trimestre</th><th class="text-end">Inflación</th><th class="text-end">Dólar</th>
+            <th class="text-end">Acciones (US$)</th><th class="text-end">Acciones ($)</th>
+            <th class="text-end">Bonos</th><th class="text-end">Plazo fijo</th></tr>
+    </thead>
+    <tbody>
+    {{ for f in rendimientos }}
+        <tr>
+            <td>{{ f.trimestre }}{{ if f.crisis }} <span class="badge bg-danger">crisis</span>{{ endif }}</td>
+            <td class="text-end">{{ f.inflacion }}</td>
+            <td class="text-end">{{ f.dolar }}</td>
+            <td class="text-end">{{ f.acciones_usd }}</td>
+            <td class="text-end {{ if f.acciones_neg }}text-danger{{ endif }}">{{ f.acciones }}</td>
+            <td class="text-end {{ if f.bonos_neg }}text-danger{{ endif }}">{{ f.bonos }}</td>
+            <td class="text-end">{{ f.liquidez }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+</div>
+<p class="small text-muted">Rendimientos nominales en pesos de cada trimestre, salvo la columna de acciones en dólares.</p>
+{{ endif }}
+
+<h5>Cómo reparten la cartera este trimestre</h5>
+<div class="row g-3 reparto">
+    <div class="col-md-4">
+        <label class="form-label fw-bold" for="id_pct_acciones">Acciones internacionales (%)</label>
+        <input type="number" class="form-control" name="pct_acciones" id="id_pct_acciones"
+               min="0" max="100" step="5" required value="{{ form.pct_acciones.data }}">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-bold" for="id_pct_bonos">Bonos de renta fija (%)</label>
+        <input type="number" class="form-control" name="pct_bonos" id="id_pct_bonos"
+               min="0" max="100" step="5" required value="{{ form.pct_bonos.data }}">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-bold" for="id_pct_liquidez">Liquidez (%)</label>
+        <input type="number" class="form-control" name="pct_liquidez" id="id_pct_liquidez"
+               min="0" max="100" step="5" required value="{{ form.pct_liquidez.data }}">
+    </div>
+</div>
+<div class="barra-reparto my-3" aria-hidden="true">
+    <span id="barra-acciones" class="barra-acciones"></span><span id="barra-bonos" class="barra-bonos"></span><span id="barra-liquidez" class="barra-liquidez"></span>
+</div>
+<p id="suma-reparto" class="fw-bold" role="status"></p>
+{{ formfield_errors 'pct_acciones' }}{{ formfield_errors 'pct_bonos' }}{{ formfield_errors 'pct_liquidez' }}
+
+{{ next_button }}
+
+<script>
+    // Muestra cuánto suman los porcentajes y cómo queda la cartera.
+    (function () {
+        var ids = ['acciones', 'bonos', 'liquidez'];
+        function actualizar() {
+            var v = ids.map(function (a) { return parseInt(document.getElementById('id_pct_' + a).value, 10) || 0; });
+            var suma = v[0] + v[1] + v[2];
+            ids.forEach(function (a, i) {
+                document.getElementById('barra-' + a).style.width = (suma ? Math.max(0, v[i]) * 100 / Math.max(suma, 100) : 0) + '%';
+            });
+            var p = document.getElementById('suma-reparto');
+            p.textContent = suma === 100 ? 'Suman 100 %. ✓' : 'Suman ' + suma + ' %: tienen que sumar 100 %.';
+            p.className = 'fw-bold ' + (suma === 100 ? 'text-success' : 'text-danger');
+        }
+        ids.forEach(function (a) { document.getElementById('id_pct_' + a).addEventListener('input', actualizar); });
+        actualizar();
+    })();
+</script>
+
+{{ endblock }}

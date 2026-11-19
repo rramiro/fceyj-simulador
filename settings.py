@@ -50,6 +50,34 @@ SESSION_CONFIGS = [
         publicidad_max=10_000_000,    # $ por trimestre
         doc='Mercado de gaseosas: cada empresa decide precio, publicidad y producción por trimestre.',
     ),
+    dict(
+        name='cartera',
+        display_name='Cartera de inversión (acciones, bonos y liquidez)',
+        app_sequence=['cartera'],
+        num_demo_participants=3,  # todos los equipos juegan juntos, frente al mismo mercado
+        # --- Desarrollo del juego ---
+        num_rondas=12,                # trimestres (máximo: C.NUM_ROUNDS = 16); informe anual cada 4
+        semilla=0,                    # escenario de mercado: 0 = al azar; otro número lo repite
+        # --- Parámetros del modelo (ver cartera/modelo.py) ---
+        # Calibrar con: python scripts/simular_cartera.py
+        capital_inicial=10_000_000,   # $ de cada equipo al empezar (todo en liquidez)
+        inflacion_media=0.08,         # inflación trimestral media (8 % ≈ 36 % anual)
+        inflacion_desvio=0.02,        # desvío de la inflación de cada trimestre (tope ±2 desvíos)
+        acciones_media=0.02,          # rendimiento trimestral medio de las acciones en dólares (≈ 8 % anual), crisis incluidas
+        acciones_desvio=0.08,         # desvío trimestral de las acciones (≈ 16 % anual)
+        dolar_desvio=0.06,            # desvío trimestral del dólar respecto de la inflación
+        bonos_tasa_real=0.01,         # los bonos rinden inflación + esta tasa real trimestral
+        bonos_duracion=3,             # años: si la tasa real sube 1 punto, el precio cae ≈ 3 %
+        bonos_desvio_tasa=0.005,      # desvío trimestral del cambio de la tasa real anual (0,5 puntos)
+        liquidez_diferencial=-0.005,  # plazo fijo = inflación esperada − 0,5 % por trimestre
+        prob_crisis=0.08,             # probabilidad de crisis por trimestre (≈ una cada 3 años)
+        crisis_acciones=-0.20,        # en una crisis: acciones −20 % en dólares,
+        crisis_dolar=0.15,            #   el dólar sube 15 % más
+        crisis_bonos=-0.05,           #   y los bonos caen 5 %
+        comision=0.005,               # sobre el monto comprado o vendido de acciones y bonos
+        precision_noticias=0.65,      # el titular anticipa bien a las acciones 2 de cada 3 veces
+        doc='Cartera de inversión: cada trimestre se reparte entre acciones internacionales, bonos y liquidez.',
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

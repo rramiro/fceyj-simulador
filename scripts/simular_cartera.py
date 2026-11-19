@@ -9,6 +9,7 @@ Verificaciones y calibración del modelo de cartera (cartera/modelo.py).
 3) Estrategias: muchas partidas con estrategias típicas de los equipos; para cada una,
    rentabilidad real (TEA), volatilidad, Sharpe, caída máxima y cuántas veces gana.
 """
+import importlib.util
 import random
 import statistics
 import sys
@@ -19,26 +20,17 @@ sys.path.insert(0, str(RAIZ))   # nucleo/ y cartera/ sin importar oTree
 
 from cartera import modelo  # noqa: E402
 
-# Valores propuestos (se pasan a settings.py en la fase 6).
-PARAMETROS = dict(
-    capital_inicial=10_000_000,
-    inflacion_media=0.08,
-    inflacion_desvio=0.02,
-    acciones_media=0.02,
-    acciones_desvio=0.08,
-    dolar_desvio=0.06,
-    bonos_tasa_real=0.01,
-    bonos_duracion=3,
-    bonos_desvio_tasa=0.005,
-    liquidez_diferencial=-0.005,
-    prob_crisis=0.08,
-    crisis_acciones=-0.20,
-    crisis_dolar=0.15,
-    crisis_bonos=-0.05,
-    comision=0.005,
-    precision_noticias=0.65,
-)
-TRIMESTRES = 12
+def cargar_settings():
+    spec = importlib.util.spec_from_file_location('settings', RAIZ / 'settings.py')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# Los parámetros salen de la configuración 'cartera' de settings.py (un solo lugar).
+_CONFIG = next(c for c in cargar_settings().SESSION_CONFIGS if c['name'] == 'cartera')
+PARAMETROS = {k: _CONFIG[k] for k in modelo.PARAMETROS}
+TRIMESTRES = _CONFIG['num_rondas']
 PARTIDAS = 2000
 
 

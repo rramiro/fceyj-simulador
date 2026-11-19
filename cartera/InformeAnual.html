@@ -1,0 +1,54 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Informe del año {{ anio }}{{ if parcial }} ({{ parcial }}){{ endif }}
+{{ endblock }}
+
+{{ block content }}
+
+<p>Inflación del año: <b>{{ inflacion_anio }}</b>. Todas las rentabilidades descuentan la inflación.</p>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <h5>Rentabilidad real del año</h5>
+        <table class="table table-sm">
+            {{ for f in filas_anio }}
+            <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+                <td>{{ f.nombre }}</td>
+                <td class="text-end {{ if f.negativo }}text-danger{{ endif }}">{{ f.rentabilidad }}</td>
+            </tr>
+            {{ endfor }}
+        </table>
+
+        <h5>{{ nombre }} hasta ahora</h5>
+        <table class="table table-sm">
+            {{ for a in anios }}
+            <tr><td>Año {{ a.anio }}</td><td class="text-end {{ if a.negativo }}text-danger{{ endif }}">{{ a.rentabilidad }}</td></tr>
+            {{ endfor }}
+            <tr class="fw-bold"><td>Rentabilidad real anual (TEA)</td>
+                <td class="text-end {{ if tea_real_neg }}text-danger{{ endif }}">{{ tea_real }}</td></tr>
+            <tr><td>En dólares (TEA)</td><td class="text-end {{ if tea_dolares_neg }}text-danger{{ endif }}">{{ tea_dolares }}</td></tr>
+            <tr><td>Volatilidad (anual)</td><td class="text-end">{{ volatilidad }}</td></tr>
+            <tr><td>Caída máxima</td><td class="text-end">{{ caida_maxima }}</td></tr>
+            <tr><td>Comisiones pagadas</td><td class="text-end">{{ comisiones }}</td></tr>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h5>Ranking de la clase</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Puesto</th><th>Equipo</th><th class="text-end">TEA real</th></tr></thead>
+            <tbody>
+            {{ for f in ranking }}
+            <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+                <td>{{ f.puesto }}</td><td>{{ f.nombre }}</td>
+                <td class="text-end {{ if f.negativo }}text-danger{{ endif }}">{{ f.valor }}</td>
+            </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{ next_button }}
+
+{{ endblock }}
