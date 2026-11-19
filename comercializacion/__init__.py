@@ -1,11 +1,14 @@
 import random
-import time
 
 from otree.api import *
 
-from . import ajustes_otree, devolucion, mercado
+from nucleo import ajustes_otree, inflacion, tablero
+from nucleo.formato import numero, pesos, porcentaje
+from nucleo.inflacion import truncada
 
-# Página propia para "aula completa" (ver ajustes_otree.py).
+from . import devolucion, mercado
+
+# Página propia para "aula completa" (ver nucleo/ajustes_otree.py).
 ajustes_otree.aplicar()
 
 
@@ -33,6 +36,9 @@ COLORES_RIVALES = ['#3B9AD7', '#8FB3DE', '#9AA5B1', '#5FB3B3', '#C9A227', '#B07A
 
 class C(BaseConstants):
     NAME_IN_URL = 'comercializacion'
+    # Nombre del juego en el encabezado de las pantallas (_templates/global/encabezado.html).
+    TITULO_JUEGO = 'Simulador de comercialización'
+    SUBTITULO_JUEGO = 'Mercado de gaseosas'
     # Los mercados se arman en creating_session con el tamaño objetivo de la configuración
     # ('empresas_por_mercado'), así la sesión admite cualquier cantidad de equipos.
     PLAYERS_PER_GROUP = None
@@ -146,20 +152,6 @@ def anterior(player):
     return player.in_round(player.round_number - 1) if player.round_number > 1 else None
 
 
-def pesos(x, decimales=0):
-    """Formatea un número como pesos al estilo argentino: $ 1.234.567,89"""
-    s = f'{abs(x):,.{decimales}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-    return ('-$ ' if x < 0 else '$ ') + s
-
-
-def numero(x, decimales=0):
-    return f'{x:,.{decimales}f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-
-
-def porcentaje(x, decimales=1):
-    return numero(100 * x, decimales) + ' %'
-
-
 def indice(player_o_group):
     g = player_o_group if isinstance(player_o_group, Group) else player_o_group.group
     return g.indice
@@ -204,11 +196,6 @@ def produccion_max(player):
 
 # --- Creación de la sesión: estacionalidad, shocks e inflación ---------------
 
-def truncada(rnd=random):
-    """Normal estándar truncada en ±2 desvíos."""
-    return max(-2.0, min(2.0, rnd.gauss(0, 1)))
-
-
 def creating_session(subsession: Subsession):
     session = subsession.session
     cfg = session.config
@@ -228,11 +215,8 @@ def creating_session(subsession: Subsession):
 
     # La senda de inflación es una sola para toda la sesión (es macroeconómica).
     if subsession.round_number == 1:
-        inflaciones, indices = [0.0], [1.0]
-        for _ in range(C.NUM_ROUNDS - 1):
-            pi = max(0.0, cfg['inflacion_media'] + truncada() * cfg['inflacion_desvio'])
-            inflaciones.append(pi)
-            indices.append(mercado.siguiente_indice(indices[-1], pi))
+        inflaciones, indices = inflacion.senda_inflacion(
+            cfg['inflacion_media'], cfg['inflacion_desvio'], C.NUM_ROUNDS)
         session.vars['inflacion'] = inflaciones
         session.vars['indice'] = indices
 
@@ -518,28 +502,72 @@ def devolucion_de(player: Player):
     return devolucion.diagnosticar(filas, puesto, empresas_en_mercado(player), terminado)
 
 
+# Pantalla en la que está el equipo -> (etapa del tablero, texto del estado).
+ETAPAS_TABLERO = {
+    'Instrucciones': ('decidiendo', 'Leyendo instrucciones'),
+    'Investigación de mercado': ('decidiendo', 'Investigación'),
+    'Decisión': ('decidiendo', 'Decidiendo'),
+    'Esperando a las demás empresas': ('esperando', 'Decisión enviada'),
+    'Resultados listos': ('resultados', 'Resultados listos'),
+    'Viendo resultados': ('resultados', 'Viendo resultados'),
+    'Terminó': ('termino', 'Terminó'),
+}
+
+COLUMNAS_TABLERO = [
+    tablero.columna('trimestre', 'T', 'ronda'),
+    tablero.columna('precio', 'Precio', 'pesos2'),
+    tablero.columna('precio_medio', 'Precio medio', 'pesos2'),
+    tablero.columna('publicidad', 'Publicidad', 'pesos'),
+    tablero.columna('produccion', 'Producción', 'numero'),
+    tablero.columna('unidades', 'Vendidas', 'numero'),
+    tablero.columna('faltante', 'Faltante', 'numero'),
+    tablero.columna('stock_final', 'Stock final', 'numero'),
+    tablero.columna('participacion', 'Partic.', 'pct'),
+    tablero.columna('resultado', 'Resultado', 'pesos', signo=True),
+    tablero.columna('resultado_acumulado', 'Acumulado', 'pesos', signo=True),
+]
+
+
+def texto_decision(player: Player):
+    """La decisión enviada, en una línea (el tablero la muestra mientras el equipo espera)."""
+    if player.field_maybe_none('precio') is None:
+        return None
+    estudios = [e for e, v in (('competencia', player.compra_competencia),
+                               ('pronóstico', player.compra_pronostico),
+                               ('sensibilidad', player.compra_sensibilidad)) if v]
+    return (f'precio {pesos(player.precio, 2)}, publicidad {pesos(player.publicidad)}, '
+            f'producción {numero(player.produccion)} u.'
+            + (f' (estudios: {", ".join(estudios)})' if estudios else ''))
+
+
 def actualizar_tablero(player: Player, pagina: str):
-    """Guarda en participant.vars el estado del equipo para el tablero del docente."""
-    decidio = player.field_maybe_none('precio') is not None
-    player.participant.vars['tablero'] = dict(
-        empresa=nombre(player),
-        mercado=player.group.id_in_subsession,
-        empresas_por_mercado=empresas_en_mercado(player),
-        id_en_mercado=player.id_in_group,
-        trimestre=player.round_number,
-        num_trimestres=num_rondas(player.session),
-        pagina=pagina,
-        decision=dict(precio=player.precio, publicidad=player.publicidad, produccion=player.produccion,
-                      estudios=[e for e, v in (('competencia', player.compra_competencia),
-                                               ('pronóstico', player.compra_pronostico),
-                                               ('sensibilidad', player.compra_sensibilidad)) if v])
-        if decidio else None,
-        inflacion=player.group.inflacion,
-        indice=player.group.indice,
+    """Guarda en participant.vars el resumen del equipo para el tablero del docente (nucleo/tablero.py)."""
+    etapa, estado = ETAPAS_TABLERO[pagina]
+    filas = historial(player)
+    ultima = filas[-1] if filas else None
+    player.participant.vars['tablero'] = tablero.resumen(
+        juego=C.NAME_IN_URL,
+        equipo=nombre(player),
+        rotulo_equipo='Empresa',
+        grupo_numero=player.group.id_in_subsession,
+        grupo_tipo='mercado',
+        grupo_tamano=empresas_en_mercado(player),
+        posicion=player.id_in_group,
+        ronda=player.round_number,
+        rondas=num_rondas(player.session),
+        etapa=etapa,
+        estado=estado,
         puesto=puesto_en_mercado(player),
-        historial=historial(player),
+        indicadores=[
+            tablero.indicador('Partic.', ultima and ultima['participacion'], 'pct'),
+            tablero.indicador('Acumulado', ultima and ultima['resultado_acumulado'], 'pesos', signo=True),
+        ],
+        decision=texto_decision(player),
+        columnas=COLUMNAS_TABLERO,
+        filas=filas,
+        nota_historial='Importes en pesos de cada trimestre; el acumulado está en moneda constante '
+                       '(pesos de su último trimestre).',
         devolucion=devolucion_de(player),
-        actualizado=time.time(),
     )
 
 

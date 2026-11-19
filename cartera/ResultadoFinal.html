@@ -1,0 +1,108 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Resultado final
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    {{ num_rondas }} trimestres, con una inflación acumulada de {{ inflacion_acumulada }}.
+    Las rentabilidades descuentan la inflación y se expresan como tasa efectiva anual (TEA).
+</p>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <h5>Ranking por rentabilidad real</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Puesto</th><th>Equipo</th><th class="text-end">TEA real</th></tr></thead>
+            <tbody>
+            {{ for f in ranking_tea }}
+            <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+                <td>{{ f.puesto }}</td><td>{{ f.nombre }}</td>
+                <td class="text-end {{ if f.negativo }}text-danger{{ endif }}">{{ f.valor }}</td>
+            </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h5>Ranking ajustado por riesgo</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Puesto</th><th>Equipo</th><th class="text-end">Sharpe</th></tr></thead>
+            <tbody>
+            {{ for f in ranking_sharpe }}
+            <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+                <td>{{ f.puesto }}</td><td>{{ f.nombre }}</td>
+                <td class="text-end {{ if f.negativo }}text-danger{{ endif }}">{{ f.valor }}</td>
+            </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+        <p class="small text-muted">
+            Índice de Sharpe: cuánto rindió por encima del plazo fijo por cada unidad de riesgo (volatilidad).
+        </p>
+    </div>
+</div>
+
+<h5 class="mt-2">Frente a las carteras de referencia</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead>
+        <tr><th>Cartera</th><th class="text-end">TEA real</th><th class="text-end">TEA en US$</th>
+            <th class="text-end">Volatilidad</th><th class="text-end">Sharpe</th>
+            <th class="text-end">Caída máxima</th><th class="text-end">Comisiones</th></tr>
+    </thead>
+    <tbody>
+    {{ for f in filas_ref }}
+        <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+            <td>{{ f.nombre }}</td>
+            <td class="text-end {{ if f.tea_real_neg }}text-danger{{ endif }}">{{ f.tea_real }}</td>
+            <td class="text-end {{ if f.tea_dolares_neg }}text-danger{{ endif }}">{{ f.tea_dolares }}</td>
+            <td class="text-end">{{ f.volatilidad }}</td>
+            <td class="text-end">{{ f.sharpe }}</td>
+            <td class="text-end">{{ f.caida_maxima }}</td>
+            <td class="text-end">{{ f.comisiones }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+</div>
+
+<h5 class="mt-2">Año por año ({{ nombre }})</h5>
+<table class="table table-sm w-auto">
+    {{ for a in anios }}
+    <tr><td>Año {{ a.anio }}{{ if a.parcial }} ({{ a.parcial }}){{ endif }}</td>
+        <td class="text-end {{ if a.negativo }}text-danger{{ endif }}">{{ a.rentabilidad }}</td></tr>
+    {{ endfor }}
+</table>
+
+<h5 class="mt-4">Devolución de {{ nombre }}</h5>
+<div class="devolucion mb-3">
+    {{ for o in devolucion }}
+    <div class="devolucion-item devolucion-{{ o.tipo }}">
+        <span class="devolucion-tema">{{ o.tema }}</span>
+        <span>{{ o.texto }}</span>
+    </div>
+    {{ endfor }}
+</div>
+
+{{ if comentario_docente }}
+<div class="comentario-docente mb-3">
+    <div class="comentario-titulo">Comentario del docente</div>
+    <div class="comentario-texto">{{ comentario_docente }}</div>
+</div>
+{{ else }}
+<p class="small text-muted" id="sin-comentario">
+    El docente todavía no dejó un comentario. Si lo hace, aparecerá aquí al
+    <a href="">recargar la página</a>.
+</p>
+{{ endif }}
+
+<h5 class="mt-4">Evolución</h5>
+{{ include "cartera/incluir_grafico.html" }}
+
+<p class="small text-muted">Escenario de mercado n.° {{ semilla }} (con este número el docente puede repetirlo).</p>
+<p>¡Gracias por participar!</p>
+
+{{ endblock }}

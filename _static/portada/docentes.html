@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="portada.css?v=3">
+    <link rel="stylesheet" href="portada.css?v=5">
 </head>
 <body class="pagina-docente">
 
@@ -21,7 +21,7 @@
         <nav class="menu" aria-label="Secciones">
             <span class="rol-actual">Docentes</span>
             <a href="#la-clase">La clase</a>
-            <a href="#el-juego">El juego</a>
+            <a href="#los-juegos">Los juegos</a>
             <a href="estudiantes.html" class="cambiar-rol">Soy estudiante</a>
         </nav>
     </div>
@@ -47,8 +47,8 @@
             </a>
             <a class="tarjeta" href="/static/docente/index.html#nueva">
                 <h3>Crear sesión en el aula</h3>
-                <p>Cantidad de equipos, tamaño de los mercados, trimestres y, si hace falta, los
-                   parámetros del mercado. Los equipos entran por el enlace del aula.</p>
+                <p>Juego, aula, cantidad de equipos, trimestres y, si hace falta, los parámetros
+                   del juego. Los equipos entran por el enlace del aula elegida.</p>
             </a>
             <a class="tarjeta" href="/demo">
                 <h3>Partidas de prueba</h3>
@@ -66,10 +66,18 @@
     <div class="contenedor">
         <div class="unirse">
             <div>
-                <h2>Enlace del aula para proyectar</h2>
-                <p>Los equipos entran con este enlace (o desde la portada, en <i>Soy estudiante</i>).</p>
-                <p class="enlace-aula"><code id="enlace-aula">/room/aula</code>
-                    <button type="button" class="boton boton-chico boton-secundario" id="copiar">Copiar</button></p>
+                <h2>Enlaces de las aulas para proyectar</h2>
+                <p>Hay tres aulas, para que puedan jugarse clases en paralelo: cada una tiene una sola
+                   sesión abierta a la vez, del juego que sea. Los equipos entran con el enlace del aula
+                   en la que crearon la sesión (o desde la portada, en <i>Soy estudiante</i>).</p>
+                <div class="aulas-enlaces">
+                    <p class="aula-enlace"><b>Aula 1</b> <code data-sala="aula">/room/aula</code>
+                        <button type="button" class="boton boton-chico boton-secundario" data-copiar="aula">Copiar</button></p>
+                    <p class="aula-enlace"><b>Aula 2</b> <code data-sala="aula2">/room/aula2</code>
+                        <button type="button" class="boton boton-chico boton-secundario" data-copiar="aula2">Copiar</button></p>
+                    <p class="aula-enlace"><b>Aula 3</b> <code data-sala="aula3">/room/aula3</code>
+                        <button type="button" class="boton boton-chico boton-secundario" data-copiar="aula3">Copiar</button></p>
+                </div>
             </div>
         </div>
     </div>
@@ -81,15 +89,13 @@
         <ol class="pasos pasos-cinco">
             <li>
                 <h3>Crear la sesión</h3>
-                <p>En <i>Crear sesión en el aula</i>, con <b>tantos equipos como haya en el curso</b>
-                   (cualquier cantidad) y el tamaño máximo de cada mercado. Si sobran lugares, el
-                   mercado incompleto no avanza.</p>
+                <p>En <i>Crear sesión en el aula</i>: el juego, un aula libre y <b>tantos equipos como
+                   haya en el curso</b>. Si sobran lugares, el grupo incompleto no avanza.</p>
             </li>
             <li>
                 <h3>Proyectar el enlace</h3>
-                <p>Cada equipo entra desde un solo dispositivo. Los equipos se reparten en mercados
-                   lo más parejos posible (por ejemplo, 10 equipos: mercados de 4, 3 y 3), que se
-                   completan a medida que entran.</p>
+                <p>El del aula elegida. Cada equipo entra desde un solo dispositivo y el juego los
+                   agrupa solo (en gaseosas, 10 equipos forman mercados de 4, 3 y 3).</p>
             </li>
             <li>
                 <h3>Seguir el juego</h3>
@@ -109,9 +115,9 @@
     </div>
 </section>
 
-<section id="el-juego" class="seccion">
+<section id="los-juegos" class="seccion">
     <div class="contenedor">
-        <h2>El juego</h2>
+        <h2>Los juegos</h2>
 
         <article class="juego">
             <div class="juego-cabecera">
@@ -171,6 +177,64 @@
             </details>
         </article>
 
+        <article class="juego">
+            <div class="juego-cabecera">
+                <div>
+                    <p class="antetitulo">Cartera de inversión</p>
+                    <h3>Acciones, bonos y liquidez</h3>
+                </div>
+                <span class="etiqueta">Versión 1</span>
+            </div>
+
+            <ul class="datos">
+                <li><b>Cualquier</b> cantidad de equipos</li>
+                <li><b>Todos</b> frente al mismo mercado</li>
+                <li><b>4 a 16</b> trimestres (informe anual cada 4)</li>
+                <li><b>1</b> dispositivo por equipo</li>
+            </ul>
+
+            <div class="juego-columnas">
+                <div>
+                    <h4>Qué decide cada equipo</h4>
+                    <ul>
+                        <li>Cada trimestre, el <b>porcentaje de la cartera</b> en acciones internacionales,
+                            bonos de renta fija y liquidez (de 5 % en 5 %).</li>
+                        <li>Antes de decidir ven un <b>titular</b> que anticipa, con error, cómo les irá a las
+                            acciones, las tasas vigentes y los rendimientos pasados.</li>
+                        <li>Rebalancear paga <b>comisión</b>.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Qué se aprende</h4>
+                    <ul>
+                        <li>Riesgo y rendimiento; diversificación.</li>
+                        <li>Rentabilidad nominal, real y en dólares; TNA y TEA.</li>
+                        <li>Duración de un bono y riesgo de tasa.</li>
+                        <li>Volatilidad, índice de Sharpe y caída máxima.</li>
+                        <li>El costo de rotar la cartera y de reaccionar a las noticias.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <details class="modelo">
+                <summary>Ver el modelo de mercado</summary>
+                <ul>
+                    <li>Un mismo <b>escenario</b> para toda la sesión, sorteado al crearla (con un número de
+                        escenario que permite repetirlo en otra comisión).</li>
+                    <li><b>Acciones:</b> rendimiento en dólares con media y volatilidad; en pesos suman la
+                        variación del dólar.</li>
+                    <li><b>Bonos:</b> inflación más una tasa real; su precio cae cuando sube la tasa real, según
+                        su duración.</li>
+                    <li><b>Plazo fijo:</b> tasa pactada con la inflación esperada, un poco por debajo de ella.</li>
+                    <li><b>Crisis</b> ocasionales: caen las acciones y los bonos, y salta el dólar. Las medias ya
+                        las incluyen.</li>
+                    <li>Ranking por <b>TEA real</b> y, al final, también por <b>Sharpe</b>; comparación con
+                        tres carteras de referencia.</li>
+                </ul>
+                <p class="nota">Los parámetros se ajustan al crear la sesión, sin tocar el código.</p>
+            </details>
+        </article>
+
         <p class="nota proximamente">Próximamente se sumarán nuevos juegos.</p>
     </div>
 </section>
@@ -191,21 +255,25 @@
 </footer>
 
 <script>
-    // Muestra el enlace completo del aula según el servidor en el que se abre la página.
+    // Muestra el enlace completo de cada aula según el servidor en el que se abre la página.
     (function () {
-        var url = window.location.origin + '/room/aula';
-        document.getElementById('enlace-aula').textContent = url;
-        document.getElementById('copiar').addEventListener('click', function (e) {
-            var boton = e.currentTarget;
-            var hecho = function () {
-                boton.textContent = 'Copiado';
-                setTimeout(function () { boton.textContent = 'Copiar'; }, 1800);
-            };
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(url).then(hecho, function () { window.prompt('Copiar el enlace del aula:', url); });
-            } else {
-                window.prompt('Copiar el enlace del aula:', url);
-            }
+        var enlace = function (sala) { return window.location.origin + '/room/' + sala; };
+        [].forEach.call(document.querySelectorAll('[data-sala]'), function (code) {
+            code.textContent = enlace(code.getAttribute('data-sala'));
+        });
+        [].forEach.call(document.querySelectorAll('[data-copiar]'), function (boton) {
+            boton.addEventListener('click', function () {
+                var url = enlace(boton.getAttribute('data-copiar'));
+                var hecho = function () {
+                    boton.textContent = 'Copiado';
+                    setTimeout(function () { boton.textContent = 'Copiar'; }, 1800);
+                };
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(url).then(hecho, function () { window.prompt('Copiar el enlace del aula:', url); });
+                } else {
+                    window.prompt('Copiar el enlace del aula:', url);
+                }
+            });
         });
     })();
 </script>

@@ -1,10 +1,11 @@
+{# Encabezado de las pantallas del juego: el nombre sale de C.TITULO_JUEGO y C.SUBTITULO_JUEGO de cada app. #}
 <header class="fceyj-encabezado">
     <div class="container">
         <img src="{{ static 'fceyj/logo-fceyj.png' }}"
              alt="Facultad de Ciencias Económicas y Jurídicas - Universidad Nacional de La Pampa">
         <div class="fceyj-sistema">
-            Simulador de comercialización
-            <small>Mercado de gaseosas</small>
+            {{ C.TITULO_JUEGO }}
+            <small>{{ C.SUBTITULO_JUEGO }}</small>
         </div>
     </div>
 </header>

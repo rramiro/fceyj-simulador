@@ -139,6 +139,12 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus { outline: no
     background: var(--celeste-claro); color: var(--indigo); border-left: 5px solid var(--celeste);
 }
 .vista-previa .advertencia { color: #7A4E0B; }
+.vista-previa:empty { display: none; }
+/* Los campos propios de cada juego se dibujan en la misma grilla que los básicos. */
+.campos-juego { display: contents; }
+.campo .nota { font-size: .85rem; }
+.etiqueta-juego { display: table; font-size: .78rem; font-weight: 700; color: var(--azul); margin-bottom: 3px;
+    background: var(--celeste-claro); border-radius: 999px; padding: .05em .6em; margin-right: 6px; }
 .parametros { margin: 6px 0 4px; background: var(--gris-fondo); border-radius: var(--radio); padding: 12px 16px; }
 .parametros summary { cursor: pointer; color: var(--azul); font-weight: 700; }
 .parametros > .nota { margin: 10px 0 12px; }

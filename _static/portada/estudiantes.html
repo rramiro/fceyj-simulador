@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap">
-    <link rel="stylesheet" href="portada.css?v=3">
+    <link rel="stylesheet" href="portada.css?v=5">
 </head>
 <body class="pagina-estudiante">
 
@@ -20,6 +20,7 @@
         <nav class="menu" aria-label="Secciones">
             <span class="rol-actual">Estudiantes</span>
             <a href="#como-se-juega">Cómo se juega</a>
+            <a href="#cartera">Cartera</a>
             <a href="docentes.html" class="cambiar-rol">Soy docente</a>
         </nav>
     </div>
@@ -37,9 +38,14 @@
             <div>
                 <p class="antetitulo antetitulo-claro">Estudiantes</p>
                 <h1>Entrar a la clase</h1>
-                <p>Cuando el docente lo indique, entren con su equipo. <b>Un solo dispositivo por equipo.</b></p>
+                <p>Cuando el docente lo indique, entren con su equipo al <b>aula que les diga</b>.
+                   <b>Un solo dispositivo por equipo.</b></p>
             </div>
-            <a href="/room/aula" class="boton boton-grande">Entrar al aula</a>
+            <div class="aulas">
+                <a href="/room/aula" class="boton boton-grande">Aula 1</a>
+                <a href="/room/aula2" class="boton boton-grande">Aula 2</a>
+                <a href="/room/aula3" class="boton boton-grande">Aula 3</a>
+            </div>
         </div>
     </div>
 </section>
@@ -60,13 +66,13 @@
             </div>
             <div class="consejo">
                 <h3>Si se les cierra la página</h3>
-                <p>Vuelvan a <b>Entrar al aula</b> desde el <b>mismo dispositivo y navegador</b>: retoman
+                <p>Vuelvan a entrar a <b>la misma aula</b> desde el <b>mismo dispositivo y navegador</b>: retoman
                    donde quedaron. Si tienen que cambiar de dispositivo, pídanle al docente el
                    enlace de su equipo.</p>
             </div>
             <div class="consejo">
-                <h3>El mercado avanza junto</h3>
-                <p>Cada trimestre se calcula cuando todas las empresas del mercado enviaron su
+                <h3>Se avanza en conjunto</h3>
+                <p>Cada trimestre se calcula cuando todos los equipos que juegan juntos enviaron su
                    decisión. Mientras esperan, la pantalla se actualiza sola.</p>
             </div>
         </div>
@@ -75,9 +81,9 @@
 
 <section id="como-se-juega" class="seccion seccion-gris">
     <div class="contenedor">
-        <h2>Cómo se juega</h2>
+        <h2>Cómo se juega: Comercialización</h2>
         <p class="bajada">
-            Dirigen una empresa de gaseosas que compite con otras empresas del curso en el mismo mercado durante
+            En el juego del mercado de gaseosas dirigen una empresa de gaseosas que compite con otras empresas del curso en el mismo mercado durante
             varios trimestres. En cada trimestre:
         </p>
         <ol class="pasos">
@@ -116,8 +122,47 @@
             </ul>
         </div>
 
-        <div class="acciones acciones-centro">
-            <a href="/room/aula" class="boton">Entrar al aula</a>
+    </div>
+</section>
+
+<section id="cartera" class="seccion">
+    <div class="contenedor">
+        <h2>Cómo se juega: Cartera de inversión</h2>
+        <p class="bajada">
+            Administran una cartera de inversión durante varios trimestres. Todos los equipos enfrentan
+            el mismo mercado; lo que cambia es cómo reparte cada uno su dinero. En cada trimestre:
+        </p>
+        <ol class="pasos">
+            <li>
+                <h3>Leen la situación</h3>
+                <p>El titular del día, las tasas vigentes y lo que rindió cada activo hasta ahora.</p>
+            </li>
+            <li>
+                <h3>Reparten la cartera</h3>
+                <p>Qué porcentaje va a <b>acciones internacionales</b>, a <b>bonos de renta fija</b> y a
+                   <b>liquidez</b>. Suman 100 %.</p>
+            </li>
+            <li>
+                <h3>Esperan a la clase</h3>
+                <p>Cuando todos los equipos decidieron, se conoce lo que pasó en el mercado.</p>
+            </li>
+            <li>
+                <h3>Ven los resultados</h3>
+                <p>Cuánto rindió cada activo y su cartera, en pesos, descontada la inflación y en
+                   dólares. Cada año, un informe con el ranking.</p>
+            </li>
+        </ol>
+
+        <div class="claves">
+            <h3>Para tener en cuenta</h3>
+            <ul>
+                <li>Las acciones son las que más rinden en promedio, pero también las que más varían.</li>
+                <li>Las acciones se compran en dólares: si el dólar sube, ganan en pesos.</li>
+                <li>El plazo fijo no tiene riesgo en pesos, pero con inflación suele perder en términos reales.</li>
+                <li>Cada compra o venta de acciones y bonos paga comisión: cambiar todo el tiempo cuesta.</li>
+                <li>Los titulares a veces aciertan y a veces no.</li>
+                <li>Gana la mayor <b>rentabilidad real</b>; también hay un ranking ajustado por riesgo.</li>
+            </ul>
         </div>
     </div>
 </section>

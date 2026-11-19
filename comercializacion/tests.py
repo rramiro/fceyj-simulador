@@ -47,7 +47,12 @@ class PlayerBot(Bot):
         # El tablero del docente: tiene que existir y ser JSON (lo lee la API REST).
         tablero = self.participant.vars['tablero']
         json.dumps(tablero)
-        expect(len(tablero['historial']), self.round_number)
+        expect(tablero['version'], 2)
+        expect(tablero['etapa'], 'resultados')
+        expect(tablero['ronda']['actual'], self.round_number)
+        expect(len(tablero['historial']['filas']), self.round_number)
+        claves = [c['clave'] for c in tablero['historial']['columnas']]
+        expect(all(set(f) == set(claves) for f in tablero['historial']['filas']), True)
         expect(len(tablero['devolucion']), '>', 0)
         yield Resultados
 

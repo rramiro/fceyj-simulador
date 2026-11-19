@@ -42,6 +42,10 @@ Modelo (Versión 3)
 
 import math
 
+# La inflación y la moneda constante son comunes a todos los juegos (nucleo/inflacion.py);
+# se reexportan acá para que el modelo y los scripts las sigan usando como mercado.*.
+from nucleo.inflacion import acumular_constante, reexpresar, siguiente_indice  # noqa: F401
+
 # Parámetros que necesita el modelo (todos deben estar en `params`).
 # Los montos están en pesos del primer trimestre (se indexan por inflación).
 PARAMETROS = [
@@ -78,22 +82,6 @@ def demanda_del_mercado(demanda_por_empresa, empresas):
     """D0 del mercado: crece con la cantidad de empresas para que el negocio de cada una
     sea comparable sin importar cuántas compitan (lo que cambia es la competencia)."""
     return demanda_por_empresa * empresas
-
-
-# --- Inflación ---------------------------------------------------------------
-
-def siguiente_indice(indice_anterior, inflacion):
-    return indice_anterior * (1 + inflacion)
-
-
-def reexpresar(monto, indice_origen, indice_destino):
-    """Lleva un monto en pesos de un trimestre a pesos de otro (moneda constante)."""
-    return monto * indice_destino / indice_origen
-
-
-def acumular_constante(acumulado_anterior, indice_anterior, resultado, indice):
-    """Resultado acumulado en pesos del trimestre actual."""
-    return reexpresar(acumulado_anterior, indice_anterior, indice) + resultado
 
 
 # --- Componentes del modelo --------------------------------------------------
