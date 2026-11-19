@@ -93,7 +93,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Hecho: catálogo `_static/juegos/catalogo.json` (verificado en CI), selector de juego y aula en el tablero, aulas `aula`, `aula2` y `aula3` (oTree no admite guiones), portada con los dos juegos y encabezado según el juego. |
 | 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | Hecho: `cartera/modelo.py` y `scripts/simular_cartera.py` (en CI); calibración revisada (sección 6). |
 | 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Hecho: se juega de punta a punta (probado en el navegador); bots en CI; nueva huella del esquema `16850cfe99019762`. |
-| 7 | Integración y prueba en testing. | CI corre los bots de los dos juegos. Prueba en el aula antes de unir a `main`. |
+| 7 | Integración y prueba en testing. | Hecho: desplegada en testing con el disparo manual por rama (base recreada, huella `16850cfe99019762`) y unida a `main` el 2026-11-19, sin la prueba en el aula (a pedido del docente). |
 | 8 | Documentación: portada y `DESPLIEGUE.md`. | — |
 
 ## 5. Decisiones (aprobadas el 2026-11-19)
