@@ -94,7 +94,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | Hecho: `cartera/modelo.py` y `scripts/simular_cartera.py` (en CI); calibración revisada (sección 6). |
 | 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Hecho: se juega de punta a punta (probado en el navegador); bots en CI; nueva huella del esquema `16850cfe99019762`. |
 | 7 | Integración y prueba en testing. | Hecho: desplegada en testing con el disparo manual por rama (base recreada, huella `16850cfe99019762`) y unida a `main` el 2026-11-19, sin la prueba en el aula (a pedido del docente). |
-| 8 | Documentación: portada y `DESPLIEGUE.md`. | — |
+| 8 | Documentación: portada y `DESPLIEGUE.md`. | Hecho: `DESPLIEGUE.md` explica juegos, aulas, catálogo, cómo probar una rama en testing y cómo sumar un juego nuevo. |
 
 ## 5. Decisiones (aprobadas el 2026-11-19)
 

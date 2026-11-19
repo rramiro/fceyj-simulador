@@ -127,6 +127,11 @@ Probar en `https://test.simulador.eco.unlpam.edu.ar/` y `https://simulador.eco.u
   haya funcionado y **Re-run all jobs**; o en el servidor:
   `sudo -u despliegue /opt/simulador/bin/desplegar.sh produccion ghcr.io/rramiro/fceyj-simulador:sha-<commit>`.
 - **Si la versión nueva no arranca**, `desplegar.sh` vuelve solo a la anterior y el workflow falla.
+- **Probar una rama en testing antes de unirla a `main`:** **Actions → Despliegue → Run workflow**,
+  elegir la rama. Corre las pruebas, construye la imagen (etiquetada con el nombre de la rama) y la
+  despliega **solo en testing**: desde una rama que no es `main` nunca se llega a producción. El
+  próximo push a `main` vuelve a poner `main` en testing. Si la rama cambia el esquema, testing
+  recrea su base (ver más abajo), y otra vez al volver a `main` si no se unió.
 
 ## Tablero docente
 
@@ -135,21 +140,27 @@ ventana de **Ingreso docente**: usuario `admin` y la contraseña de administraci
 el mismo login de oTree, así que un solo ingreso sirve para el tablero y para el panel de oTree
 (crear sesiones, datos). *Cerrar sesión* está arriba a la derecha.
 
-- Lista las sesiones del simulador (las partidas de *Demo* no aparecen: se abren por código).
-- Para cada mercado muestra en qué trimestre y en qué pantalla está cada equipo, quién está
-  demorando al mercado, la participación, el resultado acumulado y el puesto. Se actualiza solo
-  cada 10 segundos.
+- Lista las sesiones de todos los juegos, con el nombre del juego (las partidas de *Demo* no
+  aparecen: se abren por código).
+- **Nueva sesión en el aula:** se elige el juego y el aula (dice cuáles están libres y avisa si la
+  elegida ya tiene una sesión abierta), la cantidad de equipos, los campos propios del juego
+  (tamaño de los mercados, trimestres, etc.) y, opcionalmente, sus parámetros.
+- Para cada grupo (en gaseosas, cada mercado; en la cartera, toda la clase) muestra en qué
+  trimestre y en qué pantalla está cada equipo, quién está demorando al grupo, los indicadores
+  del juego y el puesto. Se actualiza solo cada 10 segundos.
 - Al elegir un equipo: su historial trimestre a trimestre, la **devolución automática**
-  (reglas en `comercializacion/devolucion.py`) y un cuadro para el **comentario del docente**.
+  (reglas en `devolucion.py` de cada juego) y un cuadro para el **comentario del docente**.
   El equipo ve la devolución y el comentario en su pantalla de resultado final.
+- **Descargar datos (CSV):** los datos de la sesión, de la app de su juego.
 - **Papelera:** *Eliminar* (en la lista o dentro de la sesión) mueve la sesión a la papelera:
   deja de aparecer en la lista, pero **no se borra ningún dato** (borrado lógico: se guarda la
   marca `papelera` en `session.vars`). Desde *Papelera* se recupera con un clic. Los equipos que
   tengan el enlace de una sesión eliminada todavía pueden entrar. Para borrarla de verdad hay que
   usar *Delete* en el panel de oTree (*Sessions*), y eso no tiene vuelta atrás.
 
-Cómo funciona: el juego guarda el estado de cada equipo en `participant.vars['tablero']` y el
-tablero lo lee con la API REST de oTree. En el servidor, Caddy protege `/api/`: solo deja pasar
+Cómo funciona: cada juego guarda el estado de cada equipo en `participant.vars['tablero']`, con
+un formato común a todos los juegos (`nucleo/tablero.py`), y el tablero lo lee con la API REST
+de oTree sin saber de qué juego se trata. En el servidor, Caddy protege `/api/`: solo deja pasar
 pedidos con el encabezado `X-Tablero` (los que hace el tablero) de un navegador con la sesión de
 administración de oTree iniciada (lo consulta a oTree en `/server_check`). Si no hay sesión
 responde 401 y el tablero muestra la ventana de ingreso. Recién entonces agrega la clave REST
@@ -178,6 +189,41 @@ sesión iniciada tiene que volver a ingresar. Guarda una copia de la configuraci
 
 En la computadora (`otree devserver`) la API no pide clave: el tablero funciona directamente en
 `http://localhost:8000/static/docente/index.html`.
+
+## Juegos y aulas
+
+**Juegos.** Cada juego es una app de oTree con su configuración en `settings.py`:
+
+| Juego | App | Modelo (funciones puras) | Calibración |
+|---|---|---|---|
+| Comercialización — Mercado de gaseosas | `comercializacion/` | `mercado.py` | `python scripts/simular_mercado.py` |
+| Cartera de inversión | `cartera/` | `modelo.py` | `python scripts/simular_cartera.py` |
+
+Lo que comparten está en `nucleo/`: formato de números, inflación y moneda constante, el
+resumen para el tablero y los ajustes de oTree (la página de aula llena).
+
+**Aulas.** Hay tres: `aula`, `aula2` y `aula3` (enlaces `/room/aula`, `/room/aula2` y
+`/room/aula3`). Cada una tiene **una sola sesión abierta a la vez**, del juego que sea: con tres
+aulas puede haber tres clases en paralelo. Crear una sesión nueva en un aula ocupada la reemplaza
+para quienes entren por el enlace; la anterior sigue en la lista con sus datos. oTree no admite
+guiones en el nombre de un aula.
+
+**Catálogo.** `_static/juegos/catalogo.json` lista los juegos, sus campos y parámetros editables
+y las aulas; lo leen la portada y el tablero. `python scripts/verificar_catalogo.py` (también en
+CI) controla que coincida con `settings.py`.
+
+### Sumar un juego nuevo
+
+1. Crear la app (`<juego>/__init__.py`, plantillas, `tests.py`) con su modelo en funciones
+   puras y un script de calibración en `scripts/`. En `C`, `TITULO_JUEGO` y `SUBTITULO_JUEGO`
+   (los muestra el encabezado).
+2. Guardar el resumen de cada equipo con `nucleo.tablero.resumen()` en cada página.
+3. Agregar su configuración en `SESSION_CONFIGS` de `settings.py` y su entrada en
+   `_static/juegos/catalogo.json` (`"estado": "proximamente"` lo muestra sin dejar elegirlo).
+4. Sumar sus bots y su script a `.github/workflows/ci.yml`.
+5. Contarlo en la portada (`_static/portada/`: inicio, estudiantes y docentes).
+6. Probarlo en testing desde su rama (ver *Uso diario*). Una app nueva cambia el esquema:
+   testing recrea su base, y para producción hay que seguir los pasos de la sección siguiente.
 
 ## Cambios en el modelo (columnas de la base)
 
