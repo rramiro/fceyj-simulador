@@ -16,3 +16,7 @@ __pycache__/
 # Configuración local de prueba del stack Docker
 deploy/local/.env
 deploy/local/respaldos/
+
+# Material de cátedra: solo en esta computadora (ver material-catedra/README.md)
+material-catedra/*
+!material-catedra/README.md
