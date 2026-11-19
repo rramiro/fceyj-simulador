@@ -1,9 +1,8 @@
 import random
-import time
 
 from otree.api import *
 
-from nucleo import ajustes_otree, inflacion
+from nucleo import ajustes_otree, inflacion, tablero
 from nucleo.formato import numero, pesos, porcentaje
 from nucleo.inflacion import truncada
 
@@ -500,28 +499,71 @@ def devolucion_de(player: Player):
     return devolucion.diagnosticar(filas, puesto, empresas_en_mercado(player), terminado)
 
 
+# Pantalla en la que está el equipo -> (etapa del tablero, texto del estado).
+ETAPAS_TABLERO = {
+    'Instrucciones': ('decidiendo', 'Leyendo instrucciones'),
+    'Investigación de mercado': ('decidiendo', 'Investigación'),
+    'Decisión': ('decidiendo', 'Decidiendo'),
+    'Esperando a las demás empresas': ('esperando', 'Decisión enviada'),
+    'Resultados listos': ('resultados', 'Resultados listos'),
+    'Viendo resultados': ('resultados', 'Viendo resultados'),
+    'Terminó': ('termino', 'Terminó'),
+}
+
+COLUMNAS_TABLERO = [
+    tablero.columna('trimestre', 'T', 'ronda'),
+    tablero.columna('precio', 'Precio', 'pesos2'),
+    tablero.columna('precio_medio', 'Precio medio', 'pesos2'),
+    tablero.columna('publicidad', 'Publicidad', 'pesos'),
+    tablero.columna('produccion', 'Producción', 'numero'),
+    tablero.columna('unidades', 'Vendidas', 'numero'),
+    tablero.columna('faltante', 'Faltante', 'numero'),
+    tablero.columna('stock_final', 'Stock final', 'numero'),
+    tablero.columna('participacion', 'Partic.', 'pct'),
+    tablero.columna('resultado', 'Resultado', 'pesos', signo=True),
+    tablero.columna('resultado_acumulado', 'Acumulado', 'pesos', signo=True),
+]
+
+
+def texto_decision(player: Player):
+    """La decisión enviada, en una línea (el tablero la muestra mientras el equipo espera)."""
+    if player.field_maybe_none('precio') is None:
+        return None
+    estudios = [e for e, v in (('competencia', player.compra_competencia),
+                               ('pronóstico', player.compra_pronostico),
+                               ('sensibilidad', player.compra_sensibilidad)) if v]
+    return (f'precio {pesos(player.precio, 2)}, publicidad {pesos(player.publicidad)}, '
+            f'producción {numero(player.produccion)} u.'
+            + (f' (estudios: {", ".join(estudios)})' if estudios else ''))
+
+
 def actualizar_tablero(player: Player, pagina: str):
-    """Guarda en participant.vars el estado del equipo para el tablero del docente."""
-    decidio = player.field_maybe_none('precio') is not None
-    player.participant.vars['tablero'] = dict(
-        empresa=nombre(player),
-        mercado=player.group.id_in_subsession,
-        empresas_por_mercado=empresas_en_mercado(player),
-        id_en_mercado=player.id_in_group,
-        trimestre=player.round_number,
-        num_trimestres=num_rondas(player.session),
-        pagina=pagina,
-        decision=dict(precio=player.precio, publicidad=player.publicidad, produccion=player.produccion,
-                      estudios=[e for e, v in (('competencia', player.compra_competencia),
-                                               ('pronóstico', player.compra_pronostico),
-                                               ('sensibilidad', player.compra_sensibilidad)) if v])
-        if decidio else None,
-        inflacion=player.group.inflacion,
-        indice=player.group.indice,
+    """Guarda en participant.vars el resumen del equipo para el tablero del docente (nucleo/tablero.py)."""
+    etapa, estado = ETAPAS_TABLERO[pagina]
+    filas = historial(player)
+    ultima = filas[-1] if filas else None
+    player.participant.vars['tablero'] = tablero.resumen(
+        juego=C.NAME_IN_URL,
+        equipo=nombre(player),
+        grupo_numero=player.group.id_in_subsession,
+        grupo_tipo='mercado',
+        grupo_tamano=empresas_en_mercado(player),
+        posicion=player.id_in_group,
+        ronda=player.round_number,
+        rondas=num_rondas(player.session),
+        etapa=etapa,
+        estado=estado,
         puesto=puesto_en_mercado(player),
-        historial=historial(player),
+        indicadores=[
+            tablero.indicador('Partic.', ultima and ultima['participacion'], 'pct'),
+            tablero.indicador('Acumulado', ultima and ultima['resultado_acumulado'], 'pesos', signo=True),
+        ],
+        decision=texto_decision(player),
+        columnas=COLUMNAS_TABLERO,
+        filas=filas,
+        nota_historial='Importes en pesos de cada trimestre; el acumulado está en moneda constante '
+                       '(pesos de su último trimestre).',
         devolucion=devolucion_de(player),
-        actualizado=time.time(),
     )
 
 

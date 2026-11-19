@@ -89,7 +89,7 @@ borra y recrea su base sola. Producción todavía no se usa, así que no afecta.
 | 0 | Crear la rama `multijuego` desde `main`. | Hecho. |
 | 1 | Acordar las decisiones de diseño. | Hecho (sección 5). |
 | 2 | Sacar a `nucleo/` lo común, sin cambiar comportamiento. | Hecho: `nucleo/` con formato, inflación y ajustes de oTree; bots, simulación idéntica y huella `96a288a9b1ed499a` sin cambios. |
-| 3 | Resumen y tablero genéricos, con gaseosas migrado al nuevo formato. | El tablero se ve exactamente igual que hoy. |
+| 3 | Resumen y tablero genéricos, con gaseosas migrado al nuevo formato. | Hecho: `nucleo/tablero.py` define el resumen común (versión 2) y el tablero lo muestra sin código propio de cada juego; se ve igual que antes. |
 | 4 | Catálogo: portada, selector de juego en "Nueva sesión" y salas. | Se puede crear una sesión de gaseosas desde el selector. |
 | 5 | Modelo de la cartera como funciones puras, más `scripts/simular_cartera.py`. | El docente revisa los números y la calibración. |
 | 6 | App `cartera`: pantallas, gráficos, devolución, tablero y bots. | Se juega de punta a punta. |

@@ -1,0 +1,72 @@
+"""
+Resumen de cada equipo para el tablero del docente (formato común a todos los juegos).
+
+El tablero (_static/docente/docente.js) lee los participantes con la API REST de
+oTree, que solo expone participant.vars. Cada juego guarda en
+participant.vars['tablero'] el dict que arma `resumen()` y el tablero lo
+muestra sin saber de qué juego se trata.
+
+Formato (versión 2; todo en tipos JSON):
+
+    version       2
+    juego         nombre de la app ('comercializacion', 'cartera', ...)
+    equipo        nombre del equipo o empresa
+    grupo         {numero, tipo, tamano, posicion}: equipos que avanzan juntos.
+                  `tipo` es un sustantivo masculino ('mercado', 'grupo') que el
+                  tablero usa en frases como "este mercado" o "su mercado".
+    ronda         {actual, total, nombre, abrev}, p. ej. {3, 4, 'trimestre', 'T'}
+    etapa         'decidiendo' | 'esperando' | 'resultados' | 'termino'
+    estado        texto corto de la pantalla en la que está ('Decidiendo')
+    puesto        posición dentro del grupo (o None si todavía no hay resultados)
+    indicadores   [{etiqueta, valor, formato, signo}] columnas de la tabla del grupo
+    decision      texto de la decisión enviada (se muestra mientras espera) o None
+    historial     {columnas: [{clave, etiqueta, formato, signo}], filas: [{clave: valor}], nota}
+    devolucion    [{tipo, tema, texto}] (ver devolucion.py de cada juego)
+    actualizado   segundos desde 1970
+
+Formatos de número que entiende el tablero: 'pesos', 'pesos2' (con centavos),
+'numero', 'pct' (0.25 -> 25 %), 'ronda' (3 -> T3) y 'texto'. `signo=True`
+marca en rojo los valores negativos.
+"""
+import time
+
+VERSION = 2
+ETAPAS = ('decidiendo', 'esperando', 'resultados', 'termino')
+FORMATOS = ('pesos', 'pesos2', 'numero', 'pct', 'ronda', 'texto')
+
+
+def columna(clave, etiqueta, formato='texto', signo=False):
+    """Columna del historial."""
+    assert formato in FORMATOS, formato
+    return dict(clave=clave, etiqueta=etiqueta, formato=formato, signo=signo)
+
+
+def indicador(etiqueta, valor, formato='texto', signo=False):
+    """Dato de la tabla del grupo (una columna por indicador)."""
+    assert formato in FORMATOS, formato
+    return dict(etiqueta=etiqueta, valor=valor, formato=formato, signo=signo)
+
+
+def resumen(*, juego, equipo, grupo_numero, grupo_tipo, grupo_tamano, posicion,
+            ronda, rondas, etapa, estado, puesto=None, indicadores=(), decision=None,
+            columnas=(), filas=(), nota_historial='', devolucion=(),
+            nombre_ronda='trimestre', abrev_ronda='T'):
+    assert etapa in ETAPAS, etapa
+    claves = [c['clave'] for c in columnas]
+    return dict(
+        version=VERSION,
+        juego=juego,
+        equipo=equipo,
+        grupo=dict(numero=grupo_numero, tipo=grupo_tipo, tamano=grupo_tamano, posicion=posicion),
+        ronda=dict(actual=ronda, total=rondas, nombre=nombre_ronda, abrev=abrev_ronda),
+        etapa=etapa,
+        estado=estado,
+        puesto=puesto,
+        indicadores=list(indicadores),
+        decision=decision,
+        historial=dict(columnas=list(columnas),
+                       filas=[{k: f.get(k) for k in claves} for f in filas],
+                       nota=nota_historial if filas else ''),
+        devolucion=list(devolucion),
+        actualizado=time.time(),
+    )

@@ -6,7 +6,9 @@
  *   POST /api/get_session/<código>        participantes + participant.vars pedidos
  *   POST /api/participant_vars/<código>   guarda el comentario del docente
  *
- * El juego guarda el estado de cada equipo en participant.vars['tablero'].
+ * Cada juego guarda el estado de cada equipo en participant.vars['tablero'], con
+ * un formato común a todos los juegos (ver nucleo/tablero.py): el tablero no
+ * sabe de qué juego se trata, solo muestra grupos, indicadores e historial.
  * En el servidor, Caddy protege esta página y /api/ con contraseña y agrega la
  * clave REST que pide oTree (ver deploy/proxy/Caddyfile).
  *
@@ -28,6 +30,26 @@
     function pesos(x, dec) { return x == null ? '—' : (x < 0 ? '-$ ' : '$ ') + (dec ? nf2 : nf0).format(Math.abs(x)); }
     function numero(x) { return x == null ? '—' : nf0.format(x); }
     function pct(x) { return x == null ? '—' : nf0.format(x * 100) + ' %'; }
+
+    /* Formatos que declara cada juego en su resumen (nucleo/tablero.py). */
+    function formatear(valor, formato, tab) {
+        if (valor == null) { return '—'; }
+        switch (formato) {
+            case 'pesos': return pesos(valor);
+            case 'pesos2': return pesos(valor, true);
+            case 'numero': return numero(valor);
+            case 'pct': return pct(valor);
+            case 'ronda': return tab.ronda.abrev + valor;
+            default: return String(valor);
+        }
+    }
+
+    function claseNumero(valor, def) {
+        if (def.formato === 'texto') { return ''; }
+        return 'num' + (def.signo && valor != null && valor < 0 ? ' negativo' : '');
+    }
+
+    function mayuscula(texto) { return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : ''; }
 
     /* Crea un elemento. hijos: texto o nodos (el texto siempre como texto, nunca HTML). */
     function el(tag, attrs, hijos) {
@@ -327,24 +349,11 @@
     }
 
     // ----------------------------------------------------------------- estados
-    var ETAPAS = {
-        'Instrucciones': ['decidiendo', 'Leyendo instrucciones'],
-        'Investigación de mercado': ['decidiendo', 'Investigación'],
-        'Decisión': ['decidiendo', 'Decidiendo'],
-        'Esperando a las demás empresas': ['esperando', 'Decisión enviada'],
-        'Resultados listos': ['resultados', 'Resultados listos'],
-        'Viendo resultados': ['resultados', 'Viendo resultados'],
-        'Terminó': ['termino', 'Terminó']
-    };
-
     function etapa(t) {
         if (!t) { return {clase: 'sin-ingresar', texto: 'Sin ingresar'}; }
-        var e = ETAPAS[t.pagina] || ['decidiendo', t.pagina];
-        var texto = e[0] === 'termino' ? e[1] : 'T' + t.trimestre + ' · ' + e[1];
-        return {clase: e[0], texto: texto};
+        var texto = t.etapa === 'termino' ? t.estado : t.ronda.abrev + t.ronda.actual + ' · ' + t.estado;
+        return {clase: t.etapa, texto: texto};
     }
-
-    function ultimo(t) { return t && t.historial && t.historial.length ? t.historial[t.historial.length - 1] : null; }
 
     // ----------------------------------------------------- enlaces de los equipos
     // El enlace personal lleva al equipo a la pantalla donde quedó, desde cualquier dispositivo.
@@ -562,6 +571,10 @@
             var firma = JSON.stringify(datos.participants);
             if (firma === estado.firma) { return; }
             estado.firma = firma;
+            // Resúmenes de una versión anterior del simulador: se ignoran (formato distinto).
+            (datos.participants || []).forEach(function (p) {
+                if (p.tablero && p.tablero.version !== 2) { p.tablero = null; }
+            });
             estado.datos = datos;
             if (datos.label) { $('titulo-sesion').textContent = datos.label + ' (' + codigo + ')'; }
             dibujarSesion();
@@ -574,15 +587,16 @@
         var participantes = estado.datos.participants || [];
         var mercados = {}, sinIngresar = [];
         participantes.forEach(function (p) {
-            if (p.tablero) { (mercados[p.tablero.mercado] = mercados[p.tablero.mercado] || []).push(p); }
+            if (p.tablero) { (mercados[p.tablero.grupo.numero] = mercados[p.tablero.grupo.numero] || []).push(p); }
             else { sinIngresar.push(p); }
         });
 
         // Resumen
         var conTablero = participantes.filter(function (p) { return p.tablero; });
-        var terminaron = conTablero.filter(function (p) { return p.tablero.pagina === 'Terminó'; }).length;
-        var trimestres = conTablero.map(function (p) { return p.tablero.trimestre; });
-        var total = conTablero.length ? conTablero[0].tablero.num_trimestres : null;
+        var terminaron = conTablero.filter(function (p) { return p.tablero.etapa === 'termino'; }).length;
+        var trimestres = conTablero.map(function (p) { return p.tablero.ronda.actual; });
+        var ronda = conTablero.length ? conTablero[0].tablero.ronda : {total: null, nombre: 'trimestre', abrev: 'T'};
+        var total = ronda.total;
         var minT = trimestres.length ? Math.min.apply(null, trimestres) : null;
         var maxT = trimestres.length ? Math.max.apply(null, trimestres) : null;
         var resumen = $('resumen');
@@ -590,13 +604,14 @@
         [
             [participantes.length, 'equipos en la sesión'],
             [conTablero.length + ' / ' + participantes.length, 'ingresaron'],
-            [minT == null ? '—' : (minT === maxT ? 'T' + minT : 'T' + minT + '–T' + maxT) + (total ? ' de ' + total : ''), 'trimestre en curso'],
+            [minT == null ? '—' : (minT === maxT ? ronda.abrev + minT : ronda.abrev + minT + '–' + ronda.abrev + maxT) +
+                (total ? ' de ' + total : ''), ronda.nombre + ' en curso'],
             [terminaron, 'terminaron el juego']
         ].forEach(function (d) { resumen.appendChild(el('div', {class: 'dato'}, [el('b', null, String(d[0])), el('span', null, d[1])])); });
 
         // Tamaño de los mercados (por si algún tablero viejo no lo informa).
         estado.tamMercado = Math.max.apply(null, [0].concat(Object.keys(mercados).map(function (m) {
-            return mercados[m][0].tablero.empresas_por_mercado || mercados[m].length;
+            return mercados[m][0].tablero.grupo.tamano || mercados[m].length;
         })));
 
         // Mercados
@@ -625,47 +640,50 @@
     }
 
     function dibujarMercado(numeroMercado, equipos) {
-        equipos.sort(function (a, b) { return a.tablero.id_en_mercado - b.tablero.id_en_mercado; });
-        var t = Math.max.apply(null, equipos.map(function (p) { return p.tablero.trimestre; }));
-        // Si alguien ya envió la decisión del trimestre, los que todavía deciden demoran al mercado.
-        var hayEsperando = equipos.some(function (p) { return p.tablero.trimestre === t && p.tablero.pagina === 'Esperando a las demás empresas'; });
+        equipos.sort(function (a, b) { return a.tablero.grupo.posicion - b.tablero.grupo.posicion; });
+        var primero = equipos[0].tablero, tipo = primero.grupo.tipo;
+        var t = Math.max.apply(null, equipos.map(function (p) { return p.tablero.ronda.actual; }));
+        // Si alguien ya envió la decisión de la ronda, los que todavía deciden demoran al grupo.
+        var hayEsperando = equipos.some(function (p) { return p.tablero.ronda.actual === t && p.tablero.etapa === 'esperando'; });
         var demoran = equipos.filter(function (p) {
-            return hayEsperando && p.tablero.trimestre === t && etapa(p.tablero).clase === 'decidiendo';
+            return hayEsperando && p.tablero.ronda.actual === t && p.tablero.etapa === 'decidiendo';
         });
-        // Equipos del mercado que todavía no abrieron el juego (no tienen tablero).
-        var faltan = (equipos[0].tablero.empresas_por_mercado || estado.tamMercado || equipos.length) - equipos.length;
+        // Equipos del grupo que todavía no abrieron el juego (no tienen tablero).
+        var faltan = (primero.grupo.tamano || estado.tamMercado || equipos.length) - equipos.length;
 
         var filas = equipos.map(function (p) {
-            var tab = p.tablero, u = ultimo(tab), e = etapa(tab);
+            var tab = p.tablero, e = etapa(tab);
             var demora = demoran.indexOf(p) >= 0;
             return el('tr', {class: 'fila-equipo', tabindex: '0', role: 'button',
                              onclick: function () { abrirDetalle(p.code); },
                              onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrirDetalle(p.code); } }}, [
-                el('td', null, [el('span', {class: 'empresa'}, tab.empresa),
+                el('td', null, [el('span', {class: 'empresa'}, tab.equipo),
                                 p.comentario_docente ? el('span', {class: 'marca-comentario', title: 'Tiene comentario del docente'}, ' ✎') : null]),
-                el('td', null, el('span', {class: 'chip chip-' + (demora ? 'bloquea' : e.clase)}, demora ? e.texto + ' · lo esperan' : e.texto)),
-                el('td', {class: 'num'}, u ? pct(u.participacion) : '—'),
-                el('td', {class: 'num' + (u && u.resultado_acumulado < 0 ? ' negativo' : '')}, u ? pesos(u.resultado_acumulado) : '—'),
+                el('td', null, el('span', {class: 'chip chip-' + (demora ? 'bloquea' : e.clase)}, demora ? e.texto + ' · lo esperan' : e.texto))
+            ].concat((tab.indicadores || []).map(function (d) {
+                return el('td', {class: claseNumero(d.valor, d)}, formatear(d.valor, d.formato, tab));
+            })).concat([
                 el('td', {class: 'num'}, tab.puesto ? tab.puesto + '°' : '—'),
-                el('td', null, botonEnlace(p.code, tab.empresa))
-            ]);
+                el('td', null, botonEnlace(p.code, tab.equipo))
+            ]));
         });
 
         return el('section', {class: 'mercado'}, [
             el('div', {class: 'mercado-cabecera'}, [
-                el('h2', null, 'Mercado ' + numeroMercado),
-                el('span', {class: 'nota'}, 'Trimestre ' + t)
+                el('h2', null, mayuscula(tipo) + ' ' + numeroMercado),
+                el('span', {class: 'nota'}, mayuscula(primero.ronda.nombre) + ' ' + t)
             ]),
             demoran.length ? el('p', {class: 'aviso-espera'},
-                'El mercado espera a: ' + demoran.map(function (p) { return p.tablero.empresa; }).join(', ') + '.') : null,
+                'El ' + tipo + ' espera a: ' + demoran.map(function (p) { return p.tablero.equipo; }).join(', ') + '.') : null,
             faltan > 0 ? el('p', {class: 'aviso-espera'},
                 (faltan === 1 ? 'Falta que ingrese 1 equipo' : 'Faltan que ingresen ' + faltan + ' equipos') +
-                ' a este mercado: hasta entonces no avanza.') : null,
+                ' a este ' + tipo + ': hasta entonces no avanza.') : null,
             el('div', {class: 'tabla-desplazable'}, el('table', {class: 'tabla'}, [
-                el('thead', null, el('tr', null, [
-                    el('th', null, 'Empresa'), el('th', null, 'Estado'), el('th', {class: 'num'}, 'Partic.'),
-                    el('th', {class: 'num'}, 'Acumulado'), el('th', {class: 'num'}, 'Puesto'), el('th', null, 'Enlace')
-                ])),
+                el('thead', null, el('tr', null, [el('th', null, 'Empresa'), el('th', null, 'Estado')]
+                    .concat((primero.indicadores || []).map(function (d) {
+                        return el('th', {class: d.formato === 'texto' ? '' : 'num'}, d.etiqueta);
+                    }))
+                    .concat([el('th', {class: 'num'}, 'Puesto'), el('th', null, 'Enlace')]))),
                 el('tbody', null, filas)
             ]))
         ]);
@@ -711,44 +729,36 @@
         var p = participante(estado.abierto);
         if (!p || !p.tablero) { return; }
         var tab = p.tablero, e = etapa(tab);
-        $('detalle-mercado').textContent = 'Mercado ' + tab.mercado;
-        $('detalle-titulo').textContent = tab.empresa;
-        var textoEstado = e.texto + (tab.puesto ? ' · puesto ' + tab.puesto + '° en su mercado' : '');
-        if (tab.decision && tab.pagina === 'Esperando a las demás empresas') {
-            textoEstado += ' · decidió precio ' + pesos(tab.decision.precio, 2) + ', publicidad ' + pesos(tab.decision.publicidad) +
-                ', producción ' + numero(tab.decision.produccion) + ' u.' +
-                (tab.decision.estudios.length ? ' (estudios: ' + tab.decision.estudios.join(', ') + ')' : '');
-        }
+        $('detalle-mercado').textContent = mayuscula(tab.grupo.tipo) + ' ' + tab.grupo.numero;
+        $('detalle-titulo').textContent = tab.equipo;
+        var textoEstado = e.texto + (tab.puesto ? ' · puesto ' + tab.puesto + '° en su ' + tab.grupo.tipo : '');
+        if (tab.decision && tab.etapa === 'esperando') { textoEstado += ' · decidió ' + tab.decision; }
         $('detalle-estado').textContent = textoEstado;
 
         // Enlace personal del equipo
         var enlace = $('detalle-enlace');
         vaciar(enlace);
         enlace.appendChild(el('code', null, enlaceEquipo(p.code)));
-        enlace.appendChild(botonEnlace(p.code, tab.empresa));
+        enlace.appendChild(botonEnlace(p.code, tab.equipo));
 
         // Historial
         var tabla = $('detalle-historial');
         vaciar(tabla);
-        var h = tab.historial || [];
+        var h = (tab.historial && tab.historial.filas) || [], columnas = (tab.historial && tab.historial.columnas) || [];
         if (!h.length) {
-            tabla.appendChild(el('tbody', null, el('tr', null, el('td', null, 'Todavía no hay trimestres con resultados.'))));
+            tabla.appendChild(el('tbody', null, el('tr', null, el('td', null, 'Todavía no hay ' + tab.ronda.nombre + 's con resultados.'))));
         } else {
-            var columnas = ['T', 'Precio', 'Precio medio', 'Publicidad', 'Producción', 'Vendidas', 'Faltante', 'Stock final', 'Partic.', 'Resultado', 'Acumulado'];
-            tabla.appendChild(el('thead', null, el('tr', null, columnas.map(function (c, i) { return el('th', {class: i ? 'num' : ''}, c); }))));
-            tabla.appendChild(el('tbody', null, h.map(function (r) {
-                var celdas = [
-                    'T' + r.trimestre, pesos(r.precio, 2), pesos(r.precio_medio, 2), pesos(r.publicidad), numero(r.produccion),
-                    numero(r.unidades), numero(r.faltante), numero(r.stock_final), pct(r.participacion), pesos(r.resultado), pesos(r.resultado_acumulado)
-                ];
-                return el('tr', null, celdas.map(function (c, i) {
-                    var negativo = (i === 9 && r.resultado < 0) || (i === 10 && r.resultado_acumulado < 0);
-                    return el('td', {class: (i ? 'num' : '') + (negativo ? ' negativo' : '')}, c);
+            tabla.appendChild(el('thead', null, el('tr', null, columnas.map(function (c) {
+                return el('th', {class: c.formato === 'texto' || c.formato === 'ronda' ? '' : 'num'}, c.etiqueta);
+            }))));
+            tabla.appendChild(el('tbody', null, h.map(function (fila) {
+                return el('tr', null, columnas.map(function (c) {
+                    var v = fila[c.clave];
+                    return el('td', {class: c.formato === 'ronda' ? '' : claseNumero(v, c)}, formatear(v, c.formato, tab));
                 }));
             })));
         }
-        $('detalle-nota-historial').textContent = h.length
-            ? 'Importes en pesos de cada trimestre; el acumulado está en moneda constante (pesos de su último trimestre).' : '';
+        $('detalle-nota-historial').textContent = tab.historial ? tab.historial.nota : '';
 
         // Devolución
         var dev = $('detalle-devolucion');
