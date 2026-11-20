@@ -19,7 +19,16 @@ El encargo
   detectar un error:  1 − Π (1 − eficacia × cobertura del alcance).
   Los números aleatorios están fijados en el escenario: la misma decisión da el
   mismo resultado en cualquier equipo, y más alcance nunca detecta menos.
-- El cliente acepta cada ajuste con cierta probabilidad.
+- Cada error encontrado trae su PAPEL DE TRABAJO (arqueo, conciliación, recuento,
+  circularización…) con los datos para calcular el AJUSTE. El estudio carga el monto;
+  si está bien calculado (± tolerancia), el cliente lo acepta con cierta probabilidad;
+  si no, lo devuelve y el error queda sin corregir.
+- Cada ciclo de control trae un RELATO de dos rasgos (como el TP 3 de la cátedra) que
+  refleja el control verdadero con probabilidad `precision_relatos`. El estudio califica
+  el control; probarlo lo confirma.
+- EMPRESA EN FUNCIONAMIENTO (evento): a veces hay una incertidumbre significativa,
+  revelada en notas; el informe debe incluir la sección que la menciona (RT 37 mod.
+  por la RT 53).
 - OPINIÓN CORRECTA según lo que queda sin corregir (ajustes rechazados + errores
   no detectados) frente a la significatividad de referencia M:
       menos de M → favorable;  de M a 3M → con salvedades;  3M o más → adversa.
@@ -33,7 +42,10 @@ El encargo
       estaban en rubros revisados con un procedimiento adecuado y el alcance que exige
       su riesgo: bajo, medio o alto),
       opinión más severa que la correcta (se pierde el cliente),
-      cada rubro sin ningún procedimiento sustantivo (evidencia insuficiente).
+      cada rubro sin ningún procedimiento sustantivo (evidencia insuficiente),
+      omitir la sección sobre empresa en funcionamiento cuando correspondía,
+      cada error encontrado sin un ajuste bien calculado (re-trabajo con el cliente);
+  más una bonificación por cada ajuste bien calculado.
 """
 import random
 
@@ -159,8 +171,15 @@ ALCANCES = {
 }
 
 OPINIONES = ('favorable', 'salvedades', 'adversa', 'abstencion')
-NOMBRES_OPINION = dict(favorable='Favorable (sin salvedades)', salvedades='Con salvedades',
-                       adversa='Adversa', abstencion='Abstención de opinión')
+# Lenguaje de la RT 37 modificada por la RT 53.
+NOMBRES_OPINION = dict(favorable='Opinión favorable (no modificada)', salvedades='Opinión con salvedades',
+                       adversa='Opinión adversa', abstencion='Abstención de opinión')
+EXPLICACION_OPINION = dict(
+    favorable='lo que queda sin corregir no es significativo',
+    salvedades='lo que queda sin corregir es significativo, pero no generalizado',
+    adversa='lo que queda sin corregir es significativo y generalizado (3 veces la significatividad o más)',
+    abstencion='no se obtuvieron elementos de juicio suficientes sobre un rubro importante',
+)
 
 # Probabilidad de error de un rubro según su riesgo inherente y su control.
 BASE_ERROR = dict(bajo=0.05, medio=0.30, alto=0.60)
@@ -185,7 +204,68 @@ PARAMETROS = [
     'factor_diligencia',        # la penalidad por falla se multiplica por esto si hubo debida diligencia
     'penalidad_severa',         # en veces los honorarios: opinión más severa que la correcta
     'penalidad_sin_evidencia',  # en veces los honorarios: por cada rubro sin procedimientos
+    'tolerancia_ajuste',        # error admitido al calcular un ajuste (0.01 = 1 %)
+    'bonificacion_ajuste',      # $ por cada ajuste bien calculado
+    'penalidad_ajuste',         # $ por cada error encontrado sin un ajuste bien calculado (re-trabajo con el cliente)
+    'precision_relatos',        # probabilidad de que cada rasgo del relato refleje el control verdadero
+    'prob_empresa_funcionamiento',  # probabilidad de incertidumbre sobre empresa en funcionamiento
+    'penalidad_enfasis',        # en veces los honorarios: omitir la sección sobre empresa en funcionamiento
 ]
+
+# --- Relatos del control interno (estilo TP 3 de la cátedra) -------------------------------
+# Rasgos de cada ciclo según su control. El relato muestra dos; cada uno refleja el control
+# verdadero con probabilidad `precision_relatos`.
+RELATOS = {
+    'caja': {
+        'fuerte': ['Las cobranzas se depositan íntegras al día siguiente y los pagos se hacen por transferencia.',
+                   'La conciliación bancaria la hace una persona que no maneja fondos, todos los meses.',
+                   'El fondo fijo tiene acta de creación y se arquea por sorpresa.'],
+        'debil': ['El mismo empleado cobra, deposita y registra los movimientos de caja.',
+                  'Cuando el gerente viaja deja cheques firmados en blanco para las urgencias.',
+                  'Hace meses que no se concilian las cuentas bancarias.'],
+    },
+    'creditos': {
+        'fuerte': ['Los créditos a clientes nuevos los aprueba Créditos y Cobranzas con un límite escrito.',
+                   'Las notas de crédito y los descuentos tienen una política escrita y los autoriza la gerencia.',
+                   'Contaduría compara todos los meses el mayor de deudores con las fichas de los clientes.'],
+        'debil': ['Los vendedores aprueban el crédito de sus propios clientes.',
+                  'Los descuentos no tienen política: se "charlan" con el dueño.',
+                  'Las cobranzas las recibe el mismo empleado que lleva las cuentas de los clientes.'],
+    },
+    'bienes_cambio': {
+        'fuerte': ['El inventario permanente se coteja con recuentos rotativos y se investigan las diferencias.',
+                   'El depósito solo entrega mercadería con remito numerado y firmado.',
+                   'Las recepciones se registran con informe de recepción numerado.'],
+        'debil': ['El encargado del depósito registra las entradas y salidas y también hace los recuentos.',
+                  'Se despacha mercadería con remitos sin numerar cuando hay apuro.',
+                  'No hay seguimiento de la mercadería vencida o de baja rotación.'],
+    },
+    'bienes_uso': {
+        'fuerte': ['Las compras de bienes de uso las aprueba el directorio y quedan en acta.',
+                   'Hay un registro de bienes con número de inventario que se controla una vez al año.',
+                   'Las bajas y ventas de bienes necesitan autorización escrita.'],
+        'debil': ['Los vehículos viejos se venden sin autorización y sin avisar a Contaduría.',
+                  'No hay registro de bienes: solo las facturas de compra.',
+                  'Las mejoras se registran como gastos "para pagar menos impuestos".'],
+    },
+    'inversiones': {
+        'fuerte': ['Los títulos están en custodia en un agente con extractos mensuales que concilia Contaduría.',
+                   'Las inversiones las decide un comité con dos firmas.',
+                   'Las valuaciones usan cotizaciones del mercado del último día hábil.'],
+        'debil': ['El gerente financiero decide, opera y registra las inversiones él solo.',
+                  'No se piden extractos al agente de bolsa.',
+                  'Las acciones que no cotizan se valúan con un precio que estima la gerencia.'],
+    },
+    'deudas': {
+        'fuerte': ['Toda compra tiene orden de compra aprobada, informe de recepción y factura que se cotejan.',
+                   'Los proveedores envían su estado de cuenta y se concilia todos los meses.',
+                   'Los pagos los autoriza una persona distinta de la que registra las facturas.'],
+        'debil': ['Las facturas se registran recién cuando se pagan.',
+                  'Hay compras de urgencia sin orden de compra.',
+                  'Nadie concilia los saldos con los proveedores.'],
+    },
+}
+CALIFICACIONES_CONTROL = dict(confio='Confío en el control', no_confio='No confío en el control')
 
 
 # --- Escenario ----------------------------------------------------------------------
@@ -237,7 +317,226 @@ def generar_escenario(params, semilla=None):
         significatividad=significatividad,
         rubros=rubros, errores=errores,
         limitacion=rnd.random() < p['prob_limitacion'],
+        **_extras(rnd, rubros, errores, ventas, p),
     )
+
+
+def _extras(rnd, rubros, errores, ventas, p):
+    """Lo que se sortea después del resto (así los escenarios anteriores no cambian): relatos del
+    control interno, datos de los papeles de trabajo, empresa en funcionamiento y datos legales."""
+    for r, d in rubros.items():
+        otro = 'debil' if d['control'] == 'fuerte' else 'fuerte'
+        niveles = [d['control'] if rnd.random() < p['precision_relatos'] else otro for _ in range(2)]
+        primero = rnd.choice(RELATOS[r][niveles[0]])
+        segundo = rnd.choice([x for x in RELATOS[r][niveles[1]] if x != primero])
+        d['relato'] = [primero, segundo]
+    for e in errores:
+        e['semilla_papel'] = rnd.randrange(10 ** 9)
+    return dict(
+        empresa_funcionamiento=rnd.random() < p['prob_empresa_funcionamiento'],
+        legales=dict(sipa=round(ventas * rnd.uniform(0.008, 0.012), -3),
+                     iibb=round(ventas * rnd.uniform(0.002, 0.004), -3)),
+    )
+
+
+# --- Papeles de trabajo y ajustes -------------------------------------------------------------
+# Cada error encontrado trae los datos que reunió el procedimiento, armados como en los
+# prácticos de la cátedra. El ajuste correcto es siempre el monto del error.
+
+def _linea(concepto, importe=None, texto=None):
+    return dict(concepto=concepto, importe=importe, texto=texto)
+
+
+def _divisor(rnd, x, opciones):
+    """Un divisor de x entre las opciones (x es múltiplo de 1.000)."""
+    validas = [d for d in opciones if x % d == 0]
+    return rnd.choice(validas or [1000])
+
+
+def papel_de_trabajo(error):
+    """Datos del procedimiento que encontró el error y la pregunta del ajuste."""
+    rnd = random.Random(error.get('semilla_papel', 0))
+    x = int(error['monto'])
+    t = error['tipo']
+    redondo = lambda v: int(round(v, -3))   # noqa: E731
+
+    if t == 'faltante_caja':
+        efectivo = redondo(x * rnd.uniform(0.3, 0.8))
+        gastos = redondo(x * rnd.uniform(0.05, 0.15))
+        anticipo = redondo(x * rnd.uniform(0.05, 0.2))
+        proveedor = redondo(x * rnd.uniform(0.1, 0.3))
+        saldo = x + efectivo + gastos + anticipo + proveedor
+        return dict(procedimiento='Arqueo de fondos al cierre', lineas=[
+            _linea('Saldo contable de Caja', saldo),
+            _linea('Recuento: dinero en efectivo', efectivo),
+            _linea('Recuento: comprobantes de gastos de limpieza', gastos),
+            _linea('Recuento: vale por anticipo de sueldo', anticipo),
+            _linea('Recuento: recibo de pago a un proveedor', proveedor),
+        ], nota='Los comprobantes son válidos y se reimputan a sus cuentas; lo que no se justifica es faltante.',
+            pregunta='Faltante de caja (diferencia sin justificar)')
+
+    if t == 'partida_conciliacion':
+        intereses = redondo(x * rnd.uniform(0.02, 0.08))
+        rechazado = redondo(x * rnd.uniform(0.3, 0.6))
+        gastos = x + intereses - rechazado
+        cheques = redondo(x * rnd.uniform(0.5, 1.5))
+        depositos = redondo(x * rnd.uniform(0.3, 1.0))
+        libros = redondo(x * rnd.uniform(3, 6))
+        banco = libros - x - depositos + cheques
+        return dict(procedimiento='Conciliación bancaria al cierre', lineas=[
+            _linea('Saldo según libros', libros),
+            _linea('Saldo según resumen bancario', banco),
+            _linea('Cheques emitidos y entregados, no debitados', cheques),
+            _linea('Depósito del último día, no acreditado', depositos),
+            _linea('Notas de débito por gastos e impuestos bancarios, no contabilizadas', gastos),
+            _linea('Cheque de cliente depositado y rechazado, no contabilizado', rechazado),
+            _linea('Nota de crédito por intereses, no contabilizada', intereses),
+        ], nota='Separen las partidas temporales (no se ajustan) de las que requieren registración.',
+            pregunta='Ajuste neto a registrar: disminución de Banco')
+
+    if t == 'incobrables':
+        pct = rnd.choice([0.4, 0.5, 0.6])
+        previsto = redondo(x * rnd.uniform(0, 0.3))
+        saldo = int(round((x + previsto) / (1 - pct)))
+        return dict(procedimiento='Antigüedad de saldos y circularización', lineas=[
+            _linea('Saldo de Distribuidora del Valle S.R.L. (en concurso preventivo)', saldo),
+            _linea('Porcentaje que se estima cobrar según el abogado', texto=f'{pct * 100:.0f} %'),
+            _linea('Previsión ya constituida para este deudor', previsto),
+        ], nota='La previsión debe cubrir lo que no se espera cobrar.',
+            pregunta='Previsión a constituir (cargo a resultados)')
+
+    if t == 'ventas_ficticias':
+        transito = redondo(x * rnd.uniform(0.2, 0.6))
+        confirmado = redondo(x * rnd.uniform(1, 3))
+        libros = confirmado + transito + x
+        return dict(procedimiento='Circularización de saldos de clientes', lineas=[
+            _linea('Saldo de Cooperativa Agrícola Limitada según libros', libros),
+            _linea('Saldo que confirma el cliente', confirmado),
+            _linea('Pago del cliente del 30/6, recibido por la empresa el 2/7', transito),
+            _linea('Facturas que el cliente no reconoce (sin remito firmado)', texto='ver diferencia'),
+        ], nota='El pago en tránsito es una diferencia de cobranza, no de ventas.',
+            pregunta='Ventas y créditos inexistentes a anular')
+
+    if t == 'corte_ventas':
+        unidades = _divisor(rnd, x, (100, 125, 200, 250, 500))
+        costo = rnd.choice(range(20_000, 60_001, 1000))
+        precio = costo + x // unidades
+        return dict(procedimiento='Corte de operaciones', lineas=[
+            _linea('Factura 0003-00004127 del 30/6: unidades', texto=f'{unidades}'),
+            _linea('Precio de venta unitario facturado', precio),
+            _linea('Costo unitario registrado', costo),
+            _linea('Remito de esa factura', texto='despachado el 3/7 (ejercicio siguiente)'),
+            _linea('Factura 0003-00004126 del 30/6 con remito del 30/6', texto='correcta'),
+        ], nota='Una venta se reconoce cuando se entrega la mercadería.',
+            pregunta='Efecto en el resultado de anular la venta (ventas menos costo)')
+
+    if t == 'inventario_inexistente':
+        faltan = _divisor(rnd, x, (20, 25, 40, 50, 100, 125, 200))
+        costo = x // faltan
+        registradas = faltan + rnd.randint(50, 300)
+        otro = rnd.randint(100, 500)
+        return dict(procedimiento='Observación del recuento físico', lineas=[
+            _linea('Bolsas de fertilizante: según inventario permanente', texto=f'{registradas} unidades'),
+            _linea('Bolsas de fertilizante: recontadas', texto=f'{registradas - faltan} unidades'),
+            _linea('Costo unitario de las bolsas', costo),
+            _linea('Bidones de herbicida: según inventario y recontados', texto=f'{otro} unidades (coinciden)'),
+        ], nota='No hay remitos ni informes de recepción pendientes que expliquen la diferencia.',
+            pregunta='Faltante de inventario a ajustar (a costo)')
+
+    if t == 'inventario_obsoleto':
+        unidades = _divisor(rnd, x, (50, 100, 125, 200, 250))
+        vnr = 9 * rnd.randint(1000, 5000)
+        precio = vnr * 10 // 9
+        costo = vnr + x // unidades
+        return dict(procedimiento='Valuación al costo o al valor neto de realización', lineas=[
+            _linea('Semillas de la campaña anterior: unidades', texto=f'{unidades}'),
+            _linea('Costo unitario registrado', costo),
+            _linea('Precio de venta estimado', precio),
+            _linea('Gastos directos de venta', texto='10 % del precio'),
+        ], nota='Los bienes de cambio no pueden superar su valor neto de realización.',
+            pregunta='Desvalorización a registrar')
+
+    if t == 'amortizacion_omitida':
+        vida = rnd.choice([5, 10])
+        meses = rnd.choice([6, 12])
+        origen = x * vida * 12 // meses
+        return dict(procedimiento='Recálculo de amortizaciones', lineas=[
+            _linea('Autoelevadora: valor de origen', origen),
+            _linea('Vida útil', texto=f'{vida} años, amortización lineal por meses de uso'),
+            _linea('Meses de uso en el ejercicio', texto=f'{meses}'),
+            _linea('Amortización registrada en el ejercicio', 0),
+        ], nota='El resto de los bienes se amortizó correctamente.',
+            pregunta='Amortización del ejercicio a registrar')
+
+    if t == 'bien_inexistente':
+        origen = x * rnd.choice([2, 3, 4])
+        acumulada = origen - x
+        return dict(procedimiento='Inspección física de bienes', lineas=[
+            _linea('Camión Ford 2016 (no se encontró; se vendió en marzo): valor de origen', origen),
+            _linea('Amortización acumulada', acumulada),
+            _linea('Precio de la venta', texto='registrado como "otros ingresos"'),
+        ], nota='El camión sigue en el activo. Calculen el valor residual que hay que dar de baja.',
+            pregunta='Valor residual a dar de baja (pérdida a reconocer)')
+
+    if t == 'inversion_sobrevaluada':
+        cantidad = _divisor(rnd, x, (500, 1000))
+        cotizacion = 100 * rnd.randint(20, 200)
+        neto = cotizacion - cotizacion // 100
+        valor_libros = neto + x // cantidad
+        return dict(procedimiento='Confirmación con el custodio y cotizaciones', lineas=[
+            _linea('Acciones de Pampa Energía en cartera', texto=f'{cantidad}'),
+            _linea('Valor por acción según libros', valor_libros),
+            _linea('Cotización al cierre por acción', cotizacion),
+            _linea('Gastos directos de venta', texto='1 % de la cotización'),
+        ], nota='Se valúan a cotización neta de gastos directos de venta.',
+            pregunta='Desvalorización de las inversiones')
+
+    if t == 'pasivo_omitido':
+        enero = redondo(x * rnd.uniform(0.3, 1.0))
+        registrada = redondo(x * rnd.uniform(0.3, 1.0))
+        return dict(procedimiento='Búsqueda de pasivos omitidos: pagos posteriores al cierre', lineas=[
+            _linea('Pago del 5/7 a Agroquímica Sur: factura del 20/6, no registrada', x),
+            _linea('Pago del 8/7 a Transportes del Oeste: factura del 3/7', enero),
+            _linea('Pago del 10/7 a Semillera Pampeana: factura del 25/6, registrada en Proveedores', registrada),
+        ], nota='Solo corresponde al ejercicio lo devengado hasta el cierre.',
+            pregunta='Pasivo omitido a registrar')
+
+    if t == 'cargas_omitidas':
+        tasa = rnd.choice([0.20, 0.25])
+        sueldos = int(round(x / tasa))
+        aportes = redondo(sueldos * 0.17)
+        return dict(procedimiento='Revisión de cargas sociales', lineas=[
+            _linea('Sueldos devengados de junio', sueldos),
+            _linea('Aportes retenidos al personal (17 %), registrados', aportes),
+            _linea('Contribuciones patronales', texto=f'{tasa * 100:.0f} % de los sueldos, no registradas'),
+        ], nota='Las contribuciones a cargo del empleador se devengan con los sueldos.',
+            pregunta='Contribuciones patronales a registrar')
+
+    raise ValueError(t)
+
+
+def ajuste_correcto(error, monto, params):
+    """El ajuste cargado coincide con el monto del error, con la tolerancia de la sesión."""
+    return monto is not None and abs(monto - error['monto']) <= params['tolerancia_ajuste'] * error['monto'] + 1
+
+
+def estado_ajuste(error, montos, params):
+    """'aceptado' | 'rechazado' (bien calculado, el cliente no lo registra) |
+    'devuelto' (mal calculado) | 'sin_proponer'. Sin `montos`, se supone bien calculado."""
+    if montos is not None:
+        monto = montos.get(error['id'])
+        if monto is None:
+            return 'sin_proponer'
+        if not ajuste_correcto(error, monto, params):
+            return 'devuelto'
+    return 'aceptado' if error['u_acepta'] < params['prob_acepta_ajuste'] else 'rechazado'
+
+
+def evaluacion_control(escenario, calificaciones):
+    """Ciclos bien calificados: 'confio' con control fuerte o 'no_confio' con control débil."""
+    return sum(1 for r, c in (calificaciones or {}).items()
+               if (c == 'confio') == (escenario['rubros'][r]['control'] == 'fuerte'))
+
 
 
 # --- Horas -----------------------------------------------------------------------------
@@ -309,9 +608,9 @@ def detectados(escenario, alcances):
     return encontrados
 
 
-def respuesta_cliente(errores_encontrados, params):
-    """Ajustes que acepta el cliente: {id: True | False}."""
-    return {e['id']: e['u_acepta'] < params['prob_acepta_ajuste'] for e in errores_encontrados}
+def respuesta_cliente(errores_encontrados, params, montos=None):
+    """Ajustes que quedan registrados: {id: True | False}. Solo los bien calculados que el cliente acepta."""
+    return {e['id']: estado_ajuste(e, montos, params) == 'aceptado' for e in errores_encontrados}
 
 
 def rubros_sin_evidencia(escenario, alcances):
@@ -333,23 +632,23 @@ def opinion_segun(sin_corregir, significatividad):
     return 'adversa'
 
 
-def opinion_correcta(escenario, alcances, params):
+def opinion_correcta(escenario, alcances, params, montos=None):
     """La opinión que correspondía, con todo lo que quedó sin corregir (lo sepa o no el equipo)."""
     if sin_alternativa_por_limitacion(escenario, alcances):
         return 'abstencion'
     encontrados = detectados(escenario, alcances)
-    acepta = respuesta_cliente(encontrados, params)
+    acepta = respuesta_cliente(encontrados, params, montos)
     ids = {e['id'] for e in encontrados}
     sin_corregir = sum(e['monto'] for e in escenario['errores'] if e['id'] not in ids or not acepta[e['id']])
     return opinion_segun(sin_corregir, escenario['significatividad'])
 
 
-def opinion_conocida(escenario, alcances, params):
-    """La opinión que surge solo de lo que el equipo sabe (ajustes rechazados y limitación)."""
+def opinion_conocida(escenario, alcances, params, montos=None):
+    """La opinión que surge solo de lo que el equipo sabe (ajustes no registrados y limitación)."""
     if sin_alternativa_por_limitacion(escenario, alcances):
         return 'abstencion'
     encontrados = detectados(escenario, alcances)
-    acepta = respuesta_cliente(encontrados, params)
+    acepta = respuesta_cliente(encontrados, params, montos)
     rechazado = sum(e['monto'] for e in encontrados if not acepta[e['id']])
     return opinion_segun(rechazado, escenario['significatividad'])
 
@@ -369,10 +668,10 @@ def revisado_con_diligencia(error, alcances, escenario):
                for pr, d in PROCEDIMIENTOS.items() if d['rubro'] == error['rubro'])
 
 
-def hubo_diligencia(escenario, alcances, opinion, params):
+def hubo_diligencia(escenario, alcances, opinion, params, montos=None):
     """Debida diligencia: la opinión no fue menos severa que lo que el estudio sabía, y cada error que se
     le escapó estaba en un rubro revisado con un procedimiento adecuado y alcance suficiente."""
-    if comparar_opinion(opinion, opinion_conocida(escenario, alcances, params)) == 'falla':
+    if comparar_opinion(opinion, opinion_conocida(escenario, alcances, params, montos)) == 'falla':
         return False
     ids = {e['id'] for e in detectados(escenario, alcances)}
     return all(revisado_con_diligencia(e, alcances, escenario) for e in escenario['errores'] if e['id'] not in ids)
@@ -391,24 +690,33 @@ def comparar_opinion(elegida, correcta):
 
 # --- Evaluación ---------------------------------------------------------------------------
 
-def evaluar(escenario, ciclos_probados, alcances, opinion, params):
-    """Resultado completo del encargo de un estudio."""
+def evaluar(escenario, ciclos_probados, alcances, opinion, params, montos=None, enfasis=None):
+    """Resultado completo del encargo de un estudio. `montos`: ajustes cargados {id: $} (None = todos bien
+    calculados). `enfasis`: si incluyó la sección sobre empresa en funcionamiento (None = lo que corresponda)."""
     p = params
     horas = horas_totales(ciclos_probados, alcances, p, escenario)
     encontrados = detectados(escenario, alcances)
     ids = {e['id'] for e in encontrados}
-    acepta = respuesta_cliente(encontrados, p)
-    correcta = opinion_correcta(escenario, alcances, p)
+    estados = {e['id']: estado_ajuste(e, montos, p) for e in encontrados}
+    acepta = {i: v == 'aceptado' for i, v in estados.items()}
+    correcta = opinion_correcta(escenario, alcances, p, montos)
     comparacion = comparar_opinion(opinion, correcta)
     sin_evidencia = rubros_sin_evidencia(escenario, alcances)
-    diligente = comparacion == 'falla' and hubo_diligencia(escenario, alcances, opinion, p)
+    diligente = comparacion == 'falla' and hubo_diligencia(escenario, alcances, opinion, p, montos)
+    hay_ef = escenario.get('empresa_funcionamiento', False)
+    if enfasis is None:
+        enfasis = hay_ef
+    bien_calculados = sum(1 for v in estados.values() if v in ('aceptado', 'rechazado'))
 
     penalidades = dict(
         falla=(p['penalidad_falla'] * p['honorarios'] * (p['factor_diligencia'] if diligente else 1.0)
                if comparacion == 'falla' else 0.0),
         severa=p['penalidad_severa'] * p['honorarios'] if comparacion == 'severa' else 0.0,
         sin_evidencia=p['penalidad_sin_evidencia'] * p['honorarios'] * len(sin_evidencia),
+        enfasis=p['penalidad_enfasis'] * p['honorarios'] if hay_ef and not enfasis else 0.0,
+        ajustes=p['penalidad_ajuste'] * (len(encontrados) - bien_calculados),
     )
+    bonificacion = bien_calculados * p['bonificacion_ajuste']
     costo_horas = horas * p['costo_hora']
     m = escenario['significatividad']
     importantes = [e for e in escenario['errores'] if e['monto'] >= m]
@@ -419,7 +727,13 @@ def evaluar(escenario, ciclos_probados, alcances, opinion, params):
         encontrados=encontrados,
         no_detectados=[e for e in escenario['errores'] if e['id'] not in ids],
         aceptados=[e for e in encontrados if acepta[e['id']]],
-        rechazados=[e for e in encontrados if not acepta[e['id']]],
+        rechazados=[e for e in encontrados if estados[e['id']] == 'rechazado'],
+        devueltos=[e for e in encontrados if estados[e['id']] in ('devuelto', 'sin_proponer')],
+        estados=estados,
+        bien_calculados=bien_calculados,
+        bonificacion=bonificacion,
+        empresa_funcionamiento=hay_ef,
+        enfasis=enfasis,
         importantes=len(importantes),
         importantes_detectados=sum(1 for e in importantes if e['id'] in ids),
         sin_evidencia=sin_evidencia,
@@ -428,5 +742,5 @@ def evaluar(escenario, ciclos_probados, alcances, opinion, params):
         comparacion=comparacion,
         diligente=diligente,
         penalidades=penalidades,
-        puntaje=p['honorarios'] - costo_horas - sum(penalidades.values()),
+        puntaje=p['honorarios'] - costo_horas - sum(penalidades.values()) + bonificacion,
     )

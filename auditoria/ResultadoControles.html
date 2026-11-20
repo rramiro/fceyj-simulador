@@ -8,11 +8,12 @@
 
 {{ if resultados }}
 <table class="table table-sm w-auto">
-    <thead><tr><th>Ciclo</th><th>Rubro</th><th>Control</th></tr></thead>
+    <thead><tr><th>Ciclo</th><th>Rubro</th><th>Ustedes</th><th>Control</th></tr></thead>
     <tbody>
     {{ for f in resultados }}
         <tr>
             <td>{{ f.ciclo }}</td><td>{{ f.rubro }}</td>
+            <td>{{ f.calificado }} {{ if f.acerto }}✓{{ else }}✗{{ endif }}</td>
             <td>{{ if f.fuerte }}<span class="badge bg-success">Fuerte</span>{{ else }}<span class="badge bg-danger">Débil</span>{{ endif }}</td>
         </tr>
     {{ endfor }}

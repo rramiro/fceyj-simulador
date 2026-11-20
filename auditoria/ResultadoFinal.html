@@ -16,12 +16,12 @@
         <h5>Los errores que había</h5>
         {{ if hay_errores }}
         <table class="table table-sm">
-            <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Importe</th><th>Qué pasó</th></tr></thead>
+            <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Importe</th><th class="text-end">Su ajuste</th><th>Qué pasó</th></tr></thead>
             <tbody>
             {{ for e in errores }}
                 <tr {{ if e.no_detectado }}class="table-danger"{{ endif }}>
                     <td>{{ e.rubro }}</td><td>{{ e.error }}{{ if e.importante }} <span class="badge bg-dark">importante</span>{{ endif }}</td>
-                    <td class="text-end">{{ e.monto }}</td><td>{{ e.estado }}</td>
+                    <td class="text-end">{{ e.monto }}</td><td class="text-end">{{ e.propuesto }}</td><td>{{ e.estado }}</td>
                 </tr>
             {{ endfor }}
             </tbody>
@@ -30,17 +30,19 @@
         <p>Los estados contables no tenían errores.</p>
         {{ endif }}
         <p class="small text-muted">Significatividad de referencia: {{ significatividad_ref }} (5 % del resultado).
-            La suya: {{ significatividad }}.</p>
+            La suya: {{ significatividad }}. Ajustes bien calculados: {{ bien_calculados }} de {{ num_encontrados }}.</p>
 
         <h5>Riesgos y controles del cliente</h5>
         <table class="table table-sm">
-            <thead><tr><th>Rubro</th><th>Riesgo inherente</th><th>Ustedes lo calificaron</th><th>Control</th></tr></thead>
+            <thead><tr><th>Rubro</th><th>Riesgo inherente</th><th>Ustedes</th><th>Control</th><th>Ustedes</th></tr></thead>
             <tbody>
             {{ for r in rubros }}
-                <tr><td>{{ r.rubro }}</td><td>{{ r.riesgo }}</td><td>{{ r.evaluado }}</td><td>{{ r.control }}</td></tr>
+                <tr><td>{{ r.rubro }}</td><td>{{ r.riesgo }}</td><td>{{ r.evaluado }}</td><td>{{ r.control }}</td>
+                    <td>{{ r.confio }} {{ if r.acerto_control }}✓{{ else }}✗{{ endif }}</td></tr>
             {{ endfor }}
             </tbody>
         </table>
+        <p class="small text-muted">Evaluaron bien el control interno de {{ controles_bien }} de {{ num_ciclos }} ciclos.</p>
     </div>
 
     <div class="col-lg-6">
@@ -48,9 +50,12 @@
         <table class="table table-sm">
             <tr><td>Honorarios</td><td class="text-end">{{ honorarios }}</td></tr>
             <tr><td>− Horas ({{ horas }})</td><td class="text-end">{{ costo_horas }}</td></tr>
+            <tr><td>+ Ajustes bien calculados ({{ bien_calculados }})</td><td class="text-end">{{ bonificacion }}</td></tr>
             {{ if hay_falla }}<tr class="text-danger"><td>− Falla de auditoría{{ if diligente }} (a la mitad: hubo debida diligencia){{ endif }}</td><td class="text-end">{{ penalidad_falla }}</td></tr>{{ endif }}
             {{ if hay_severa }}<tr class="text-danger"><td>− Opinión más severa de lo necesario (pérdida del cliente)</td><td class="text-end">{{ penalidad_severa }}</td></tr>{{ endif }}
             {{ if hay_sin_evidencia }}<tr class="text-danger"><td>− Rubros sin evidencia</td><td class="text-end">{{ penalidad_sin_evidencia }}</td></tr>{{ endif }}
+            {{ if hay_penalidad_ajustes }}<tr class="text-danger"><td>− Re-trabajo: ajustes mal calculados o sin proponer ({{ num_mal }})</td><td class="text-end">{{ penalidad_ajustes }}</td></tr>{{ endif }}
+            {{ if hay_enfasis }}<tr class="text-danger"><td>− Faltó la sección sobre empresa en funcionamiento</td><td class="text-end">{{ penalidad_enfasis }}</td></tr>{{ endif }}
             <tr class="fw-bold"><td>Puntaje</td><td class="text-end {{ if puntaje_neg }}text-danger{{ endif }}">{{ puntaje }}</td></tr>
         </table>
 
@@ -70,6 +75,21 @@
         </table>
     </div>
 </div>
+
+<h5 class="mt-2">El informe</h5>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-header">El que firmaron</div><div class="card-body small">
+            {{ for sec in informe_propio }}<p class="fw-bold mb-1">{{ sec.titulo }}</p>{{ for par in sec.parrafos }}<p>{{ par }}</p>{{ endfor }}{{ endfor }}
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100 {{ if mismo_informe }}border-success{{ else }}border-danger{{ endif }}"><div class="card-header">El que correspondía{{ if mismo_informe }} (igual al suyo){{ endif }}</div><div class="card-body small">
+            {{ for sec in informe_correcto }}<p class="fw-bold mb-1">{{ sec.titulo }}</p>{{ for par in sec.parrafos }}<p>{{ par }}</p>{{ endfor }}{{ endfor }}
+        </div></div>
+    </div>
+</div>
+<p class="small text-muted">Informe abreviado según el modelo de la RT 37 modificada por la RT 53 (se omiten las secciones de responsabilidades).</p>
 
 <h5 class="mt-2">Devolución de {{ nombre }}</h5>
 <div class="devolucion mb-3">

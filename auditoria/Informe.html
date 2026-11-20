@@ -8,18 +8,20 @@
 
 {{ if hay_hallazgos }}
 <h5>Respuesta del cliente a los ajustes propuestos</h5>
+<div class="table-responsive">
 <table class="table table-sm">
-    <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Importe</th><th>El cliente…</th></tr></thead>
+    <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Ajuste propuesto</th><th>Respuesta</th></tr></thead>
     <tbody>
     {{ for h in hallazgos }}
         <tr>
-            <td>{{ h.rubro }}</td><td>{{ h.error }}</td><td class="text-end">{{ h.monto }}</td>
-            <td>{{ if h.acepta }}<span class="text-success">ajustó</span>{{ else }}<span class="text-danger fw-bold">no ajustó</span>{{ endif }}</td>
+            <td>{{ h.rubro }}</td><td>{{ h.error }}</td><td class="text-end">{{ h.propuesto }}</td>
+            <td class="{{ h.clase }}">{{ h.estado }}</td>
         </tr>
     {{ endfor }}
     </tbody>
 </table>
-<p>Errores detectados que el cliente <b>no corrigió</b>: <b>{{ rechazado }}</b>. Su significatividad: <b>{{ significatividad }}</b>.</p>
+</div>
+<p>Lo que el cliente <b>no registró</b> (con el monto correcto): <b>{{ sin_registrar }}</b>. Su significatividad: <b>{{ significatividad }}</b>.</p>
 {{ else }}
 <p>No encontraron errores para proponer ajustes. Su significatividad: <b>{{ significatividad }}</b>.</p>
 {{ endif }}
@@ -36,12 +38,20 @@
 <div class="alert alert-warning">Sin ningún procedimiento: <b>{{ sin_evidencia }}</b>.</div>
 {{ endif }}
 
+<h5>Empresa en funcionamiento</h5>
+<div class="alert alert-light border">{{ nota_ef }}</div>
+{{ formfield 'enfasis' }}
+<p class="small text-muted">
+    Si hay una incertidumbre significativa y está revelada en notas, el informe incluye una sección que llama la
+    atención sobre ella; la opinión no se modifica por eso (RT 37 modificada por la RT 53).
+</p>
+
 <h5>Opinión</h5>
 <ul class="small">
-    <li><b>Favorable:</b> los estados contables presentan razonablemente la situación (lo no corregido no es significativo).</li>
-    <li><b>Con salvedades:</b> salvo por errores significativos pero no generalizados (o una limitación acotada).</li>
-    <li><b>Adversa:</b> los errores son significativos y generalizados.</li>
-    <li><b>Abstención:</b> no obtuvieron evidencia suficiente sobre algo muy importante.</li>
+    <li><b>Opinión favorable (no modificada):</b> {{ explicacion.favorable }}.</li>
+    <li><b>Opinión con salvedades:</b> {{ explicacion.salvedades }}.</li>
+    <li><b>Opinión adversa:</b> {{ explicacion.adversa }}.</li>
+    <li><b>Abstención de opinión:</b> {{ explicacion.abstencion }}.</li>
 </ul>
 <p class="small text-muted">Recuerden que puede haber errores que no detectaron.</p>
 

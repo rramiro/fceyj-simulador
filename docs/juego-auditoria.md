@@ -95,6 +95,34 @@ Resultados (puntaje medio en millones de pesos):
 pocos errores, gastar poco gana), pero falla el 58 % de las veces: buen tema para el cierre de la
 clase.
 
+## Versión 2: ajustes con monto, control interno y RT 53 (20/11/2026)
+
+A partir del material del curso de Moodle 2026 de la cátedra (prácticos por rubro, TP 3 de control
+interno, modelos de informe de la RT 53). Decisiones aprobadas:
+
+| # | Cambio | Detalle |
+|---|---|---|
+| 1 | **Ajustes con monto** | Cada error encontrado trae su papel de trabajo (arqueo, conciliación, antigüedad y concurso, circularización, corte, recuento, VNR, recálculo de amortizaciones, baja de un bien, cotización neta, pagos posteriores, cargas sociales), con datos generados por el encargo. El estudio calcula el ajuste; bien calculado (±1 %) suma $ 300.000 y el cliente lo considera; mal calculado o en blanco, el error queda sin corregir. |
+| 2 | **Re-trabajo** | Decidido en la calibración: cada error encontrado sin un ajuste bien calculado cuesta $ 300.000. Sin esto, no proponer ajustes rendía lo mismo que calcularlos (5,2 M contra 5,2 M). |
+| 3 | **Evaluación del control interno** | Cada ciclo trae un relato de dos rasgos al estilo del TP 3 (oposición de intereses, documentación, controles periódicos); cada rasgo refleja el control real el 80 % de las veces. El estudio califica "confío / no confío"; solo se reducen horas si probó el control y resultó fuerte (NIA 330). Indicador en la devolución, sin puntaje. |
+| 4 | **Informe según la RT 37 mod. por la RT 53** | Opinión favorable (no modificada), con salvedades, adversa ("significativo y generalizado"), abstención. Evento de empresa en funcionamiento (30 % de los encargos): si no incluyen la sección «Incertidumbre significativa relacionada con empresa en funcionamiento», 10 % de los honorarios. La pantalla final muestra el informe firmado y el que correspondía, con el modelo de la cátedra (incluye requerimientos legales: SIPA, Ingresos Brutos de La Pampa, Res. FACPCE 420/11). |
+
+Calibración (2.000 encargos; puntaje medio en millones; salvo indicación, ajustes bien calculados y
+sección de empresa en funcionamiento cuando corresponde):
+
+| Estrategia | Puntaje |
+|---|---|
+| Por riesgo y control | **5,2** |
+| La misma, calcula mal la mitad de los ajustes | 4,8 |
+| La misma, sin proponer ajustes | 4,7 |
+| La misma, sin la sección de empresa en funcionamiento | 4,8 |
+| Todo con alcance medio | 4,8 |
+| Todo con alcance bajo | 2,7 |
+| Sin procedimientos (firma favorable) | −5,6 |
+
+`scripts/simular_auditoria.py` verifica además que cada papel de trabajo permita calcular su ajuste
+(3.741 papeles en 2.000 encargos). Se probó una partida completa en el navegador.
+
 ## Estado
 
 | Fase | Estado |
@@ -102,4 +130,5 @@ clase.
 | Diseño | Aprobado (20/11/2026). |
 | Modelo y calibración | Aprobados; debida diligencia agregada en la prueba. |
 | App, catálogo, portada, CI | Hechos en la rama `auditoria`; probados en el navegador. |
+| Versión 2 (material de la cátedra) | Hecha en la rama `auditoria`; probada en el navegador. |
 | Testing y unión a `main` | Pendiente. |
