@@ -45,6 +45,12 @@ jobs:
       - name: Verificaciones y calibración del modelo de auditoría
         run: python scripts/simular_auditoria.py
 
+      - name: Bots de oTree del juego de costos (4 equipos, 6 meses)
+        run: otree test costos 4
+
+      - name: Verificaciones y calibración del modelo de costos
+        run: python scripts/simular_costos.py
+
       - name: Catálogo de juegos (portada y tablero) coincide con settings.py
         run: python scripts/verificar_catalogo.py
 

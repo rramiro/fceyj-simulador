@@ -107,6 +107,37 @@ SESSION_CONFIGS = [
         penalidad_sin_evidencia=0.1,  # en veces los honorarios: por cada rubro sin procedimientos
         doc='Auditoría: cada equipo es un estudio que planifica, prueba controles, aplica procedimientos y emite su opinión.',
     ),
+    dict(
+        name='costos',
+        display_name='Costos para la gestión (taller de cortinas)',
+        app_sequence=['costos'],
+        num_demo_participants=3,  # cada equipo maneja su taller; todos frente al mismo escenario
+        num_rondas=6,                 # meses (máximo: C.NUM_ROUNDS = 12)
+        semilla=0,                    # escenario: 0 = al azar; otro número lo repite
+        # --- Parámetros del modelo (ver costos/modelo.py) ---
+        # Calibrar con: python scripts/simular_costos.py
+        precio_tela=4_000,            # $ por metro (estándar)
+        rendimiento_tela=0.90,        # rendimiento estándar de la tela
+        costo_hora_mo=5_120,          # $ por hora hombre de corte y costura
+        tasa_cv_corte=400,            # costos variables indirectos de corte, $ por hora hombre
+        cv_hora_embolsado=3_700,      # costo variable de la hora máquina de embolsado (incluye control)
+        estuche_compra=1_500,         # $ por estuche comprado
+        cm_corte=300, np_corte=280,   # capacidad máxima y nivel previsto de corte (horas hombre por mes)
+        cfc_corte=644_000, cfo_corte=400_000,
+        cm_embolsado=220, np_embolsado=200,   # embolsado (horas máquina por mes)
+        cfc_embolsado=636_000, cfo_embolsado=563_400,
+        cf_administracion=6_000_000,  # $ por mes
+        cf_comercializacion=2_000_000,  # $ por mes (además de los costos fijos directos de cada línea)
+        escala_demanda=1.0,           # multiplica la demanda de todas las líneas
+        desvio_demanda=0.08,          # variación mensual de la demanda de cada línea
+        desvio_precio_tela=0.04,      # variación del precio real de la tela
+        desvio_rendimiento=0.015,     # variación del rendimiento real de la tela
+        desvio_eficiencia=0.05,       # variación de las horas reales de corte
+        tolerancia_informe=0.05,      # el informe al empresario acierta con ±5 %
+        puntos_informe=5,             # puntos por informe acertado
+        puntos_resultado=70,          # puntos del ranking por el resultado (relativo al mejor)
+        doc='Costos: cada equipo maneja un taller de cortinas con dos procesos, decide precios, producción y un evento por mes.',
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

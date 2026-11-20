@@ -1,0 +1,97 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ empresa }} — Resultados del mes {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+<div class="row g-3 mb-2">
+    <div class="col-md-6">
+        <div class="alert {{ if decidio_bien }}alert-success{{ else }}alert-warning{{ endif }} h-100 mb-0">
+            <b>{{ evento }}.</b> Decidieron: {{ decision }}.
+            {{ if recomendada }}{{ if not decidio_bien }}Con los datos del mes convenía: <b>{{ recomendada }}</b>.{{ endif }}{{ endif }}
+            {{ if pedido }}{{ if horas_extra }}Usaron horas extra para el pedido.{{ endif }}{{ endif }}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="alert {{ if informe_acierto }}alert-success{{ else }}alert-warning{{ endif }} h-100 mb-0">
+            <b>Informe al empresario:</b> {{ informe_pregunta }}.<br>
+            Su respuesta: {{ informe_respuesta }} · Valor correcto: <b>{{ informe_correcto }}</b>
+            {{ if informe_acierto }}(+{{ puntos_informe }} puntos){{ endif }}
+        </div>
+    </div>
+</div>
+
+<h5>Ventas y producción</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead><tr><th>Línea</th><th class="text-end">Precio</th><th class="text-end">Producción</th><th class="text-end">Demanda</th>
+        <th class="text-end">Vendidas</th><th class="text-end">Stock final</th><th class="text-end">Costo variable</th>
+        <th class="text-end">CF absorbido</th><th class="text-end">Contribución unitaria</th></tr></thead>
+    <tbody>
+    {{ for f in filas }}
+        <tr><td>{{ f.linea }}</td><td class="text-end">{{ f.precio }}</td><td class="text-end">{{ f.produccion }}</td>
+            <td class="text-end">{{ f.demanda }}</td>
+            <td class="text-end {{ if f.hubo_faltante }}text-danger{{ endif }}">{{ f.vendidas }}</td>
+            <td class="text-end">{{ f.stock }}</td><td class="text-end">{{ f.cv }}</td><td class="text-end">{{ f.cf }}</td>
+            <td class="text-end">{{ f.cm }}</td></tr>
+    {{ endfor }}
+    </tbody>
+</table>
+</div>
+<p class="small text-muted">
+    Horas usadas: corte y costura {{ horas_corte }} de {{ cm_corte }} (ociosa {{ ociosidad_corte }}) ·
+    embolsado {{ horas_embolsado }} de {{ cm_embolsado }} (ociosa {{ ociosidad_embolsado }}).
+    Punto de equilibrio del mes con la mezcla vendida: <b>{{ pe }}</b> cortinas · margen de seguridad:
+    <b class="{{ if ms_neg }}text-danger{{ endif }}">{{ ms }}</b>.
+</p>
+
+<h5>Estado de resultados del mes</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead><tr><th></th><th class="text-end">Costeo variable</th><th class="text-end">Costeo integral</th></tr></thead>
+    <tbody>
+        <tr><td>Ventas</td><td class="text-end">{{ er.ventas }}</td><td class="text-end">{{ er.ventas }}</td></tr>
+        <tr><td>− Costo de ventas (estándar)</td><td class="text-end">{{ er.cv_ventas }}</td><td class="text-end">{{ er.costo_ventas_int }}</td></tr>
+        <tr><td>− Comercialización variable</td><td class="text-end">{{ er.comisiones }}</td><td class="text-end">{{ er.comisiones }}</td></tr>
+        <tr class="fw-bold"><td>Contribución marginal / margen bruto</td><td class="text-end">{{ er.contribucion }}</td><td class="text-end">{{ er.bruto_int }}</td></tr>
+        <tr><td>− Desvíos (tela y mano de obra)</td><td class="text-end">{{ er.desvios }}</td><td class="text-end">{{ er.desvios }}</td></tr>
+        <tr><td>− Costos fijos de producción</td><td class="text-end">{{ er.cf_produccion }}</td><td class="text-end">—</td></tr>
+        <tr><td>− Variación por uso de la capacidad {{ if er.subaplicacion }}(subaplicación){{ else }}(sobreaplicación){{ endif }}</td>
+            <td class="text-end">—</td><td class="text-end">{{ er.variacion_capacidad }}</td></tr>
+        <tr><td>− Otros costos fijos</td><td class="text-end">{{ er.otros_cf }}</td><td class="text-end">{{ er.otros_cf }}</td></tr>
+        <tr class="fw-bold"><td>Resultado del mes</td>
+            <td class="text-end {{ if er.resultado_var_neg }}text-danger{{ endif }}">{{ er.resultado_var }}</td>
+            <td class="text-end {{ if er.resultado_int_neg }}text-danger{{ endif }}">{{ er.resultado_int }}</td></tr>
+    </tbody>
+</table>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <h6>Desvíos estándar del mes</h6>
+        <table class="table table-sm">
+            <tr><td>Precio de la tela</td><td class="text-end">{{ er.desvio_precio }}</td></tr>
+            <tr><td>Consumo de tela (rendimiento)</td><td class="text-end">{{ er.desvio_consumo }}</td></tr>
+            <tr><td>Eficiencia de la mano de obra de corte</td><td class="text-end">{{ er.desvio_eficiencia }}</td></tr>
+        </table>
+        <p class="small text-muted">Positivo = desfavorable (más costo que el estándar). Costos fijos aplicados a la producción: {{ er.cf_aplicados }}.</p>
+    </div>
+    <div class="col-md-6">
+        <h6>Costos fijos del mes</h6>
+        <table class="table table-sm">
+            {{ for c in er.detalle_cf }}<tr><td>{{ c.concepto }}</td><td class="text-end">{{ c.monto }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+</div>
+
+<div class="alert alert-light border">
+    Resultado acumulado: <b>{{ acumulado_var }}</b> por costeo variable y {{ acumulado_int }} por costeo integral.
+    Stock valuado: {{ stock_var }} a costo variable y {{ stock_int }} a costo integral. Puesto en la clase:
+    <b>{{ puesto }}° de {{ num_equipos }}</b>.
+</div>
+
+{{ next_button }}
+
+{{ endblock }}

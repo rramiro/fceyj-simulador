@@ -1,0 +1,107 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ empresa }} — Mes {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+{{ if acumulado }}<p class="text-muted">Resultado acumulado por costeo variable: <b>{{ acumulado }}</b>.</p>{{ endif }}
+
+<div class="alert alert-info">
+    <small class="d-block text-uppercase fw-bold">Evento del mes: {{ evento }}</small>
+    {{ texto_evento }}
+</div>
+
+<h5>Hoja de especificaciones</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead><tr><th>Línea</th><th class="text-end">Tela (m netos)</th><th class="text-end">Accesorios</th>
+        <th class="text-end">Horas corte</th><th class="text-end">Horas embolsado</th><th class="text-end">Comercialización</th>
+        <th class="text-end">Precio ref.</th><th class="text-end">Demanda prevista</th><th class="text-end">Elasticidad</th>
+        <th class="text-end">CF directos</th><th class="text-end">Stock</th></tr></thead>
+    <tbody>
+    {{ for f in hoja }}
+        <tr {{ if not f.activa }}class="text-muted"{{ endif }}>
+            <td>{{ f.linea }}{{ if not f.activa }} (propuesta){{ endif }}</td>
+            <td class="text-end">{{ f.tela }}</td><td class="text-end">{{ f.accesorios }}</td>
+            <td class="text-end">{{ f.horas_corte }}</td><td class="text-end">{{ f.horas_embolsado }}</td>
+            <td class="text-end">{{ f.comision }}</td><td class="text-end">{{ f.precio_ref }}</td>
+            <td class="text-end">{{ f.demanda }}</td><td class="text-end">{{ f.elasticidad }}</td>
+            <td class="text-end">{{ f.cf_directos }}</td><td class="text-end">{{ f.stock }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+</div>
+<p class="small text-muted">
+    Tela a {{ precio_tela }} el metro con rendimiento del {{ rendimiento }}. Demanda prevista: a precio de referencia; con otro precio
+    cambia según la elasticidad. Costos fijos totales del mes, sin decisiones nuevas: {{ costos_fijos }}.
+    {{ if fabrica_estuches }}Fabrican sus estuches.{{ endif }}
+    {{ if equipo }}Tienen el equipo de embolsado semiautomático.{{ endif }}
+    {{ if bordado }}Bordan el {{ bordado }} de las cortinas comunes.{{ endif }}
+</p>
+{{ if ultimo_cv }}
+<p class="small text-muted">Costo variable unitario del mes pasado: {{ ultimo_cv }}.</p>
+{{ endif }}
+
+<h5>Plan del mes</h5>
+<div class="row g-3">
+    {{ if hay_comun }}
+    <div class="col-md-4"><div class="card"><div class="card-header">Cortina común</div><div class="card-body">
+        {{ formfield 'precio_comun' }}{{ formfield 'prod_comun' }}</div></div></div>
+    {{ endif }}
+    {{ if hay_infantil }}
+    <div class="col-md-4"><div class="card"><div class="card-header">Cortina infantil</div><div class="card-body">
+        {{ formfield 'precio_infantil' }}{{ formfield 'prod_infantil' }}</div></div></div>
+    {{ endif }}
+    {{ if hay_hotel }}
+    <div class="col-md-4"><div class="card"><div class="card-header">Cortina para hoteles</div><div class="card-body">
+        {{ formfield 'precio_hotel' }}{{ formfield 'prod_hotel' }}</div></div></div>
+    {{ endif }}
+</div>
+<div class="alert alert-secondary mt-3" id="capacidad" role="status"></div>
+
+{{ if pregunta_evento }}
+<h5>Evento: {{ pregunta_evento }}</h5>
+{{ formfield 'evento_si' }}
+{{ endif }}
+{{ if es_bordado }}
+<h5>Evento: ¿qué parte de las cortinas comunes bordan?</h5>
+{{ formfield 'bordado_pct' }}
+{{ endif }}
+
+<h5>Informe al empresario</h5>
+<p><b>{{ pregunta_informe }}</b> ({{ unidad_informe }}).</p>
+{{ formfield 'informe' }}
+<p class="form-text">Opcional, pero suma {{ puntos_informe }} puntos si acierta (±{{ tolerancia_informe }}). Usen punto o coma decimal según su navegador.</p>
+
+{{ next_button }}
+
+<script>
+    // Horas que necesita el plan en cada proceso, mientras escriben.
+    (function () {
+        var fmt = new Intl.NumberFormat('es-AR', {maximumFractionDigits: 1});
+        var caja = document.getElementById('capacidad');
+        function actualizar() {
+            var h = [0, 0];
+            Object.keys(js_vars.horas).forEach(function (l) {
+                var c = document.querySelector('[name="prod_' + l + '"]');
+                var q = c ? parseInt(c.value, 10) || 0 : 0;
+                h[0] += q * js_vars.horas[l][0];
+                h[1] += q * js_vars.horas[l][1];
+            });
+            var si = document.querySelector('[name="evento_si"][value="True"]');
+            if (si && si.checked) { h[0] += js_vars.pedido[0]; h[1] += js_vars.pedido[1]; }
+            var pasa = h[0] > js_vars.cm[0] || h[1] > js_vars.cm[1];
+            caja.textContent = 'Horas del plan: corte y costura ' + fmt.format(h[0]) + ' de ' + js_vars.cm[0] +
+                ' · embolsado ' + fmt.format(h[1]) + ' de ' + js_vars.cm[1] + '.' +
+                (pasa ? ' Se pasa de la capacidad máxima.' : '');
+            caja.className = 'alert mt-3 ' + (pasa ? 'alert-danger' : 'alert-secondary');
+        }
+        document.querySelectorAll('input').forEach(function (c) { c.addEventListener('input', actualizar); c.addEventListener('change', actualizar); });
+        actualizar();
+    })();
+</script>
+
+{{ endblock }}

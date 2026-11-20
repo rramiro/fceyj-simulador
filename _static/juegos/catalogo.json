@@ -99,6 +99,31 @@
         {"clave": "prob_limitacion", "rotulo": "Limitación al alcance", "unidad": "% de probabilidad", "porcentaje": true, "paso": 5},
         {"clave": "prob_acepta_ajuste", "rotulo": "El cliente acepta ajustes", "unidad": "% de las veces", "porcentaje": true, "paso": 5}
       ]
+    },
+    {
+      "config": "costos",
+      "app": "costos",
+      "estado": "disponible",
+      "nombre": "Costos para la gestión",
+      "subtitulo": "Taller de cortinas con dos procesos",
+      "resumen": "Cada equipo maneja un taller de cortinas: decide precios y producción, resuelve un evento por mes (pedido especial, comprar o fabricar, nueva línea, eliminar una línea…) e informa al empresario un número calculado. Costeo variable e integral.",
+      "grupo": {
+        "tipo": "grupo",
+        "texto": "Todos los equipos manejan talleres iguales frente al mismo mercado y pasan juntos de mes."
+      },
+      "rondas": {"campo": "num_rondas", "rotulo": "Meses", "min": 3, "max": 12},
+      "parametros_titulo": "Parámetros del taller",
+      "parametros": [
+        {"clave": "semilla", "rotulo": "Escenario (0 = al azar)", "unidad": "n.° de escenario: el mismo número repite eventos y demanda", "paso": 1},
+        {"clave": "escala_demanda", "rotulo": "Demanda", "unidad": "veces la demanda base", "paso": 0.1},
+        {"clave": "cm_corte", "rotulo": "Capacidad de corte y costura", "unidad": "horas hombre por mes", "paso": 10},
+        {"clave": "cm_embolsado", "rotulo": "Capacidad de embolsado", "unidad": "horas máquina por mes", "paso": 10},
+        {"clave": "precio_tela", "rotulo": "Precio estándar de la tela", "unidad": "$ por metro", "paso": 100},
+        {"clave": "costo_hora_mo", "rotulo": "Hora de mano de obra", "unidad": "$ por hora hombre", "paso": 100},
+        {"clave": "cf_administracion", "rotulo": "Costos fijos de administración", "unidad": "$ por mes", "paso": 100000},
+        {"clave": "tolerancia_informe", "rotulo": "Tolerancia del informe", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
+        {"clave": "puntos_informe", "rotulo": "Puntos por informe acertado", "unidad": "puntos", "paso": 1}
+      ]
     }
   ]
 }

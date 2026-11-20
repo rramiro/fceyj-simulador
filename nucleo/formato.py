@@ -8,7 +8,8 @@ def numero(x, decimales=0):
 
 def pesos(x, decimales=0):
     """Formatea un número como pesos: $ 1.234.567,89 (o -$ 1.234 si es negativo)."""
-    return ('-$ ' if x < 0 else '$ ') + numero(abs(x), decimales)
+    # Lo que redondea a cero se muestra sin signo (no "-$ 0").
+    return ('-$ ' if round(x, decimales) < 0 else '$ ') + numero(abs(x), decimales)
 
 
 def porcentaje(x, decimales=1):

@@ -1,0 +1,59 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Simulador de costos para la gestión
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes dirigen <b>{{ empresa }}</b>, un taller de cortinas de Santa Rosa, durante <b>{{ num_rondas }} meses</b>.
+    Los {{ num_equipos }} equipos de la clase manejan talleres iguales frente al mismo mercado: lo que cambia son sus
+    decisiones. Arrancan con cortinas <b>comunes</b> e <b>infantiles</b>.
+</p>
+
+<h5>El taller</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead><tr><th>Proceso</th><th>Se mide en</th><th class="text-end">Cm</th><th class="text-end">Np</th>
+        <th class="text-end">CFC</th><th class="text-end">CFO</th><th class="text-end">Tasa de CF</th></tr></thead>
+    <tbody>
+        <tr><td>Corte y costura</td><td>horas hombre</td><td class="text-end">{{ cm_corte }}</td><td class="text-end">{{ np_corte }}</td>
+            <td class="text-end">{{ cfc_corte }}</td><td class="text-end">{{ cfo_corte }}</td><td class="text-end">{{ tasa_corte }} / hh</td></tr>
+        <tr><td>Embolsado y terminado</td><td>horas máquina</td><td class="text-end">{{ cm_embolsado }}</td><td class="text-end">{{ np_embolsado }}</td>
+            <td class="text-end">{{ cfc_embolsado }}</td><td class="text-end">{{ cfo_embolsado }}</td><td class="text-end">{{ tasa_embolsado }} / hm</td></tr>
+    </tbody>
+</table>
+</div>
+<ul class="small">
+    <li>Tela: {{ precio_tela }} el metro, con un rendimiento estándar del {{ rendimiento }}. Estuche: {{ estuche }}.</li>
+    <li>Mano de obra de corte y costura: {{ costo_hora_mo }} la hora, más {{ tasa_cv_corte }} por hora de otros costos variables.
+        Embolsado: {{ cv_hora_embolsado }} por hora máquina (incluye el control).</li>
+    <li>Costos fijos de administración: {{ cf_administracion }}; de comercialización: {{ cf_comercializacion }}; además, cada línea
+        tiene sus costos fijos directos.</li>
+</ul>
+
+<h5>Cada mes</h5>
+<ol>
+    <li>Fijan el <b>precio</b> y las <b>unidades a producir</b> de cada línea, sin superar la capacidad de ningún proceso.
+        La demanda depende del precio (y varía un poco); lo que no se vende queda en stock.</li>
+    <li>Resuelven el <b>evento del mes</b>: un pedido especial, comprar o fabricar, una nueva línea, eliminar una línea, un
+        equipo alternativo, un procesamiento adicional…</li>
+    <li>Envían un <b>informe al empresario</b>: un número que tienen que calcular (punto de equilibrio, punto de indiferencia,
+        punto de cierre…). Acierta si queda a ±{{ tolerancia }} del valor correcto y suma {{ puntos_informe }} puntos.</li>
+</ol>
+
+<h5>Cómo se evalúa</h5>
+<p>
+    Cada mes verán el estado de resultados por <b>costeo variable y por costeo integral</b>, los costos indirectos aplicados
+    contra los reales, los desvíos estándar, el punto de equilibrio y el margen de seguridad. El ranking suma hasta
+    <b>{{ puntos_resultado }} puntos</b> por el resultado acumulado <b>por costeo variable</b> (relativo al mejor equipo) más los
+    puntos de los informes.
+</p>
+
+{{ formfield 'nombre_equipo' }}
+<p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de equipo.</p>
+
+{{ next_button }}
+
+{{ endblock }}

@@ -832,7 +832,8 @@
         enlace.appendChild(el('code', null, enlaceEquipo(p.code)));
         enlace.appendChild(botonEnlace(p.code, tab.equipo));
 
-        // Historial
+        // Historial ("Mes a mes", "Trimestre a trimestre", según el juego)
+        $('detalle-titulo-historial').textContent = mayuscula(tab.ronda.nombre) + ' a ' + tab.ronda.nombre;
         var tabla = $('detalle-historial');
         vaciar(tabla);
         var h = (tab.historial && tab.historial.filas) || [], columnas = (tab.historial && tab.historial.columnas) || [];
