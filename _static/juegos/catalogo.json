@@ -129,6 +129,33 @@
         {"clave": "tolerancia_informe", "rotulo": "Tolerancia del informe", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
         {"clave": "puntos_informe", "rotulo": "Puntos por informe acertado", "unidad": "puntos", "paso": 1}
       ]
+    },
+    {
+      "config": "deposito",
+      "app": "deposito",
+      "estado": "disponible",
+      "nombre": "El depósito",
+      "subtitulo": "Gestión de inventarios con demanda incierta",
+      "resumen": "Cada equipo maneja el depósito de un mueble de cocina: fija el lote y el punto de pedido de cada mes, con demanda y demora del proveedor aleatorias. Un evento por mes (descuento por cantidad, suba de costos, campaña, huelga) y una pregunta para calcular con las fórmulas del modelo.",
+      "grupo": {
+        "tipo": "grupo",
+        "texto": "Todos los equipos enfrentan la misma demanda día por día y pasan juntos de mes."
+      },
+      "rondas": {"campo": "num_rondas", "rotulo": "Meses", "min": 3, "max": 12},
+      "parametros_titulo": "Parámetros del depósito",
+      "parametros": [
+        {"clave": "semilla", "rotulo": "Escenario (0 = al azar)", "unidad": "n.° de escenario: el mismo número repite demanda, demoras y eventos", "paso": 1},
+        {"clave": "demanda_diaria", "rotulo": "Demanda media", "unidad": "unidades por día hábil", "paso": 1},
+        {"clave": "demora_min", "rotulo": "Demora mínima del proveedor", "unidad": "días hábiles", "paso": 1},
+        {"clave": "demora_max", "rotulo": "Demora máxima del proveedor", "unidad": "días hábiles", "paso": 1},
+        {"clave": "precio", "rotulo": "Costo de adquisición ca", "unidad": "$ por unidad", "paso": 10000},
+        {"clave": "costo_orden", "rotulo": "Costo de cada orden co", "unidad": "$", "paso": 10000},
+        {"clave": "tasa_anual", "rotulo": "Costo de mantener cm", "unidad": "% anual del precio", "porcentaje": true, "paso": 1},
+        {"clave": "costo_faltante", "rotulo": "Costo del faltante c2", "unidad": "$ por venta perdida", "paso": 5000},
+        {"clave": "descuento", "rotulo": "Descuento por cantidad (evento)", "unidad": "% del precio", "porcentaje": true, "paso": 1},
+        {"clave": "tolerancia_pregunta", "rotulo": "Tolerancia de la pregunta", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
+        {"clave": "puntos_pregunta", "rotulo": "Puntos por pregunta acertada", "unidad": "puntos", "paso": 1}
+      ]
     }
   ]
 }

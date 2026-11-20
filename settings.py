@@ -144,6 +144,35 @@ SESSION_CONFIGS = [
         puntos_resultado=70,          # puntos del ranking por el resultado (relativo al mejor)
         doc='Costos: cada equipo maneja un taller de cortinas con dos procesos, decide precios, producción y un evento por mes.',
     ),
+    dict(
+        name='deposito',
+        display_name='El depósito (gestión de inventarios)',
+        app_sequence=['deposito'],
+        num_demo_participants=3,  # cada equipo maneja su depósito; todos frente a la misma demanda
+        num_rondas=6,                 # meses (máximo: C.NUM_ROUNDS = 12)
+        semilla=0,                    # escenario: 0 = al azar; otro número lo repite
+        # --- Parámetros del modelo (ver deposito/modelo.py) ---
+        # Calibrar con: python scripts/simular_deposito.py
+        dias_mes=25,                  # días hábiles por mes
+        dias_anio=300,                # días hábiles por año (T)
+        demanda_diaria=8,             # media de la demanda diaria (Poisson)
+        escala_demanda=1.0,           # multiplica la demanda (dificultad)
+        demora_min=2, demora_max=6,   # demora del proveedor, en días hábiles
+        precio=400_000,               # ca: costo de adquisición unitario
+        costo_orden=150_000,          # co: costo de emitir cada orden
+        tasa_anual=0.24,              # cm = 24 % anual del precio
+        costo_faltante=60_000,        # c2: margen perdido por unidad no vendida
+        stock_inicial=100,
+        descuento=0.03,               # descuento por cantidad (evento)
+        suba_co=0.15,                 # suba de co (evento)
+        suba_demanda=0.5,             # suba de la demanda en la campaña (evento)
+        demora_extra_huelga=4,        # días extra de demora en la huelga (evento)
+        tasa_alta=0.48,               # tasa anual durante la suba de la tasa (evento)
+        tolerancia_pregunta=0.05,     # la pregunta del mes acierta con ±5 %
+        puntos_pregunta=5,            # puntos por pregunta acertada
+        puntos_resultado=70,          # puntos del ranking por el costo (relativo al mejor)
+        doc='El depósito: cada equipo fija el lote y el punto de pedido de cada mes, con demanda y demora inciertas.',
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

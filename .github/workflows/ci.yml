@@ -51,6 +51,12 @@ jobs:
       - name: Verificaciones y calibración del modelo de costos
         run: python scripts/simular_costos.py
 
+      - name: Bots de oTree de El depósito (4 equipos, 6 meses)
+        run: otree test deposito 4
+
+      - name: Verificaciones y calibración del modelo de inventarios
+        run: python scripts/simular_deposito.py
+
       - name: Catálogo de juegos (portada y tablero) coincide con settings.py
         run: python scripts/verificar_catalogo.py
 

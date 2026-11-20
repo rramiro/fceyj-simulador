@@ -1,0 +1,50 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    El depósito
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes manejan el depósito de <b>{{ empresa }}</b>, que vende un {{ producto }}, durante <b>{{ num_rondas }} meses</b>
+    de {{ dias_mes }} días hábiles. Los {{ num_equipos }} equipos de la clase enfrentan exactamente la misma demanda:
+    lo que cambia es cómo gestionan el stock. Empiezan con {{ stock_inicial }} unidades.
+</p>
+
+<h5>Cada mes</h5>
+<ol>
+    <li>Fijan la política de reposición:
+        <ul>
+            <li><b>Tamaño del lote n</b>: cuántas unidades piden en cada orden.</li>
+            <li><b>Punto de pedido R</b>: cuando el stock más lo que ya está en camino baja a R o menos, se emite una orden de n
+                unidades. El pedido llega después de la demora del proveedor.</li>
+        </ul>
+    </li>
+    <li>Leen el <b>evento del mes</b>: un descuento por cantidad, una suba de costos, una campaña de ventas, una huelga del
+        proveedor… Puede convenir cambiar la política.</li>
+    <li>Responden la <b>pregunta del mes</b>: un número que se calcula con las fórmulas del modelo (lote óptimo, costo total
+        esperado, cantidad de órdenes, punto de pedido…). Acierta si queda a ±{{ tolerancia }} y suma {{ puntos_pregunta }} puntos.</li>
+</ol>
+
+<h5>Qué pasa en el mes</h5>
+<ul>
+    <li>La demanda de cada día es aleatoria alrededor de la media; la demora del proveedor también.</li>
+    <li>Si no hay stock, la venta se pierde: cuesta c2 por unidad (margen perdido).</li>
+    <li>Cada orden cuesta co y cada unidad en el depósito cuesta cm por día.</li>
+</ul>
+
+<h5>Cómo se evalúa</h5>
+<p>
+    El costo de gestión es <b>órdenes + mantenimiento + faltantes − ahorro por descuentos</b> (la compra en sí es la misma
+    para todos). El ranking suma hasta <b>{{ puntos_resultado }} puntos</b> por el costo acumulado (el equipo con menor costo
+    se lleva los {{ puntos_resultado }}) más los puntos de las preguntas. Cada mes verán el stock día por día y lo que habría
+    costado la política del modelo.
+</p>
+
+{{ formfield 'nombre_equipo' }}
+<p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de equipo.</p>
+
+{{ next_button }}
+
+{{ endblock }}

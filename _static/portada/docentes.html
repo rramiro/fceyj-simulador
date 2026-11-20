@@ -351,6 +351,57 @@
             </details>
         </article>
 
+        <article class="juego">
+            <div class="juego-cabecera">
+                <div>
+                    <p class="antetitulo">Métodos Cuantitativos para la Administración</p>
+                    <h3>El depósito: gestión de inventarios</h3>
+                </div>
+                <span class="etiqueta">Versión 1</span>
+            </div>
+
+            <ul class="datos">
+                <li><b>Cualquier</b> cantidad de equipos</li>
+                <li><b>Todos</b> con la misma demanda</li>
+                <li><b>3 a 12</b> meses</li>
+                <li><b>1</b> dispositivo por equipo</li>
+            </ul>
+
+            <div class="juego-columnas">
+                <div>
+                    <h4>Qué decide cada equipo</h4>
+                    <ul>
+                        <li>El tamaño del lote n y el punto de pedido R de cada mes.</li>
+                        <li>Cómo responder a un evento: descuento por cantidad, suba del costo de emitir órdenes,
+                            campaña de ventas, huelga del proveedor, suba de la tasa.</li>
+                        <li>La pregunta del mes: n0, CT0, h0, t0, punto de pedido, conveniencia del descuento.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Qué se aprende</h4>
+                    <ul>
+                        <li>Lote óptimo y costo total esperado (modelo con costos proporcionales).</li>
+                        <li>Estabilidad del óptimo y sensibilidad frente a cambios de co, cm y D.</li>
+                        <li>Stock de protección y punto de pedido con demanda y demora inciertas.</li>
+                        <li>Costos no proporcionales: cuándo conviene un descuento por cantidad.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <details class="modelo">
+                <summary>Ver el modelo</summary>
+                <ul>
+                    <li>Notación de la cátedra (D, n, ca, co, cm, T, h, t, sp, R); n0 = √(2·co·D/(cm·T)).</li>
+                    <li>Cada mes se simula día por día: demanda Poisson, demora uniforme, revisión continua (n, R) y
+                        ventas perdidas cuando falta stock.</li>
+                    <li>Costo de gestión = órdenes + mantenimiento + faltantes − ahorro por descuentos.</li>
+                    <li>Ranking: costo acumulado relativo (hasta 70 puntos) más 5 puntos por pregunta acertada.</li>
+                    <li>Cada mes se muestra lo que habría costado la política del modelo desde el mismo stock.</li>
+                </ul>
+                <p class="nota">Demanda, demoras, costos, descuento y tolerancia se ajustan al crear la sesión.</p>
+            </details>
+        </article>
+
         <p class="nota proximamente">Próximamente se sumarán nuevos juegos.</p>
     </div>
 </section>

@@ -1,0 +1,46 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ empresa }} — Mes {{ player.round_number }} de {{ num_rondas }}
+{{ endblock }}
+
+{{ block content }}
+
+{{ if acumulado }}<p class="text-muted">Costo de gestión acumulado: <b>{{ acumulado }}</b>.</p>{{ endif }}
+
+<div class="alert alert-info">
+    <small class="d-block text-uppercase fw-bold">Evento del mes: {{ evento }}</small>
+    {{ texto_evento }}
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <h5>Datos del mes</h5>
+        <table class="table table-sm">
+            {{ for f in datos }}<tr><td>{{ f.concepto }}</td><td>{{ f.valor }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+    <div class="col-lg-5">
+        <h5>El depósito hoy</h5>
+        <table class="table table-sm">
+            <tr><td>Stock</td><td class="text-end"><b>{{ stock }}</b> unidades</td></tr>
+            <tr><td>Pedidos en camino</td><td class="text-end">{{ en_camino }}</td></tr>
+        </table>
+    </div>
+</div>
+
+<h5>Política del mes</h5>
+<div class="row g-3">
+    <div class="col-md-6">{{ formfield 'lote' }}</div>
+    <div class="col-md-6">{{ formfield 'punto_pedido' }}</div>
+</div>
+<p class="form-text">Cada día, al cerrar, si el stock más lo que está en camino queda en R o menos, se emite una orden de n unidades.</p>
+
+<h5>Pregunta del mes</h5>
+<p><b>{{ pregunta }}</b> ({{ unidad }}).</p>
+{{ formfield 'respuesta' }}
+<p class="form-text">Opcional, pero suma {{ puntos_pregunta }} puntos si acierta (±{{ tolerancia }}).</p>
+
+{{ next_button }}
+
+{{ endblock }}
