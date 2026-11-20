@@ -26,7 +26,8 @@ def _nombres(rubros):
     return ', '.join(modelo.RUBROS[r]['nombre'] for r in rubros)
 
 
-def diagnosticar(esc, riesgos_propios, significatividad, ciclos, alcances, ev, params, puesto, equipos):
+def diagnosticar(esc, riesgos_propios, significatividad, ciclos, alcances, ev, params, puesto, equipos,
+                 calificaciones=None):
     obs = []
 
     # Resultado
@@ -45,13 +46,13 @@ def diagnosticar(esc, riesgos_propios, significatividad, ciclos, alcances, ev, p
                   if no_det else '')
         if ev.get('diligente'):
             obs.append(_obs('sugerencia', 'Opinión',
-                            f'Firmaron una opinión {elegida} y correspondía una opinión {correcta}.{motivo} Pero actuaron '
+                            f'Firmaron una {elegida} y correspondía una {correcta}.{motivo} Pero actuaron '
                             'con la debida diligencia: decidieron bien con lo que sabían y revisaron esos rubros con '
                             'procedimientos adecuados, así que la penalidad se redujo a la mitad. El riesgo de detección '
                             'nunca es cero.'))
         else:
             obs.append(_obs('alerta', 'Opinión',
-                            f'Firmaron una opinión {elegida} y correspondía una opinión {correcta}: es una falla de '
+                            f'Firmaron una {elegida} y correspondía una {correcta}: es una falla de '
                             f'auditoría, con responsabilidad profesional.{motivo}'))
     else:
         obs.append(_obs('sugerencia', 'Opinión',
@@ -94,6 +95,48 @@ def diagnosticar(esc, riesgos_propios, significatividad, ciclos, alcances, ev, p
         if debiles_vistos:
             texto += f' Encontraron controles débiles en {_nombres(debiles_vistos)}.'
         obs.append(_obs('fortaleza', 'Control interno', texto))
+
+    # Evaluación del control interno a partir del relato
+    if calificaciones:
+        bien = modelo.evaluacion_control(esc, calificaciones)
+        confiaron_debiles = [r for r, c in calificaciones.items() if c == 'confio' and esc['rubros'][r]['control'] == 'debil']
+        texto = f'Evaluaron bien el control interno de {bien} de {len(esc["rubros"])} ciclos a partir del relato.'
+        if confiaron_debiles:
+            texto += (f' Confiaron en controles que eran débiles: {_nombres(confiaron_debiles)}. Fíjense en la '
+                      'oposición de intereses: quien custodia no debe registrar ni autorizar.')
+        sin_probar = [r for r, c in calificaciones.items() if c == 'confio' and r not in ciclos]
+        if sin_probar:
+            texto += (f' Dijeron confiar en {_nombres(sin_probar)} sin probarlo: para reducir las pruebas '
+                      'sustantivas hay que probar el control (NIA 330).')
+        obs.append(_obs('fortaleza' if bien >= 5 and not confiaron_debiles else 'sugerencia', 'Evaluación del control', texto))
+
+    # Ajustes calculados con los papeles de trabajo
+    if ev['encontrados']:
+        n = len(ev['encontrados'])
+        mal = [e for e in ev['encontrados'] if ev['estados'][e['id']] in ('devuelto', 'sin_proponer')]
+        if not mal:
+            obs.append(_obs('fortaleza', 'Ajustes', ('Calcularon bien el ajuste propuesto.' if n == 1 else f'Calcularon bien los {n} ajustes propuestos.')))
+        else:
+            detalle = '; '.join(f'{modelo.ERRORES[e["tipo"]]["nombre"].lower()}: {pesos(e["monto"])}' for e in mal)
+            obs.append(_obs('alerta', 'Ajustes',
+                            f'Calcularon bien {n - len(mal)} de {n} ajustes. Los que no ({detalle}) quedaron sin '
+                            'corregir en los estados contables y pesan en la opinión.'))
+
+    # Empresa en funcionamiento
+    if ev.get('empresa_funcionamiento'):
+        if ev.get('enfasis'):
+            obs.append(_obs('fortaleza', 'Empresa en funcionamiento',
+                            'Incluyeron la sección sobre la incertidumbre significativa relacionada con empresa en '
+                            'funcionamiento: no modifica la opinión, pero el lector tiene que saberlo.'))
+        else:
+            obs.append(_obs('alerta', 'Empresa en funcionamiento',
+                            'La nota 12 revelaba pérdidas recurrentes y una deuda bancaria vencida en refinanciación: '
+                            'el informe debía incluir la sección «Incertidumbre significativa relacionada con empresa '
+                            'en funcionamiento».'))
+    elif ev.get('enfasis'):
+        obs.append(_obs('sugerencia', 'Empresa en funcionamiento',
+                        'Incluyeron la sección sobre empresa en funcionamiento, pero no había una incertidumbre '
+                        'significativa: usar esos párrafos sin necesidad les quita peso (RT 37).'))
 
     # Rubros sin evidencia
     if ev['sin_evidencia']:

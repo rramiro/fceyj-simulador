@@ -7,24 +7,32 @@
 {{ block content }}
 
 <p>
-    Horas usadas hasta ahora: <b>{{ horas_usadas }}</b> de {{ presupuesto }}. Probar los controles de un ciclo
-    lleva <b>{{ horas_prueba }} horas</b>. Si el control resulta <b>fuerte</b>, las pruebas sustantivas de ese
-    rubro llevan {{ reduccion }} menos horas. Si resulta <b>débil</b>, o si no lo prueban, no pueden confiar en él.
+    Horas usadas hasta ahora: <b>{{ horas_usadas }}</b> de {{ presupuesto }}. Primero lean cómo funciona cada ciclo
+    y <b>califiquen su control interno</b>. Después decidan qué controles <b>probar</b> ({{ horas_prueba }} horas
+    cada uno). Solo pueden confiar en un control si lo probaron y resultó <b>fuerte</b>: en ese caso, las pruebas
+    sustantivas del rubro llevan {{ reduccion }} menos horas.
+</p>
+<p class="small text-muted">
+    Pistas: la oposición de intereses (quien custodia no registra ni autoriza), la documentación numerada y los
+    controles periódicos (conciliaciones, arqueos, recuentos) hacen fuerte un control.
 </p>
 
-<div class="table-responsive">
-<table class="table table-sm align-middle">
-    <thead><tr><th>Ciclo de control</th><th>Lo que vieron en el planeamiento</th><th>Su riesgo inherente</th></tr></thead>
-    <tbody>
-        <tr><td>{{ formfield 'prueba_caja' }}</td><td class="small">{{ senal.caja }}</td><td>{{ riesgo.caja }}</td></tr>
-        <tr><td>{{ formfield 'prueba_creditos' }}</td><td class="small">{{ senal.creditos }}</td><td>{{ riesgo.creditos }}</td></tr>
-        <tr><td>{{ formfield 'prueba_bienes_cambio' }}</td><td class="small">{{ senal.bienes_cambio }}</td><td>{{ riesgo.bienes_cambio }}</td></tr>
-        <tr><td>{{ formfield 'prueba_bienes_uso' }}</td><td class="small">{{ senal.bienes_uso }}</td><td>{{ riesgo.bienes_uso }}</td></tr>
-        <tr><td>{{ formfield 'prueba_inversiones' }}</td><td class="small">{{ senal.inversiones }}</td><td>{{ riesgo.inversiones }}</td></tr>
-        <tr><td>{{ formfield 'prueba_deudas' }}</td><td class="small">{{ senal.deudas }}</td><td>{{ riesgo.deudas }}</td></tr>
-    </tbody>
-</table>
+{{ for c in ciclos }}
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between">
+        <b>{{ c.ciclo }}</b><span class="small">Su riesgo inherente: {{ c.riesgo }}</span>
+    </div>
+    <div class="card-body">
+        <ul class="mb-2">
+            {{ for rasgo in c.relato }}<li>{{ rasgo }}</li>{{ endfor }}
+        </ul>
+        <div class="row">
+            <div class="col-md-6">{{ formfield c.calif label="Su evaluación del control" }}</div>
+            <div class="col-md-6">{{ formfield c.prueba }}</div>
+        </div>
+    </div>
 </div>
+{{ endfor }}
 
 {{ next_button }}
 

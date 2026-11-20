@@ -105,6 +105,12 @@ SESSION_CONFIGS = [
         factor_diligencia=0.5,        # la penalidad por falla baja a la mitad si hubo debida diligencia
         penalidad_severa=0.5,         # en veces los honorarios: opinión más severa que la correcta
         penalidad_sin_evidencia=0.1,  # en veces los honorarios: por cada rubro sin procedimientos
+        tolerancia_ajuste=0.01,       # error admitido al calcular un ajuste (1 %)
+        bonificacion_ajuste=300_000,  # $ por cada ajuste bien calculado
+        penalidad_ajuste=300_000,     # $ por cada error encontrado sin un ajuste bien calculado (re-trabajo)
+        precision_relatos=0.8,        # cada rasgo del relato del control interno refleja el control real el 80 %
+        prob_empresa_funcionamiento=0.3,  # probabilidad de incertidumbre sobre empresa en funcionamiento
+        penalidad_enfasis=0.1,        # en veces los honorarios: omitir la sección sobre empresa en funcionamiento
         doc='Auditoría: cada equipo es un estudio que planifica, prueba controles, aplica procedimientos y emite su opinión.',
     ),
 ]

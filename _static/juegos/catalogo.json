@@ -97,7 +97,12 @@
         {"clave": "prob_control_debil", "rotulo": "Controles débiles", "unidad": "% de los ciclos", "porcentaje": true, "paso": 5},
         {"clave": "precision_senales", "rotulo": "Claridad de las señales de riesgo", "unidad": "% de las veces que reflejan el riesgo real", "porcentaje": true, "paso": 5},
         {"clave": "prob_limitacion", "rotulo": "Limitación al alcance", "unidad": "% de probabilidad", "porcentaje": true, "paso": 5},
-        {"clave": "prob_acepta_ajuste", "rotulo": "El cliente acepta ajustes", "unidad": "% de las veces", "porcentaje": true, "paso": 5}
+        {"clave": "prob_acepta_ajuste", "rotulo": "El cliente acepta ajustes", "unidad": "% de las veces", "porcentaje": true, "paso": 5},
+        {"clave": "precision_relatos", "rotulo": "Claridad de los relatos del control interno", "unidad": "% de los rasgos que reflejan el control real", "porcentaje": true, "paso": 5},
+        {"clave": "tolerancia_ajuste", "rotulo": "Tolerancia al calcular ajustes", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
+        {"clave": "bonificacion_ajuste", "rotulo": "Bonificación por ajuste bien calculado", "unidad": "$", "paso": 50000},
+        {"clave": "penalidad_ajuste", "rotulo": "Re-trabajo por ajuste mal calculado o sin proponer", "unidad": "$", "paso": 50000},
+        {"clave": "prob_empresa_funcionamiento", "rotulo": "Incertidumbre sobre empresa en funcionamiento", "unidad": "% de probabilidad", "porcentaje": true, "paso": 5}
       ]
     }
   ]

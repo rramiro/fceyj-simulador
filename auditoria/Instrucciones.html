@@ -17,14 +17,17 @@
 <ol>
     <li><b>Planeamiento</b> ({{ horas_planeamiento }} h): fijan la <b>significatividad</b> y califican el
         <b>riesgo inherente</b> de cada rubro a partir de la información del cliente.</li>
-    <li><b>Control interno</b>: deciden qué ciclos de control probar ({{ horas_prueba_control }} h cada uno).
-        Si un control resulta <b>fuerte</b>, pueden confiar en él y las pruebas sustantivas de ese rubro llevan
-        {{ reduccion }} menos horas. Si es <b>débil</b>, es más probable que haya errores.</li>
+    <li><b>Control interno</b>: leen cómo funciona cada ciclo y califican su control; después deciden qué
+        controles probar ({{ horas_prueba_control }} h cada uno). Si un control probado resulta <b>fuerte</b>,
+        pueden confiar en él y las pruebas sustantivas de ese rubro llevan {{ reduccion }} menos horas. Si es
+        <b>débil</b>, es más probable que haya errores.</li>
     <li><b>Pruebas sustantivas</b>: eligen qué procedimientos aplicar en cada rubro y con qué alcance (bajo,
         medio o alto). Más alcance encuentra más, pero cuesta más horas. Cada procedimiento sirve para ciertos
-        errores y no para otros.</li>
-    <li><b>Informe</b>: ven qué ajustes acepta el cliente y emiten su opinión: favorable, con salvedades,
-        adversa o abstención.</li>
+        errores y no para otros. Con el <b>papel de trabajo</b> de cada error encontrado <b>calculan el ajuste</b>
+        que le proponen al cliente (ejercicio cerrado el {{ cierre }}).</li>
+    <li><b>Informe</b>: ven qué ajustes registra el cliente, deciden si corresponde la sección sobre
+        <b>empresa en funcionamiento</b> y emiten su opinión (RT 37 modificada por la RT 53): favorable, con
+        salvedades, adversa o abstención.</li>
 </ol>
 
 <h5>Cómo se evalúa</h5>
@@ -35,7 +38,10 @@
         importante sin corregir), es una <b>falla de auditoría</b>: {{ penalidad_falla }} de penalidad.</li>
     <li>Si la opinión es <b>más severa</b> de lo necesario, pierden el cliente: {{ penalidad_severa }}.</li>
     <li>Cada rubro sin <b>ningún procedimiento</b> es evidencia insuficiente: {{ penalidad_sin_evidencia }}.</li>
-    <li>Puntaje = honorarios − horas × costo de la hora − penalidades. Al final se ve qué errores había
+    <li>Cada <b>ajuste bien calculado</b> (±{{ tolerancia }}) suma {{ bonificacion }}. Si está mal calculado o no lo
+        proponen, el error queda sin corregir y el re-trabajo con el cliente cuesta {{ penalidad_ajuste }}.</li>
+    <li>Omitir la sección sobre empresa en funcionamiento cuando correspondía: {{ penalidad_enfasis }}.</li>
+    <li>Puntaje = honorarios − horas × costo de la hora − penalidades + bonificación por ajustes. Al final se ve qué errores había
         realmente, cuáles encontraron y cuál era la opinión correcta.</li>
 </ul>
 
