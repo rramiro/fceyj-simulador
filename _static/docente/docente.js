@@ -245,8 +245,10 @@
             caja.appendChild(campoNumero('nueva-grupo', juego.grupo.rotulo, base[juego.grupo.campo] || juego.grupo.max,
                                          juego.grupo.min, juego.grupo.max));
         }
-        caja.appendChild(campoNumero('nueva-rondas', juego.rondas.rotulo, base[juego.rondas.campo] || juego.rondas.max,
-                                     juego.rondas.min, juego.rondas.max));
+        if (juego.rondas) {   // algunos juegos tienen una cantidad fija de rondas (p. ej., las etapas de un encargo)
+            caja.appendChild(campoNumero('nueva-rondas', juego.rondas.rotulo, base[juego.rondas.campo] || juego.rondas.max,
+                                         juego.rondas.min, juego.rondas.max));
+        }
         (juego.campos || []).forEach(function (c) {
             var select = el('select', {'data-clave': c.clave}, c.opciones.map(function (o) {
                 return el('option', {value: String(o[0])}, o[1]);
@@ -363,16 +365,16 @@
         var error = $('nueva-error'), boton = $('crear-sesion'), juego = nueva.juego;
         if (!juego) { return; }
         var fuera = function (v, d) { return !(v >= d.min && v <= d.max); };
-        var equipos = enteroDe('nueva-equipos'), rondas = enteroDe('nueva-rondas');
+        var equipos = enteroDe('nueva-equipos'), rondas = juego.rondas ? enteroDe('nueva-rondas') : null;
         var grupo = juego.grupo && juego.grupo.campo ? enteroDe('nueva-grupo') : null;
         var problema = !(equipos >= 1 && equipos <= 200) ? 'La cantidad de equipos tiene que estar entre 1 y 200.'
             : grupo !== null && fuera(grupo, juego.grupo) ? '"' + juego.grupo.rotulo + '" tiene que estar entre ' + juego.grupo.min + ' y ' + juego.grupo.max + '.'
-            : fuera(rondas, juego.rondas) ? '"' + juego.rondas.rotulo + '" tiene que estar entre ' + juego.rondas.min + ' y ' + juego.rondas.max + '.'
+            : juego.rondas && fuera(rondas, juego.rondas) ? '"' + juego.rondas.rotulo + '" tiene que estar entre ' + juego.rondas.min + ' y ' + juego.rondas.max + '.'
             : null;
         if (problema) { error.textContent = problema; error.hidden = false; return; }
 
         var cambios = {};
-        cambios[juego.rondas.campo] = rondas;
+        if (juego.rondas) { cambios[juego.rondas.campo] = rondas; }
         if (grupo !== null) { cambios[juego.grupo.campo] = grupo; }
         [].forEach.call(document.querySelectorAll('#campos-juego select'), function (sel) {
             cambios[sel.getAttribute('data-clave')] = parseInt(sel.value, 10);

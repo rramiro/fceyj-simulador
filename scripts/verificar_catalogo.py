@@ -43,7 +43,7 @@ def problemas():
             continue
         if juego['app'] not in cfg['app_sequence']:
             errores.append(f'{nombre}: la app {juego["app"]} no está en app_sequence')
-        claves = [juego['rondas']['campo']]
+        claves = [juego['rondas']['campo']] if juego.get('rondas') else []
         if juego.get('grupo', {}).get('campo'):
             claves.append(juego['grupo']['campo'])
         claves += [c['clave'] for c in juego.get('campos', [])]

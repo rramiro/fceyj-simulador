@@ -1,0 +1,100 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Etapa 3: Pruebas sustantivas
+{{ endblock }}
+
+{{ block content }}
+
+{{ if limitacion }}
+<div class="alert alert-warning">
+    <b>Limitación al alcance:</b> el cliente informó que no permite enviar pedidos de confirmación de saldos a sus
+    clientes. Para Créditos por ventas tendrán que usar otro procedimiento.
+</div>
+{{ endif }}
+
+<p>
+    Elijan el alcance de cada procedimiento: más alcance (muestras más grandes) encuentra más, pero lleva más horas.
+    Su significatividad es <b>{{ significatividad }}</b>.
+    {{ if controles }}Controles probados:
+    {{ for c in controles }}<span class="badge {{ if c.fuerte }}bg-success{{ else }}bg-danger{{ endif }}">{{ c.ciclo }}: {{ if c.fuerte }}fuerte{{ else }}débil{{ endif }}</span> {{ endfor }}
+    {{ endif }}
+</p>
+
+<div class="alert alert-info" id="horas-encargo" role="status">
+    Horas del encargo: <b id="horas-total">—</b> de {{ presupuesto }} (ya usadas en las etapas anteriores: {{ horas_previas }}).
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card"><div class="card-header">Caja y bancos{{ if confianza.caja }} <span class="badge bg-success">control confiable: −{{ reduccion }} de horas</span>{{ endif }}</div>
+        <div class="card-body">
+            {{ formfield 'alcance_arqueo' }}<p class="form-text mt-0">{{ horas_txt.arqueo }}</p>
+            {{ formfield 'alcance_conciliacion' }}<p class="form-text mt-0">{{ horas_txt.conciliacion }}</p>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card"><div class="card-header">Créditos por ventas{{ if confianza.creditos }} <span class="badge bg-success">control confiable: −{{ reduccion }} de horas</span>{{ endif }}</div>
+        <div class="card-body">
+            {{ if limitacion }}
+            <p class="text-muted small">Confirmación de saldos con clientes: <b>no permitida por el cliente</b>.</p>
+            <input type="hidden" name="alcance_confirmacion" value="0">
+            {{ else }}
+            {{ formfield 'alcance_confirmacion' }}<p class="form-text mt-0">{{ horas_txt.confirmacion }}</p>
+            {{ endif }}
+            {{ formfield 'alcance_antiguedad' }}<p class="form-text mt-0">{{ horas_txt.antiguedad }}</p>
+            {{ formfield 'alcance_corte' }}<p class="form-text mt-0">{{ horas_txt.corte }}</p>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card"><div class="card-header">Bienes de cambio{{ if confianza.bienes_cambio }} <span class="badge bg-success">control confiable: −{{ reduccion }} de horas</span>{{ endif }}</div>
+        <div class="card-body">
+            {{ formfield 'alcance_observacion' }}<p class="form-text mt-0">{{ horas_txt.observacion }}</p>
+            {{ formfield 'alcance_valuacion' }}<p class="form-text mt-0">{{ horas_txt.valuacion }}</p>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card"><div class="card-header">Bienes de uso{{ if confianza.bienes_uso }} <span class="badge bg-success">control confiable: −{{ reduccion }} de horas</span>{{ endif }}</div>
+        <div class="card-body">
+            {{ formfield 'alcance_inspeccion' }}<p class="form-text mt-0">{{ horas_txt.inspeccion }}</p>
+            {{ formfield 'alcance_recalculo' }}<p class="form-text mt-0">{{ horas_txt.recalculo }}</p>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card"><div class="card-header">Inversiones{{ if confianza.inversiones }} <span class="badge bg-success">control confiable: −{{ reduccion }} de horas</span>{{ endif }}</div>
+        <div class="card-body">
+            {{ formfield 'alcance_custodio' }}<p class="form-text mt-0">{{ horas_txt.custodio }}</p>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card"><div class="card-header">Deudas{{ if confianza.deudas }} <span class="badge bg-success">control confiable: −{{ reduccion }} de horas</span>{{ endif }}</div>
+        <div class="card-body">
+            {{ formfield 'alcance_pasivos_omitidos' }}<p class="form-text mt-0">{{ horas_txt.pasivos_omitidos }}</p>
+            {{ formfield 'alcance_cargas_sociales' }}<p class="form-text mt-0">{{ horas_txt.cargas_sociales }}</p>
+        </div></div>
+    </div>
+</div>
+
+<div class="mt-3">{{ next_button }}</div>
+
+<script>
+    // Suma en vivo las horas del encargo con los alcances elegidos.
+    (function () {
+        var fmt = new Intl.NumberFormat('es-AR', {maximumFractionDigits: 1});
+        var total = document.getElementById('horas-total'), caja = document.getElementById('horas-encargo');
+        function actualizar() {
+            var h = js_vars.previas;
+            Object.keys(js_vars.horas).forEach(function (pr) {
+                var campo = document.querySelector('[name="alcance_' + pr + '"]');
+                var a = campo ? parseInt(campo.value, 10) || 0 : 0;
+                h += js_vars.horas[pr][a];
+            });
+            total.textContent = fmt.format(h);
+            caja.className = 'alert ' + (h > js_vars.presupuesto ? 'alert-danger' : 'alert-info');
+        }
+        document.querySelectorAll('[name^="alcance_"]').forEach(function (c) { c.addEventListener('change', actualizar); });
+        actualizar();
+    })();
+</script>
+
+{{ endblock }}

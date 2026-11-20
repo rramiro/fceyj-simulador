@@ -1,0 +1,54 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Etapa 4: Informe
+{{ endblock }}
+
+{{ block content }}
+
+{{ if hay_hallazgos }}
+<h5>Respuesta del cliente a los ajustes propuestos</h5>
+<table class="table table-sm">
+    <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Importe</th><th>El cliente…</th></tr></thead>
+    <tbody>
+    {{ for h in hallazgos }}
+        <tr>
+            <td>{{ h.rubro }}</td><td>{{ h.error }}</td><td class="text-end">{{ h.monto }}</td>
+            <td>{{ if h.acepta }}<span class="text-success">ajustó</span>{{ else }}<span class="text-danger fw-bold">no ajustó</span>{{ endif }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+<p>Errores detectados que el cliente <b>no corrigió</b>: <b>{{ rechazado }}</b>. Su significatividad: <b>{{ significatividad }}</b>.</p>
+{{ else }}
+<p>No encontraron errores para proponer ajustes. Su significatividad: <b>{{ significatividad }}</b>.</p>
+{{ endif }}
+
+{{ if limitacion }}
+<div class="alert {{ if sin_alternativa }}alert-danger{{ else }}alert-info{{ endif }}">
+    El cliente no permitió confirmar saldos de créditos.
+    {{ if sin_alternativa }}No aplicaron un procedimiento alternativo: no tienen evidencia suficiente sobre Créditos por ventas.
+    {{ else }}Aplicaron un procedimiento alternativo.{{ endif }}
+</div>
+{{ endif }}
+
+{{ if sin_evidencia }}
+<div class="alert alert-warning">Sin ningún procedimiento: <b>{{ sin_evidencia }}</b>.</div>
+{{ endif }}
+
+<h5>Opinión</h5>
+<ul class="small">
+    <li><b>Favorable:</b> los estados contables presentan razonablemente la situación (lo no corregido no es significativo).</li>
+    <li><b>Con salvedades:</b> salvo por errores significativos pero no generalizados (o una limitación acotada).</li>
+    <li><b>Adversa:</b> los errores son significativos y generalizados.</li>
+    <li><b>Abstención:</b> no obtuvieron evidencia suficiente sobre algo muy importante.</li>
+</ul>
+<p class="small text-muted">Recuerden que puede haber errores que no detectaron.</p>
+
+{{ formfield 'opinion' }}
+
+<p>Horas usadas en el encargo: <b>{{ horas }}</b>.</p>
+
+{{ next_button }}
+
+{{ endblock }}

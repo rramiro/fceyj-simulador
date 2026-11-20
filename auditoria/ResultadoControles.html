@@ -1,0 +1,37 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Resultado de las pruebas de controles
+{{ endblock }}
+
+{{ block content }}
+
+{{ if resultados }}
+<table class="table table-sm w-auto">
+    <thead><tr><th>Ciclo</th><th>Rubro</th><th>Control</th></tr></thead>
+    <tbody>
+    {{ for f in resultados }}
+        <tr>
+            <td>{{ f.ciclo }}</td><td>{{ f.rubro }}</td>
+            <td>{{ if f.fuerte }}<span class="badge bg-success">Fuerte</span>{{ else }}<span class="badge bg-danger">Débil</span>{{ endif }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+<p>
+    En los rubros con control <b>fuerte</b> pueden confiar en él: sus pruebas sustantivas llevan {{ reduccion }}
+    menos horas. Donde el control es <b>débil</b>, es más probable que haya errores.
+</p>
+{{ else }}
+<p>No probaron ningún control: no pueden confiar en ninguno.</p>
+{{ endif }}
+
+{{ if no_probados }}
+<p class="small text-muted">Sin probar: {{ no_probados }}.</p>
+{{ endif }}
+
+<p>Horas usadas hasta ahora: <b>{{ horas }}</b>.</p>
+
+{{ next_button }}
+
+{{ endblock }}

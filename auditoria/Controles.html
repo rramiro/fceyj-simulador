@@ -1,0 +1,31 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Etapa 2: Control interno
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Horas usadas hasta ahora: <b>{{ horas_usadas }}</b> de {{ presupuesto }}. Probar los controles de un ciclo
+    lleva <b>{{ horas_prueba }} horas</b>. Si el control resulta <b>fuerte</b>, las pruebas sustantivas de ese
+    rubro llevan {{ reduccion }} menos horas. Si resulta <b>débil</b>, o si no lo prueban, no pueden confiar en él.
+</p>
+
+<div class="table-responsive">
+<table class="table table-sm align-middle">
+    <thead><tr><th>Ciclo de control</th><th>Lo que vieron en el planeamiento</th><th>Su riesgo inherente</th></tr></thead>
+    <tbody>
+        <tr><td>{{ formfield 'prueba_caja' }}</td><td class="small">{{ senal.caja }}</td><td>{{ riesgo.caja }}</td></tr>
+        <tr><td>{{ formfield 'prueba_creditos' }}</td><td class="small">{{ senal.creditos }}</td><td>{{ riesgo.creditos }}</td></tr>
+        <tr><td>{{ formfield 'prueba_bienes_cambio' }}</td><td class="small">{{ senal.bienes_cambio }}</td><td>{{ riesgo.bienes_cambio }}</td></tr>
+        <tr><td>{{ formfield 'prueba_bienes_uso' }}</td><td class="small">{{ senal.bienes_uso }}</td><td>{{ riesgo.bienes_uso }}</td></tr>
+        <tr><td>{{ formfield 'prueba_inversiones' }}</td><td class="small">{{ senal.inversiones }}</td><td>{{ riesgo.inversiones }}</td></tr>
+        <tr><td>{{ formfield 'prueba_deudas' }}</td><td class="small">{{ senal.deudas }}</td><td>{{ riesgo.deudas }}</td></tr>
+    </tbody>
+</table>
+</div>
+
+{{ next_button }}
+
+{{ endblock }}

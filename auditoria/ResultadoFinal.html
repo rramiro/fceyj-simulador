@@ -1,0 +1,98 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Resultado del encargo
+{{ endblock }}
+
+{{ block content }}
+
+<div class="alert {{ clase_alerta }}">
+    Su opinión: <b>{{ opinion }}</b>. La que correspondía: <b>{{ opinion_correcta }}</b>.
+    {{ if falla }}Firmaron una opinión menos severa de lo que correspondía: es una falla de auditoría.{{ endif }}
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <h5>Los errores que había</h5>
+        {{ if hay_errores }}
+        <table class="table table-sm">
+            <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Importe</th><th>Qué pasó</th></tr></thead>
+            <tbody>
+            {{ for e in errores }}
+                <tr {{ if e.no_detectado }}class="table-danger"{{ endif }}>
+                    <td>{{ e.rubro }}</td><td>{{ e.error }}{{ if e.importante }} <span class="badge bg-dark">importante</span>{{ endif }}</td>
+                    <td class="text-end">{{ e.monto }}</td><td>{{ e.estado }}</td>
+                </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+        {{ else }}
+        <p>Los estados contables no tenían errores.</p>
+        {{ endif }}
+        <p class="small text-muted">Significatividad de referencia: {{ significatividad_ref }} (5 % del resultado).
+            La suya: {{ significatividad }}.</p>
+
+        <h5>Riesgos y controles del cliente</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Rubro</th><th>Riesgo inherente</th><th>Ustedes lo calificaron</th><th>Control</th></tr></thead>
+            <tbody>
+            {{ for r in rubros }}
+                <tr><td>{{ r.rubro }}</td><td>{{ r.riesgo }}</td><td>{{ r.evaluado }}</td><td>{{ r.control }}</td></tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-lg-6">
+        <h5>Puntaje de {{ nombre }}</h5>
+        <table class="table table-sm">
+            <tr><td>Honorarios</td><td class="text-end">{{ honorarios }}</td></tr>
+            <tr><td>− Horas ({{ horas }})</td><td class="text-end">{{ costo_horas }}</td></tr>
+            {{ if hay_falla }}<tr class="text-danger"><td>− Falla de auditoría{{ if diligente }} (a la mitad: hubo debida diligencia){{ endif }}</td><td class="text-end">{{ penalidad_falla }}</td></tr>{{ endif }}
+            {{ if hay_severa }}<tr class="text-danger"><td>− Opinión más severa de lo necesario (pérdida del cliente)</td><td class="text-end">{{ penalidad_severa }}</td></tr>{{ endif }}
+            {{ if hay_sin_evidencia }}<tr class="text-danger"><td>− Rubros sin evidencia</td><td class="text-end">{{ penalidad_sin_evidencia }}</td></tr>{{ endif }}
+            <tr class="fw-bold"><td>Puntaje</td><td class="text-end {{ if puntaje_neg }}text-danger{{ endif }}">{{ puntaje }}</td></tr>
+        </table>
+
+        <h5>Ranking de los estudios</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Puesto</th><th>Estudio</th><th class="text-end">Puntaje</th><th class="text-end">Horas</th><th>Opinión</th></tr></thead>
+            <tbody>
+            {{ for f in ranking }}
+                <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+                    <td>{{ f.puesto }}</td><td>{{ f.nombre }}</td>
+                    <td class="text-end {{ if f.negativo }}text-danger{{ endif }}">{{ f.puntaje }}</td>
+                    <td class="text-end">{{ f.horas }}</td>
+                    <td>{{ f.opinion }} {{ if f.acerto }}✓{{ else }}✗{{ endif }}</td>
+                </tr>
+            {{ endfor }}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<h5 class="mt-2">Devolución de {{ nombre }}</h5>
+<div class="devolucion mb-3">
+    {{ for o in devolucion }}
+    <div class="devolucion-item devolucion-{{ o.tipo }}">
+        <span class="devolucion-tema">{{ o.tema }}</span>
+        <span>{{ o.texto }}</span>
+    </div>
+    {{ endfor }}
+</div>
+
+{{ if comentario_docente }}
+<div class="comentario-docente mb-3">
+    <div class="comentario-titulo">Comentario del docente</div>
+    <div class="comentario-texto">{{ comentario_docente }}</div>
+</div>
+{{ else }}
+<p class="small text-muted">
+    El docente todavía no dejó un comentario. Si lo hace, aparecerá aquí al <a href="">recargar la página</a>.
+</p>
+{{ endif }}
+
+<p class="small text-muted">Encargo n.° {{ semilla }} (con este número el docente puede repetirlo).</p>
+<p>¡Gracias por participar!</p>
+
+{{ endblock }}

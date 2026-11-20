@@ -1,0 +1,34 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Hallazgos de las pruebas sustantivas
+{{ endblock }}
+
+{{ block content }}
+
+{{ if hallazgos }}
+<p>Sus procedimientos encontraron estos errores en los estados contables:</p>
+<table class="table table-sm">
+    <thead><tr><th>Rubro</th><th>Error</th><th class="text-end">Importe</th></tr></thead>
+    <tbody>
+    {{ for h in hallazgos }}
+        <tr><td>{{ h.rubro }}</td><td>{{ h.error }}</td><td class="text-end">{{ h.monto }}</td></tr>
+    {{ endfor }}
+    </tbody>
+</table>
+<p>En la próxima etapa le proponen los ajustes al cliente y verán cuáles acepta.</p>
+{{ else }}
+<p>Sus procedimientos no encontraron errores. Eso no quiere decir que no los haya: depende de qué revisaron y con qué alcance.</p>
+{{ endif }}
+
+{{ if sin_evidencia }}
+<div class="alert alert-warning">
+    No aplicaron ningún procedimiento en: <b>{{ sin_evidencia }}</b>. Firmar sin evidencia suficiente es una falta profesional.
+</div>
+{{ endif }}
+
+<p>Horas usadas en el encargo: <b>{{ horas }}</b>.</p>
+
+{{ next_button }}
+
+{{ endblock }}

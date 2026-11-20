@@ -78,6 +78,35 @@ SESSION_CONFIGS = [
         precision_noticias=0.65,      # el titular anticipa bien a las acciones 2 de cada 3 veces
         doc='Cartera de inversión: cada trimestre se reparte entre acciones internacionales, bonos y liquidez.',
     ),
+    dict(
+        name='auditoria',
+        display_name='Auditoría de estados contables (encargo en 4 etapas)',
+        app_sequence=['auditoria'],
+        num_demo_participants=3,  # cada equipo es un estudio; todos auditan el mismo cliente
+        semilla=0,                    # encargo: 0 = al azar; otro número lo repite
+        # --- Parámetros del modelo (ver auditoria/modelo.py) ---
+        # Calibrar con: python scripts/simular_auditoria.py
+        escala=1_000_000,             # los saldos del cliente están en millones de pesos
+        honorarios=12_000_000,        # $ del encargo
+        costo_hora=20_000,            # $ por hora de trabajo del estudio
+        presupuesto_horas=400,        # horas máximas del encargo
+        horas_planeamiento=20,        # horas fijas del planeamiento
+        horas_prueba_control=5,       # horas por cada ciclo de control probado
+        reduccion_control_fuerte=0.3, # 30 % menos horas sustantivas si el control se probó y es fuerte (NIA 330)
+        prob_control_debil=0.4,       # probabilidad de que un ciclo tenga control débil
+        precision_senales=0.6,        # la señal del planeamiento refleja el riesgo verdadero el 60 % de las veces
+        factor_errores=1.0,           # dificultad: multiplica la probabilidad de error de cada rubro
+        monto_min=0.3,                # monto de cada error, en veces la significatividad de referencia
+        monto_max=2.5,
+        pct_significatividad=0.05,    # significatividad de referencia: 5 % del resultado antes de impuestos
+        prob_limitacion=0.25,         # probabilidad de que el cliente no permita confirmar créditos
+        prob_acepta_ajuste=0.7,       # probabilidad de que el cliente acepte cada ajuste
+        penalidad_falla=1.0,          # en veces los honorarios: opinión menos severa que la correcta
+        factor_diligencia=0.5,        # la penalidad por falla baja a la mitad si hubo debida diligencia
+        penalidad_severa=0.5,         # en veces los honorarios: opinión más severa que la correcta
+        penalidad_sin_evidencia=0.1,  # en veces los honorarios: por cada rubro sin procedimientos
+        doc='Auditoría: cada equipo es un estudio que planifica, prueba controles, aplica procedimientos y emite su opinión.',
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

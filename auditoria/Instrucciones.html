@@ -1,0 +1,47 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Simulador de auditoría
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes son un <b>estudio de auditoría</b> contratado para dictaminar sobre los estados contables de
+    <b>{{ cliente }}</b>, una distribuidora de agroinsumos de La Pampa. Los {{ num_equipos }} estudios de la
+    clase auditan al mismo cliente. Sus estados contables pueden tener <b>errores</b>: el trabajo es encontrar
+    los importantes y emitir la opinión que corresponde.
+</p>
+
+<h5>El encargo, en cuatro etapas</h5>
+<ol>
+    <li><b>Planeamiento</b> ({{ horas_planeamiento }} h): fijan la <b>significatividad</b> y califican el
+        <b>riesgo inherente</b> de cada rubro a partir de la información del cliente.</li>
+    <li><b>Control interno</b>: deciden qué ciclos de control probar ({{ horas_prueba_control }} h cada uno).
+        Si un control resulta <b>fuerte</b>, pueden confiar en él y las pruebas sustantivas de ese rubro llevan
+        {{ reduccion }} menos horas. Si es <b>débil</b>, es más probable que haya errores.</li>
+    <li><b>Pruebas sustantivas</b>: eligen qué procedimientos aplicar en cada rubro y con qué alcance (bajo,
+        medio o alto). Más alcance encuentra más, pero cuesta más horas. Cada procedimiento sirve para ciertos
+        errores y no para otros.</li>
+    <li><b>Informe</b>: ven qué ajustes acepta el cliente y emiten su opinión: favorable, con salvedades,
+        adversa o abstención.</li>
+</ol>
+
+<h5>Cómo se evalúa</h5>
+<ul>
+    <li>Honorarios del encargo: <b>{{ honorarios }}</b>. Cada hora del estudio cuesta <b>{{ costo_hora }}</b>.
+        El presupuesto es de <b>{{ presupuesto }} horas</b>: no se puede superar.</li>
+    <li>Si firman una opinión <b>menos severa</b> de la que correspondía (por ejemplo, favorable con un error
+        importante sin corregir), es una <b>falla de auditoría</b>: {{ penalidad_falla }} de penalidad.</li>
+    <li>Si la opinión es <b>más severa</b> de lo necesario, pierden el cliente: {{ penalidad_severa }}.</li>
+    <li>Cada rubro sin <b>ningún procedimiento</b> es evidencia insuficiente: {{ penalidad_sin_evidencia }}.</li>
+    <li>Puntaje = honorarios − horas × costo de la hora − penalidades. Al final se ve qué errores había
+        realmente, cuáles encontraron y cuál era la opinión correcta.</li>
+</ul>
+
+{{ formfield 'nombre_equipo' }}
+<p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de estudio.</p>
+
+{{ next_button }}
+
+{{ endblock }}

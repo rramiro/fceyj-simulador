@@ -75,6 +75,30 @@
         {"clave": "prob_crisis", "rotulo": "Probabilidad de crisis", "unidad": "% por trimestre", "porcentaje": true, "paso": 1},
         {"clave": "precision_noticias", "rotulo": "Acierto de los titulares", "unidad": "% de las veces", "porcentaje": true, "paso": 5}
       ]
+    },
+    {
+      "config": "auditoria",
+      "app": "auditoria",
+      "estado": "disponible",
+      "nombre": "Auditoría",
+      "subtitulo": "Encargo de auditoría de estados contables",
+      "resumen": "Cada equipo es un estudio que planifica, prueba controles, elige procedimientos con horas limitadas y emite su opinión sobre un cliente con errores sorteados.",
+      "grupo": {
+        "tipo": "grupo",
+        "texto": "Todos los estudios auditan el mismo cliente y pasan juntos por las 4 etapas del encargo."
+      },
+      "parametros_titulo": "Parámetros del encargo",
+      "parametros": [
+        {"clave": "semilla", "rotulo": "Encargo (0 = al azar)", "unidad": "n.° de encargo: el mismo número repite el cliente y sus errores", "paso": 1},
+        {"clave": "presupuesto_horas", "rotulo": "Presupuesto de horas", "unidad": "horas", "paso": 10},
+        {"clave": "honorarios", "rotulo": "Honorarios", "unidad": "$", "paso": 100000},
+        {"clave": "costo_hora", "rotulo": "Costo de la hora", "unidad": "$ por hora", "paso": 1000},
+        {"clave": "factor_errores", "rotulo": "Dificultad (cantidad de errores)", "unidad": "veces la probabilidad normal", "paso": 0.1},
+        {"clave": "prob_control_debil", "rotulo": "Controles débiles", "unidad": "% de los ciclos", "porcentaje": true, "paso": 5},
+        {"clave": "precision_senales", "rotulo": "Claridad de las señales de riesgo", "unidad": "% de las veces que reflejan el riesgo real", "porcentaje": true, "paso": 5},
+        {"clave": "prob_limitacion", "rotulo": "Limitación al alcance", "unidad": "% de probabilidad", "porcentaje": true, "paso": 5},
+        {"clave": "prob_acepta_ajuste", "rotulo": "El cliente acepta ajustes", "unidad": "% de las veces", "porcentaje": true, "paso": 5}
+      ]
     }
   ]
 }

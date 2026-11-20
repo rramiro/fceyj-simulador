@@ -39,6 +39,12 @@ jobs:
       - name: Verificaciones y calibración del modelo de cartera
         run: python scripts/simular_cartera.py
 
+      - name: Bots de oTree del juego de auditoría (4 estudios, 4 etapas)
+        run: otree test auditoria 4
+
+      - name: Verificaciones y calibración del modelo de auditoría
+        run: python scripts/simular_auditoria.py
+
       - name: Catálogo de juegos (portada y tablero) coincide con settings.py
         run: python scripts/verificar_catalogo.py
 

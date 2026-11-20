@@ -1,0 +1,85 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ nombre }} — Etapa 1: Planeamiento
+{{ endblock }}
+
+{{ block content }}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <h5>Estados contables de {{ cliente }}</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Activo</th><th class="text-end">Saldo</th></tr></thead>
+            <tbody>
+            {{ for f in ec.activo }}
+                <tr><td>{{ f.nombre }}</td><td class="text-end">{{ f.saldo }}</td></tr>
+            {{ endfor }}
+                <tr class="fw-bold"><td>Total del activo</td><td class="text-end">{{ ec.total_activo }}</td></tr>
+                <tr><td>Deudas</td><td class="text-end">{{ ec.deudas }}</td></tr>
+                <tr><td>Patrimonio neto</td><td class="text-end">{{ ec.patrimonio }}</td></tr>
+                <tr><td>Ventas del ejercicio</td><td class="text-end">{{ ec.ventas }}</td></tr>
+                <tr class="fw-bold"><td>Resultado antes de impuestos</td><td class="text-end">{{ ec.resultado }}</td></tr>
+            </tbody>
+        </table>
+
+        <h5>Significatividad</h5>
+        <p class="small text-muted">El importe a partir del cual un error, solo o sumado a otros, cambiaría la opinión
+            de quien lee los estados contables.</p>
+        {{ formfield 'base_significatividad' }}
+        {{ formfield 'pct_significatividad' }}
+        <p class="fw-bold" id="signif-resultado" role="status"></p>
+    </div>
+
+    <div class="col-lg-7">
+        <h5>Lo que surge de las entrevistas y la visita al cliente</h5>
+        <p class="small text-muted">Califiquen el riesgo inherente de cada rubro: qué tan probable es que tenga un error
+            importante, antes de mirar los controles.</p>
+
+        <div class="card mb-2"><div class="card-body py-2">
+            <p class="mb-1"><b>Caja y bancos.</b> {{ senal.caja }}</p>
+            {{ formfield 'riesgo_caja' }}
+        </div></div>
+        <div class="card mb-2"><div class="card-body py-2">
+            <p class="mb-1"><b>Créditos por ventas.</b> {{ senal.creditos }}</p>
+            {{ formfield 'riesgo_creditos' }}
+        </div></div>
+        <div class="card mb-2"><div class="card-body py-2">
+            <p class="mb-1"><b>Bienes de cambio.</b> {{ senal.bienes_cambio }}</p>
+            {{ formfield 'riesgo_bienes_cambio' }}
+        </div></div>
+        <div class="card mb-2"><div class="card-body py-2">
+            <p class="mb-1"><b>Bienes de uso.</b> {{ senal.bienes_uso }}</p>
+            {{ formfield 'riesgo_bienes_uso' }}
+        </div></div>
+        <div class="card mb-2"><div class="card-body py-2">
+            <p class="mb-1"><b>Inversiones.</b> {{ senal.inversiones }}</p>
+            {{ formfield 'riesgo_inversiones' }}
+        </div></div>
+        <div class="card mb-2"><div class="card-body py-2">
+            <p class="mb-1"><b>Deudas.</b> {{ senal.deudas }}</p>
+            {{ formfield 'riesgo_deudas' }}
+        </div></div>
+    </div>
+</div>
+
+{{ next_button }}
+
+<script>
+    // Muestra el importe de la significatividad con la base y el porcentaje elegidos.
+    (function () {
+        var base = document.getElementById('id_base_significatividad');
+        var pct = document.getElementById('id_pct_significatividad');
+        var salida = document.getElementById('signif-resultado');
+        var fmt = new Intl.NumberFormat('es-AR', {maximumFractionDigits: 0});
+        function actualizar() {
+            var b = js_vars.bases[base.value], p = parseFloat(pct.value);
+            salida.textContent = (b && p > 0) ? 'Significatividad: $ ' + fmt.format(b * p / 100) : '';
+        }
+        base.addEventListener('change', actualizar);
+        pct.addEventListener('input', actualizar);
+        actualizar();
+    })();
+</script>
+
+{{ endblock }}
