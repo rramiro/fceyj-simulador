@@ -23,7 +23,12 @@ Formato (versión 2; todo en tipos JSON):
     decision      texto de la decisión enviada (se muestra mientras espera) o None
     historial     {columnas: [{clave, etiqueta, formato, signo}], filas: [{clave: valor}], nota}
     devolucion    [{tipo, tema, texto}] (ver devolucion.py de cada juego)
+    vence         segundos desde 1970 en que vence el tiempo para enviar la decisión
+                  que el equipo tiene pendiente, o None (sin límite, o nada pendiente)
+    fuera_de_tiempo  rondas en las que no envió a tiempo y decidió el sistema (lista)
     actualizado   segundos desde 1970
+
+`vence` y `fuera_de_tiempo` son opcionales: un tablero que no los trae se muestra igual.
 
 Formatos de número que entiende el tablero: 'pesos', 'pesos2' (con centavos),
 'numero', 'pct' (0.25 -> 25 %), 'pct1' (con un decimal: 4,6 %), 'ronda' (3 -> T3) y 'texto'. `signo=True`
@@ -51,7 +56,8 @@ def indicador(etiqueta, valor, formato='texto', signo=False):
 def resumen(*, juego, equipo, grupo_numero, grupo_tipo, grupo_tamano, posicion,
             ronda, rondas, etapa, estado, puesto=None, indicadores=(), decision=None,
             columnas=(), filas=(), nota_historial='', devolucion=(),
-            nombre_ronda='trimestre', abrev_ronda='T', rotulo_equipo='Equipo'):
+            nombre_ronda='trimestre', abrev_ronda='T', rotulo_equipo='Equipo',
+            vence=None, fuera_de_tiempo=()):
     assert etapa in ETAPAS, etapa
     claves = [c['clave'] for c in columnas]
     return dict(
@@ -70,5 +76,7 @@ def resumen(*, juego, equipo, grupo_numero, grupo_tipo, grupo_tamano, posicion,
                        filas=[{k: f.get(k) for k in claves} for f in filas],
                        nota=nota_historial if filas else ''),
         devolucion=list(devolucion),
+        vence=vence,
+        fuera_de_tiempo=list(fuera_de_tiempo),
         actualizado=time.time(),
     )

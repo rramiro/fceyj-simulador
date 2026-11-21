@@ -209,7 +209,11 @@ SESSION_CONFIGS = [
 # e.g. self.session.config['participation_fee']
 
 SESSION_CONFIG_DEFAULTS = dict(
-    real_world_currency_per_point=1.00, participation_fee=0.00, doc=""
+    real_world_currency_per_point=1.00, participation_fee=0.00, doc="",
+    # Tiempo máximo por ronda (ver nucleo/tiempo.py). Si un equipo no envía su decisión a
+    # tiempo, el sistema decide al azar y la ronda queda marcada como fuera de tiempo.
+    minutos_por_ronda=0,          # 0 = sin límite
+    minutos_primera_ronda=0,      # primera ronda (incluye las instrucciones); 0 = igual que las demás
 )
 
 PARTICIPANT_FIELDS = []

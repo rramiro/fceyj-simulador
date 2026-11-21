@@ -51,6 +51,16 @@
     puntos de los informes.
 </p>
 
+{{ if minutos }}
+<h5>Tiempo</h5>
+<p>
+    Cada mes tienen <b>{{ minutos }}</b> para enviar el plan, contando desde que se publican los resultados del mes
+    anterior. Para el primer mes, que incluye leer estas instrucciones, tienen <b>{{ minutos_primera }}</b> desde que
+    abrieron esta página. Si el tiempo se termina, <b>el sistema decide al azar</b> por ustedes y el mes queda marcado
+    como fuera de tiempo (lo ve el docente).
+</p>
+{{ endif }}
+
 {{ formfield 'nombre_equipo' }}
 <p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de equipo.</p>
 

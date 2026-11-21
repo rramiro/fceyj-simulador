@@ -1,6 +1,9 @@
 """
 Bots de prueba: recorren los meses con planes razonables y decisiones al azar.
 Ejecutar con:  otree test costos
+
+Caso 'fuera_de_tiempo': el equipo 1 deja vencer el tiempo del mes 2 con un plan inválido a medio
+cargar; el sistema decide al azar (dentro de la capacidad) y el mes queda marcado.
 """
 import json
 import random
@@ -12,6 +15,8 @@ from . import (Decision, Instrucciones, ResultadoFinal, Resultados, EVENTOS_SI_N
 
 
 class PlayerBot(Bot):
+    cases = ['a_tiempo', 'fuera_de_tiempo']
+
     def play_round(self):
         if self.round_number == 1:
             expect(len(self.subsession.get_groups()), 1)
@@ -34,6 +39,23 @@ class PlayerBot(Bot):
         elif tipo == 'bordado':
             exceso['bordado_pct'] = 0
         yield SubmissionMustFail(Decision, exceso, check_html=False)
+
+        if self.case == 'fuera_de_tiempo' and mes == 2 and self.player.id_in_group == 1:
+            # Vence el tiempo con un plan que se pasa de la capacidad: se descarta y decide el sistema.
+            yield Submission(Decision, exceso, check_html=False, timeout_happened=True)
+            expect(self.player.fuera_de_tiempo, True)
+            expect(self.player.field_maybe_none('informe'), None)
+            r = self.participant.vars['meses_costos'][-1]
+            expect(r['fuera_de_tiempo'], True)
+            expect(sum(f['produccion'] for f in r['filas'].values()), '<', 5000 * len(est['lineas']))
+            expect(self.participant.vars['fuera_de_tiempo'], [2])
+            tablero = self.participant.vars['tablero']
+            expect(tablero['fuera_de_tiempo'], [2])
+            expect(tablero['historial']['filas'][-1]['envio'], '⏱ al azar')
+            yield Resultados
+            if es_ultima_ronda(self.player):
+                yield Submission(ResultadoFinal, check_html=False)
+            return
 
         # Plan razonable: precio de referencia ± 10 % y producción ≈ demanda prevista, dentro de la capacidad.
         datos = {}
@@ -70,6 +92,8 @@ class PlayerBot(Bot):
         expect(tablero['juego'], 'costos')
         expect(len(tablero['historial']['filas']), mes)
         expect(len(tablero['devolucion']), '>', 0)
+        expect(self.player.fuera_de_tiempo, False)
+        expect(tablero['vence'], None)  # la configuración de prueba no tiene tiempo máximo
         yield Resultados
 
         if es_ultima_ronda(self.player):

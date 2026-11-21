@@ -80,6 +80,11 @@
     {{ if informe_en_pesos }}formatoImportes(['informe'], {negativos: true});{{ endif }}
 </script>
 
+{{ if minutos }}
+<p class="form-text">Tienen {{ minutos }} por mes. Si el tiempo se termina antes de enviar, el sistema completa el plan
+    al azar y el mes queda marcado como fuera de tiempo.</p>
+{{ endif }}
+
 {{ next_button }}
 
 <script>
