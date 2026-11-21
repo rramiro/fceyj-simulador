@@ -246,3 +246,10 @@ textarea { width: 100%; resize: vertical; margin-top: 6px; }
 
 .titulo-sistema small a { color: var(--azul); text-decoration: none; }
 .titulo-sistema small a:hover { color: var(--indigo); }
+
+/* Tiempo máximo por ronda: cuenta regresiva y marcas de envíos fuera de tiempo */
+.cuenta { display: inline-block; margin-left: 6px; font-size: .82rem; font-weight: 700; color: var(--indigo);
+    font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cuenta-urgente { color: var(--ambar); }
+.cuenta-vencida { color: var(--rojo); }
+.marca-tiempo { color: var(--rojo); font-weight: 700; font-size: .85rem; cursor: help; white-space: nowrap; }

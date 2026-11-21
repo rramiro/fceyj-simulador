@@ -111,6 +111,7 @@
       "estado": "disponible",
       "nombre": "Costos para la gestión",
       "subtitulo": "Taller de cortinas con dos procesos",
+      "tiempo": {"ronda": "mes", "sugerido": 15, "sugerido_primera": 25},
       "resumen": "Cada equipo maneja un taller de cortinas: decide precios y producción, resuelve un evento por mes (pedido especial, comprar o fabricar, nueva línea, eliminar una línea…) e informa al empresario un número calculado. Costeo variable e integral.",
       "grupo": {
         "tipo": "grupo",
