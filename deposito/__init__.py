@@ -338,7 +338,7 @@ class Decision(Page):
             datos=datos_tabla(mes, p, esc),
             stock=numero(est['stock']),
             en_camino=', '.join(f'{numero(u)} unidades el día {max(1, dl + 1)}' for dl, u in est['en_camino']) or 'ninguno',
-            pregunta=pregunta, unidad=unidad,
+            pregunta=pregunta, unidad=unidad, pregunta_en_pesos=unidad.startswith('$'),
             tolerancia=porcentaje(p['tolerancia_pregunta'], 0), puntos_pregunta=p['puntos_pregunta'],
             acumulado=pesos(est['costo_acumulado']) if meses_jugados(player) else None,
         )

@@ -74,7 +74,11 @@
 <h5>Informe al empresario</h5>
 <p><b>{{ pregunta_informe }}</b> ({{ unidad_informe }}).</p>
 {{ formfield 'informe' }}
-<p class="form-text">Opcional, pero suma {{ puntos_informe }} puntos si acierta (±{{ tolerancia_informe }}). Usen punto o coma decimal según su navegador.</p>
+<p class="form-text">Opcional, pero suma {{ puntos_informe }} puntos si acierta (±{{ tolerancia_informe }}).{{ if informe_en_pesos }} Los puntos de miles se ponen solos; los centavos van después de la coma.{{ else }} Usen coma decimal.{{ endif }}</p>
+<script>
+    formatoImportes(['precio_comun', 'precio_infantil', 'precio_hotel']);
+    {{ if informe_en_pesos }}formatoImportes(['informe'], {negativos: true});{{ endif }}
+</script>
 
 {{ next_button }}
 

@@ -28,6 +28,7 @@
 </div>
 {{ endfor }}
 <p class="form-text">Pueden dejar un ajuste en blanco, pero en ese caso no se propone y el error queda sin corregir.</p>
+<script>formatoImportes(Array.from({length: 10}, function (_, i) { return 'ajuste_' + (i + 1); }));</script>
 {{ else }}
 <p>Sus procedimientos no encontraron errores. Eso no quiere decir que no los haya: depende de qué revisaron y con qué alcance.</p>
 {{ endif }}

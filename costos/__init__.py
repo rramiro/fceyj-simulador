@@ -461,7 +461,7 @@ class Decision(Page):
             empresa=EMPRESA, num_rondas=num_rondas(player.session),
             evento=modelo.NOMBRES_EVENTO[tipo], texto_evento=texto_evento(player),
             pregunta_evento=PREGUNTA_EVENTO.get(tipo), es_bordado=tipo == 'bordado',
-            pregunta_informe=pregunta, unidad_informe=unidad,
+            pregunta_informe=pregunta, unidad_informe=unidad, informe_en_pesos=unidad.startswith('$'),
             tolerancia_informe=porcentaje(p['tolerancia_informe'], 0), puntos_informe=p['puntos_informe'],
             hoja=hoja_especificaciones(player),
             lineas=est['lineas'],

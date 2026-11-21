@@ -128,6 +128,8 @@
 {{ formfield 'produccion' }}
 <p class="form-text">Entre 0 y {{ capacidad }} unidades. Podrán vender hasta su stock más lo que produzcan.</p>
 
+<script>formatoImportes(['precio', 'publicidad']);</script>
+
 {{ next_button }}
 
 {{ endblock }}
