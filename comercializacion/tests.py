@@ -2,6 +2,9 @@
 Bots de prueba: recorren todas las páginas con decisiones aleatorias y
 compras de estudios al azar.
 Ejecutar con:  otree test comercializacion
+
+Caso 'fuera_de_tiempo': la empresa 2 deja vencer el tiempo del trimestre 2 en la investigación y
+en la decisión; no compra estudios, el sistema decide al azar y el trimestre queda marcado.
 """
 import json
 import random
@@ -13,6 +16,8 @@ from . import (Instrucciones, Investigacion, Decision, Resultados, ResultadoFina
 
 
 class PlayerBot(Bot):
+    cases = ['a_tiempo', 'fuera_de_tiempo']
+
     def play_round(self):
         cfg = self.session.config
         if self.round_number == 1:
@@ -29,12 +34,25 @@ class PlayerBot(Bot):
         if self.round_number > 1:
             compras.update(compra_competencia=random.random() < 0.5,
                            compra_sensibilidad=random.random() < 0.5)
-        # Las casillas están escritas a mano en la plantilla.
-        yield Submission(Investigacion, {k: v for k, v in compras.items() if v}, check_html=False)
+        tarde = self.case == 'fuera_de_tiempo' and self.round_number == 2 and self.player.id_in_group == 2
+        if tarde:
+            # Vence el tiempo con estudios marcados y sin decisión: no se compran y decide el sistema.
+            yield Submission(Investigacion, dict(compra_pronostico=True, compra_competencia=True), check_html=False,
+                             timeout_happened=True)
+            expect(self.player.costo_investigacion, 0)
+            yield Submission(Decision, dict(precio=1), check_html=False, timeout_happened=True)
+            expect(self.player.fuera_de_tiempo, True)
+            expect(self.player.precio, '>=', cfg['precio_min'] * self.group.indice - 0.01)
+            expect(0 <= self.player.produccion <= cfg['capacidad'], True)
+            expect(self.participant.vars['fuera_de_tiempo'], [2])
+        else:
+            # Las casillas están escritas a mano en la plantilla.
+            yield Submission(Investigacion, {k: v for k, v in compras.items() if v}, check_html=False)
 
-        if compras.get('compra_pronostico'):
-            expect(self.player.pronostico, '>', 0)
-        yield Decision, self.decision(cfg, self.group.indice)
+            if compras.get('compra_pronostico'):
+                expect(self.player.pronostico, '>', 0)
+            yield Decision, self.decision(cfg, self.group.indice)
+            expect(self.player.fuera_de_tiempo, False)
 
         expect(self.player.unidades, '>=', 0)
         expect(self.player.stock_final, '>=', 0)
@@ -54,6 +72,11 @@ class PlayerBot(Bot):
         claves = [c['clave'] for c in tablero['historial']['columnas']]
         expect(all(set(f) == set(claves) for f in tablero['historial']['filas']), True)
         expect(len(tablero['devolucion']), '>', 0)
+        expect(tablero['vence'], None)  # la configuración de prueba no tiene tiempo máximo
+        if tarde:
+            expect(tablero['fuera_de_tiempo'], [2])
+            expect(tablero['historial']['filas'][-1]['envio'], '⏱ al azar')
+            expect(any(o['tema'] == 'Tiempo' for o in tablero['devolucion']), True)
         yield Resultados
 
         if self.round_number == num_rondas(self.session):

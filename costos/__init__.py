@@ -2,7 +2,7 @@ import random
 
 from otree.api import *
 
-from nucleo import ajustes_otree, tablero
+from nucleo import ajustes_otree, tablero, tiempo
 from nucleo.formato import numero, pesos, porcentaje
 
 from . import devolucion, modelo
@@ -76,6 +76,8 @@ class Player(BasePlayer):
     acumulado_int = models.FloatField()
     informe_acierto = models.BooleanField()
     puntos_informe = models.IntegerField()
+    # No enviaron a tiempo: el plan del mes lo completó el sistema al azar (ver nucleo/tiempo.py).
+    fuera_de_tiempo = models.BooleanField(initial=False)
 
 
 # --- Funciones auxiliares ---------------------------------------------------
@@ -131,6 +133,46 @@ def decisiones(player):
     return dict(precios=precios, produccion=produccion, evento=valor, informe=player.field_maybe_none('informe'))
 
 
+def decision_al_azar(player):
+    """Plan del mes al azar (cuando el equipo no envía a tiempo): precios cerca del de referencia,
+    producción alrededor de la demanda prevista y dentro de la capacidad, evento al azar y sin informe."""
+    p = parametros(player.session)
+    esc = escenario(player.session)
+    est = estado(player)
+    tipo = evento_del_mes(player)
+    mes = player.round_number
+    for l in LINEAS:
+        setattr(player, f'precio_{l}', None)
+        setattr(player, f'prod_{l}', None)
+    acepta = random.random() < 0.5
+    prod = {}
+    for l in est['lineas']:
+        setattr(player, f'precio_{l}', float(round(modelo.LINEAS[l]['precio_ref'] * random.uniform(0.8, 1.2), -2)))
+        prod[l] = max(0, int(modelo.demanda_prevista(l, mes, est, p, esc) * random.uniform(0.5, 1.3)))
+    pedido = tipo == 'pedido_especial' and acepta
+    for _ in range(200):
+        if modelo.validar_produccion(prod, est, p, esc, pedido=pedido) is None:
+            break
+        prod = {l: int(q * 0.9) for l, q in prod.items()}
+    for l, q in prod.items():
+        setattr(player, f'prod_{l}', q)
+    player.evento_si = acepta if tipo in EVENTOS_SI_NO else None
+    player.bordado_pct = random.choice([v for v, _ in OPCIONES_BORDADO]) if tipo == 'bordado' else None
+    player.informe = None
+    player.fuera_de_tiempo = True
+    tiempo.marcar_fuera_de_tiempo(player.participant.vars, mes)
+
+
+def vence_pendiente(player, pagina):
+    """Vencimiento de la decisión que el equipo tiene pendiente en esta página (para el tablero)."""
+    pv = player.participant.vars
+    if pagina in ('Instrucciones', 'Decisión'):
+        return tiempo.vencimiento(pv, player.round_number)
+    if pagina in ('Resultados listos', 'Viendo resultados') and not es_ultima_ronda(player):
+        return tiempo.vencimiento(pv, player.round_number + 1)
+    return None
+
+
 # --- Creación de la sesión -------------------------------------------------------------
 
 def creating_session(subsession: Subsession):
@@ -148,6 +190,7 @@ def cerrar_mes(group: Group):
     esc = escenario(group.session)
     for pl in group.get_players():
         nuevo, r = modelo.simular_mes(pl.round_number, decisiones(pl), estado(pl), p, esc)
+        r['fuera_de_tiempo'] = bool(pl.fuera_de_tiempo)
         pl.participant.vars['estado_costos'] = nuevo
         pl.participant.vars['meses_costos'] = meses_jugados(pl) + [r]
         pl.ventas = r['ventas']
@@ -158,6 +201,10 @@ def cerrar_mes(group: Group):
         pl.acumulado_int = nuevo['resultado_int']
         pl.informe_acierto = r['informe']['acierto']
         pl.puntos_informe = nuevo['puntos_informe']
+    # El reloj del mes siguiente corre desde ahora, igual para todos.
+    if group.round_number < num_rondas(group.session):
+        tiempo.abrir_ronda([pl.participant.vars for pl in group.get_players()], group.round_number + 1,
+                           group.session.config)
     for pl in group.get_players():
         actualizar_tablero(pl, 'Resultados listos')
 
@@ -325,6 +372,7 @@ COLUMNAS_TABLERO = [
     tablero.columna('resultado_var', 'Res. variable', 'pesos', signo=True),
     tablero.columna('resultado_int', 'Res. integral', 'pesos', signo=True),
     tablero.columna('informe', 'Informe', 'texto'),
+    tablero.columna('envio', 'Envío', 'texto'),
 ]
 
 
@@ -332,7 +380,8 @@ def historial(player):
     return [dict(mes=r['mes'], evento=modelo.NOMBRES_EVENTO[r['evento']],
                  decision=texto_decision(r['evento'], r['decision']), ventas=r['ventas'],
                  resultado_var=r['resultado_var'], resultado_int=r['resultado_int'],
-                 informe='✓' if r['informe']['acierto'] else '✗')
+                 informe='✓' if r['informe']['acierto'] else '✗',
+                 envio='⏱ al azar' if r.get('fuera_de_tiempo') else 'a tiempo')
             for r in meses_jugados(player)]
 
 
@@ -373,7 +422,16 @@ def actualizar_tablero(player, pagina):
         filas=historial(player),
         nota_historial='Resultados del mes; el ranking usa el resultado acumulado por costeo variable.',
         devolucion=devolucion_de(player),
+        vence=vence_pendiente(player, pagina),
+        fuera_de_tiempo=tiempo.rondas_fuera_de_tiempo(player.participant.vars),
     )
+
+
+def aviso_tiempo(session):
+    """Minutos por mes en texto para las pantallas (None si no hay límite)."""
+    if not tiempo.hay_limite(session.config):
+        return None
+    return tiempo.texto_minutos(tiempo.minutos_por_ronda(session.config))
 
 
 # --- Páginas --------------------------------------------------------------------------
@@ -381,6 +439,11 @@ def actualizar_tablero(player, pagina):
 class Instrucciones(Page):
     form_model = 'player'
     form_fields = ['nombre_equipo']
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_restantes(tiempo.iniciar_primera_ronda(player.participant.vars, player.session.config))
 
     @staticmethod
     def is_displayed(player: Player):
@@ -388,6 +451,7 @@ class Instrucciones(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
+        tiempo.iniciar_primera_ronda(player.participant.vars, player.session.config)
         actualizar_tablero(player, 'Instrucciones')
         p = parametros(player.session)
         return dict(
@@ -405,6 +469,8 @@ class Instrucciones(Page):
             cf_administracion=pesos(p['cf_administracion']), cf_comercializacion=pesos(p['cf_comercializacion']),
             tolerancia=porcentaje(p['tolerancia_informe'], 0), puntos_informe=p['puntos_informe'],
             puntos_resultado=p['puntos_resultado'],
+            minutos=aviso_tiempo(player.session),
+            minutos_primera=tiempo.texto_minutos(tiempo.minutos_primera_ronda(player.session.config)),
         )
 
     @staticmethod
@@ -416,6 +482,14 @@ class Instrucciones(Page):
 
 class Decision(Page):
     form_model = 'player'
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        pv = player.participant.vars
+        if player.round_number == 1:
+            tiempo.iniciar_primera_ronda(pv, player.session.config)
+        return tiempo.segundos_restantes(tiempo.vencimiento(pv, player.round_number))
 
     @staticmethod
     def is_displayed(player: Player):
@@ -474,6 +548,7 @@ class Decision(Page):
             bordado=porcentaje(est['bordado'], 0) if est['bordado'] else None,
             acumulado=pesos(est['resultado_var']) if anteriores else None,
             ultimo_cv=' · '.join(f"{f['nombre']} {pesos(f['cv_unitario'])}" for f in ultimo['filas'].values()) if ultimo else None,
+            minutos=aviso_tiempo(player.session),
         )
 
     @staticmethod
@@ -491,6 +566,8 @@ class Decision(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            decision_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás equipos')
 
 
@@ -505,9 +582,18 @@ class EsperaMes(WaitPage):
 
 
 class Resultados(Page):
+    timer_text = tiempo.TEXTO_LECTURA
+
     @staticmethod
     def is_displayed(player: Player):
         return ronda_activa(player)
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        # El reloj del mes siguiente ya corre mientras leen los resultados.
+        if es_ultima_ronda(player):
+            return None
+        return tiempo.segundos_restantes(tiempo.vencimiento(player.participant.vars, player.round_number + 1))
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -537,6 +623,7 @@ class Resultados(Page):
             acumulado_var=pesos(player.acumulado_var), acumulado_int=pesos(player.acumulado_int),
             puesto=puesto(player), num_equipos=len(player.group.get_players()),
             stock_var=pesos(r['stock_var']), stock_int=pesos(r['stock_int']),
+            fuera_de_tiempo=r.get('fuera_de_tiempo', False),
         )
 
 
@@ -568,11 +655,13 @@ class ResultadoFinal(Page):
                         decision=texto_decision(r['evento'], r['decision']),
                         recomendada=texto_decision(r['evento'], r['recomendada']) if r['recomendada'] is not None else '—',
                         resultado=pesos(r['resultado_var']), negativo=r['resultado_var'] < 0,
-                        informe='✓' if r['informe']['acierto'] else '✗') for r in meses],
+                        informe='✓' if r['informe']['acierto'] else '✗',
+                        fuera_de_tiempo=r.get('fuera_de_tiempo', False)) for r in meses],
             devolucion=devolucion_de(player),
             comentario_docente=(player.participant.vars.get('comentario_docente') or '').strip(),
             semilla=player.session.vars.get('semilla'),
             puntos_resultado=parametros(player.session)['puntos_resultado'],
+            fuera_de_tiempo=', '.join(str(r['mes']) for r in meses if r.get('fuera_de_tiempo')),
         )
 
 

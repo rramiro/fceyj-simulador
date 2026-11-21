@@ -42,6 +42,10 @@ demora: media 32, máxima 48.
 | Pide mucho (n = 400) | 12,1 | 99 % | 0 % |
 | Pide seguido (n = 15) | 19,6 | 91 % | 0 % |
 
+## Tiempo máximo por ronda (21/11/2026, rama `modalidad_juego`)
+
+El docente puede fijar al crear la sesión los minutos de cada mes. Si un equipo no envía la política a tiempo, el sistema elige un lote entre la mitad y el doble de la demanda del mes y un punto de pedido entre 0 y 1,5 veces la demanda durante la demora máxima, sin responder la pregunta del mes. La ronda queda marcada como fuera de tiempo (tablero, CSV, resultados y devolución) y no cambia el puntaje. Funcionamiento común: `DESPLIEGUE.md`, sección *Tiempo máximo por ronda*.
+
 ## Estado
 
 | Fase | Estado |

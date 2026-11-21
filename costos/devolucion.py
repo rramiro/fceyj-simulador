@@ -36,6 +36,15 @@ def diagnosticar(meses, estado, params, puesto, equipos, terminado):
                     f'Resultado acumulado {periodo} por costeo variable: {pesos(estado["resultado_var"])} '
                     f'(por costeo integral: {pesos(estado["resultado_int"])}). Puesto {puesto} de {equipos}.'))
 
+    # Tiempo máximo por mes
+    tarde = [r['mes'] for r in meses if r.get('fuera_de_tiempo')]
+    if tarde:
+        lista = ', '.join(str(m) for m in tarde)
+        obs.append(_obs('alerta', 'Tiempo',
+                        f'No enviaron el plan a tiempo en {len(tarde)} mes{"es" if len(tarde) > 1 else ""} ({lista}): '
+                        'el sistema decidió al azar. Conviene repartir el tiempo y enviar un plan razonable antes '
+                        'del cierre, aunque no esté perfecto.'))
+
     # Informes al empresario
     aciertos = [r for r in meses if r['informe']['acierto']]
     errados = [r for r in meses if not r['informe']['acierto']]

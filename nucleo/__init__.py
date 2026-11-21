@@ -5,6 +5,7 @@ Lo que comparten todos los juegos y no depende de ninguno en particular:
     formato        montos en pesos, números y porcentajes al estilo argentino
     inflacion      índice de precios, moneda constante y senda de inflación de la sesión
     tablero        resumen de cada equipo para el tablero del docente (formato común)
+    tiempo         tiempo máximo por ronda: vencimientos y rondas fuera de tiempo
     ajustes_otree  ajustes puntuales sobre oTree (página propia de aula completa)
 
 No es una app de oTree (no figura en app_sequence) y salvo ajustes_otree no

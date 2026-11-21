@@ -2,7 +2,7 @@ import random
 
 from otree.api import *
 
-from nucleo import ajustes_otree, tablero
+from nucleo import ajustes_otree, tablero, tiempo
 from nucleo.formato import numero, pesos, porcentaje
 
 from . import devolucion, modelo
@@ -51,6 +51,8 @@ class Player(BasePlayer):
     costo_acumulado = models.FloatField()
     acierto = models.BooleanField()
     puntos_pregunta = models.IntegerField()
+    # No enviaron a tiempo: la decisión la tomó el sistema al azar (ver nucleo/tiempo.py).
+    fuera_de_tiempo = models.BooleanField(initial=False)
 
 
 # --- Funciones auxiliares ---------------------------------------------------
@@ -114,6 +116,14 @@ def minutos(x):
     return f'{numero(x, 1)} min'
 
 
+def decision_al_azar(player):
+    """Cajas de la franja al azar (cuando el equipo no envía a tiempo): de 1 al máximo del súper, sin respuesta."""
+    player.cajas = random.randint(1, int(parametros(player.session)['max_cajas']))
+    player.respuesta = None
+    player.fuera_de_tiempo = True
+    tiempo.marcar_fuera_de_tiempo(player.participant.vars, player.round_number)
+
+
 # --- Creación de la sesión -------------------------------------------------------------
 
 def creating_session(subsession: Subsession):
@@ -145,11 +155,16 @@ def cerrar_ronda(group: Group):
                  en_sistema_inicial=len(antes['fila']) + len(antes['en_caja'])
                  if antes.get('sabado', 1) == r['sabado'] else 0)
         pl.participant.vars['estado_cajas'] = nuevo
+        r['fuera_de_tiempo'] = bool(pl.fuera_de_tiempo)
         pl.participant.vars['rondas_cajas'] = rondas_jugadas(pl) + [r]
         pl.costo = r['costo']
         pl.costo_acumulado = nuevo['costo_acumulado']
         pl.acierto = acierto
         pl.puntos_pregunta = nuevo['aciertos'] * p['puntos_pregunta']
+    # El reloj de la ronda siguiente corre desde ahora, igual para todos.
+    if group.round_number < num_rondas(group.session):
+        tiempo.abrir_ronda([pl.participant.vars for pl in group.get_players()], group.round_number + 1,
+                           group.session.config)
     for pl in group.get_players():
         actualizar_tablero(pl, 'Resultados listos')
 
@@ -263,13 +278,15 @@ COLUMNAS_TABLERO = [
     tablero.columna('costo', 'Costo', 'pesos'),
     tablero.columna('espera', 'Espera media', 'texto'),
     tablero.columna('pregunta', 'Pregunta', 'texto'),
+    tablero.columna('envio', 'Envío', 'texto'),
 ]
 
 
 def historial(player):
     return [dict(ronda=r['ronda'], franja=r['nombre'], evento=modelo.EVENTOS[r['evento']],
                  cajas=f'{r["cajas"]} ({r["recomendada"]["cajas"]})', costo=r['costo'],
-                 espera=minutos(r['wq_observada']), pregunta='✓' if r['pregunta']['acierto'] else '✗')
+                 espera=minutos(r['wq_observada']), pregunta='✓' if r['pregunta']['acierto'] else '✗',
+                 envio='⏱ al azar' if r.get('fuera_de_tiempo') else 'a tiempo')
             for r in rondas_jugadas(player)]
 
 
@@ -277,8 +294,9 @@ def devolucion_de(player):
     rondas = rondas_jugadas(player)
     if not rondas:
         return []
-    return devolucion.diagnosticar(rondas, parametros(player.session), escenario(player.session),
-                                   puesto(player), len(player.group.get_players()))
+    obs = devolucion.diagnosticar(rondas, parametros(player.session), escenario(player.session),
+                                  puesto(player), len(player.group.get_players()))
+    return obs + tiempo.observaciones(player.participant.vars, 'F')
 
 
 def actualizar_tablero(player, pagina):
@@ -310,6 +328,9 @@ def actualizar_tablero(player, pagina):
         nota_historial='Costo de la franja = cajas abiertas + espera de los clientes; entre paréntesis, las cajas '
                        'óptimas del modelo M/M/s. El ranking usa el costo acumulado.',
         devolucion=devolucion_de(player),
+        vence=tiempo.vence_pendiente(player.participant.vars, player.session.config, player.round_number,
+                                     etapa, es_ultima_ronda(player)),
+        fuera_de_tiempo=tiempo.rondas_fuera_de_tiempo(player.participant.vars),
     )
 
 
@@ -318,6 +339,11 @@ def actualizar_tablero(player, pagina):
 class Instrucciones(Page):
     form_model = 'player'
     form_fields = ['nombre_equipo']
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -330,6 +356,7 @@ class Instrucciones(Page):
         n = num_rondas(player.session)
         franjas = len(modelo.FRANJAS)
         return dict(
+            **tiempo.contexto(player.session.config, 'franja', femenino=True),
             empresa=EMPRESA, num_rondas=n,
             sabados=(n + franjas - 1) // franjas,
             num_equipos=len(player.group.get_players()),
@@ -350,6 +377,11 @@ class Instrucciones(Page):
 
 class Decision(Page):
     form_model = 'player'
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
     form_fields = ['cajas', 'respuesta']
 
     @staticmethod
@@ -374,6 +406,7 @@ class Decision(Page):
         pregunta, _, unidad = modelo.pregunta_de_la_ronda(ronda, p, esc)
         anterior = rondas_jugadas(player)[-1] if rondas_jugadas(player) else None
         return dict(
+            **tiempo.contexto(player.session.config, 'franja', femenino=True),
             empresa=EMPRESA, num_rondas=num_rondas(player.session), franja=nombre_ronda(ronda, player.session),
             evento=modelo.EVENTOS[d['evento']], texto_evento=texto_evento(ronda, p, esc),
             evento_normal=d['evento'] == 'normal',
@@ -390,6 +423,8 @@ class Decision(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            decision_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás equipos')
 
 
@@ -404,6 +439,13 @@ class EsperaRonda(WaitPage):
 
 
 class Resultados(Page):
+    timer_text = tiempo.TEXTO_LECTURA
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        # El reloj de la ronda siguiente ya corre mientras leen los resultados.
+        return tiempo.segundos_lectura(player.participant.vars, player.round_number, es_ultima_ronda(player))
+
     @staticmethod
     def is_displayed(player: Player):
         return ronda_activa(player)
@@ -419,6 +461,8 @@ class Resultados(Page):
         rec = r['recomendada']
         horas_cajas = r['cajas'] * d['horas']
         return dict(
+            **tiempo.contexto(player.session.config, 'franja', femenino=True),
+            t_fuera=r.get('fuera_de_tiempo', False),
             empresa=EMPRESA, num_rondas=num_rondas(player.session), franja=nombre_ronda(r['ronda'], player.session),
             evento=modelo.EVENTOS[r['evento']], cajas=r['cajas'],
             llegaron=numero(r['llegaron']), atendidos=numero(r['atendidos']), quedan=numero(r['quedan']),
@@ -472,6 +516,7 @@ class ResultadoFinal(Page):
         est = estado(player)
         rondas = rondas_jugadas(player)
         return dict(
+            t_fuera_lista=tiempo.lista(player.participant.vars, 'F'),
             empresa=EMPRESA, ranking=filas,
             costo=pesos(est['costo_acumulado']),
             costo_recomendado=pesos(sum(r['recomendada']['costo'] for r in rondas)),

@@ -51,6 +51,13 @@ def problemas():
         for clave in claves:
             if clave not in cfg:
                 errores.append(f'{nombre}: "{clave}" no está en su SESSION_CONFIG')
+        # Tiempo máximo por ronda: los campos vienen de SESSION_CONFIG_DEFAULTS (ver nucleo/tiempo.py).
+        if juego.get('tiempo'):
+            for clave in ('minutos_por_ronda', 'minutos_primera_ronda'):
+                if clave not in cfg and clave not in settings.SESSION_CONFIG_DEFAULTS:
+                    errores.append(f'{nombre}: "{clave}" no está en su SESSION_CONFIG ni en SESSION_CONFIG_DEFAULTS')
+            if not juego['tiempo'].get('ronda'):
+                errores.append(f'{nombre}: "tiempo" necesita el nombre de la ronda ("ronda")')
 
     en_catalogo = {j['config'] for j in catalogo['juegos'] if j['estado'] == 'disponible'}
     for nombre in configs:

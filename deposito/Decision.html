@@ -42,6 +42,8 @@
 <p class="form-text">Opcional, pero suma {{ puntos_pregunta }} puntos si acierta (±{{ tolerancia }}).</p>
 {{ if pregunta_en_pesos }}<script>formatoImportes(['respuesta'], {negativos: true});</script>{{ endif }}
 
+{{ include "global/tiempo_decision.html" }}
+
 {{ next_button }}
 
 {{ endblock }}

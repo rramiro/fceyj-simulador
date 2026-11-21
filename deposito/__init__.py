@@ -2,7 +2,7 @@ import random
 
 from otree.api import *
 
-from nucleo import ajustes_otree, tablero
+from nucleo import ajustes_otree, tablero, tiempo
 from nucleo.formato import numero, pesos, porcentaje
 
 from . import devolucion, modelo
@@ -53,6 +53,8 @@ class Player(BasePlayer):
     costo_acumulado = models.FloatField()
     acierto = models.BooleanField()
     puntos_pregunta = models.IntegerField()
+    # No enviaron a tiempo: la decisión la tomó el sistema al azar (ver nucleo/tiempo.py).
+    fuera_de_tiempo = models.BooleanField(initial=False)
 
 
 # --- Funciones auxiliares ---------------------------------------------------
@@ -102,6 +104,19 @@ def texto_valor(valor, unidad):
     return f'{numero(valor, 1)} {unidad}'
 
 
+def decision_al_azar(player):
+    """Política del mes al azar (cuando el equipo no envía a tiempo): lote entre media y dos veces la
+    demanda del mes, punto de pedido entre 0 y la demanda durante la demora máxima, y sin respuesta."""
+    p = parametros(player.session)
+    d = modelo.datos_mes(player.round_number, p, escenario(player.session))
+    demanda_mes = d['media_diaria'] * p['dias_mes']
+    player.lote = max(1, min(5000, int(demanda_mes * random.uniform(0.5, 2.0))))
+    player.punto_pedido = max(0, min(5000, int(d['media_diaria'] * d['demora_max'] * random.uniform(0, 1.5))))
+    player.respuesta = None
+    player.fuera_de_tiempo = True
+    tiempo.marcar_fuera_de_tiempo(player.participant.vars, player.round_number)
+
+
 # --- Creación de la sesión -------------------------------------------------------------
 
 def creating_session(subsession: Subsession):
@@ -132,11 +147,16 @@ def cerrar_mes(group: Group):
                  recomendada=dict(lote=n_rec, punto_pedido=r_rec, costo=rec['costo'], perdidas=rec['perdidas']),
                  stock_inicial=antes['stock'])
         pl.participant.vars['estado_deposito'] = nuevo
+        r['fuera_de_tiempo'] = bool(pl.fuera_de_tiempo)
         pl.participant.vars['meses_deposito'] = meses_jugados(pl) + [r]
         pl.costo = r['costo']
         pl.costo_acumulado = nuevo['costo_acumulado']
         pl.acierto = acierto
         pl.puntos_pregunta = nuevo['aciertos'] * p['puntos_pregunta']
+    # El reloj de la ronda siguiente corre desde ahora, igual para todos.
+    if group.round_number < num_rondas(group.session):
+        tiempo.abrir_ronda([pl.participant.vars for pl in group.get_players()], group.round_number + 1,
+                           group.session.config)
     for pl in group.get_players():
         actualizar_tablero(pl, 'Resultados listos')
 
@@ -233,12 +253,14 @@ COLUMNAS_TABLERO = [
     tablero.columna('costo', 'Costo del mes', 'pesos'),
     tablero.columna('servicio', 'Servicio', 'pct'),
     tablero.columna('pregunta', 'Pregunta', 'texto'),
+    tablero.columna('envio', 'Envío', 'texto'),
 ]
 
 
 def historial(player):
     return [dict(mes=r['mes'], evento=modelo.EVENTOS[r['evento']], politica=f'{r["lote"]} · {r["punto_pedido"]}',
-                 costo=r['costo'], servicio=r['nivel_servicio'], pregunta='✓' if r['pregunta']['acierto'] else '✗')
+                 costo=r['costo'], servicio=r['nivel_servicio'], pregunta='✓' if r['pregunta']['acierto'] else '✗',
+                 envio='⏱ al azar' if r.get('fuera_de_tiempo') else 'a tiempo')
             for r in meses_jugados(player)]
 
 
@@ -246,9 +268,10 @@ def devolucion_de(player):
     meses = meses_jugados(player)
     if not meses:
         return []
-    return devolucion.diagnosticar(meses, estado(player), parametros(player.session), escenario(player.session),
-                                   puesto(player), len(player.group.get_players()),
-                                   terminado=len(meses) == num_rondas(player.session))
+    obs = devolucion.diagnosticar(meses, estado(player), parametros(player.session), escenario(player.session),
+                                  puesto(player), len(player.group.get_players()),
+                                  terminado=len(meses) == num_rondas(player.session))
+    return obs + tiempo.observaciones(player.participant.vars, 'M')
 
 
 def actualizar_tablero(player, pagina):
@@ -279,6 +302,9 @@ def actualizar_tablero(player, pagina):
         filas=historial(player),
         nota_historial='Costo de gestión del mes (órdenes + mantenimiento + faltantes − descuentos); el ranking usa el acumulado.',
         devolucion=devolucion_de(player),
+        vence=tiempo.vence_pendiente(player.participant.vars, player.session.config, player.round_number,
+                                     etapa, es_ultima_ronda(player)),
+        fuera_de_tiempo=tiempo.rondas_fuera_de_tiempo(player.participant.vars),
     )
 
 
@@ -287,6 +313,11 @@ def actualizar_tablero(player, pagina):
 class Instrucciones(Page):
     form_model = 'player'
     form_fields = ['nombre_equipo']
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -297,6 +328,7 @@ class Instrucciones(Page):
         actualizar_tablero(player, 'Instrucciones')
         p = parametros(player.session)
         return dict(
+            **tiempo.contexto(player.session.config, 'mes', femenino=False),
             empresa=EMPRESA, producto=PRODUCTO, num_rondas=num_rondas(player.session),
             num_equipos=len(player.group.get_players()), dias_mes=p['dias_mes'],
             stock_inicial=numero(p['stock_inicial']),
@@ -313,6 +345,11 @@ class Instrucciones(Page):
 
 class Decision(Page):
     form_model = 'player'
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
     form_fields = ['lote', 'punto_pedido', 'respuesta']
 
     @staticmethod
@@ -333,6 +370,7 @@ class Decision(Page):
         est = estado(player)
         pregunta, _, unidad = modelo.pregunta_del_mes(mes, p, esc)
         return dict(
+            **tiempo.contexto(player.session.config, 'mes', femenino=False),
             empresa=EMPRESA, num_rondas=num_rondas(player.session),
             evento=modelo.EVENTOS[evento_del_mes(player)], texto_evento=texto_evento(mes, p, esc),
             datos=datos_tabla(mes, p, esc),
@@ -345,6 +383,8 @@ class Decision(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            decision_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás equipos')
 
 
@@ -359,6 +399,13 @@ class EsperaMes(WaitPage):
 
 
 class Resultados(Page):
+    timer_text = tiempo.TEXTO_LECTURA
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        # El reloj de la ronda siguiente ya corre mientras leen los resultados.
+        return tiempo.segundos_lectura(player.participant.vars, player.round_number, es_ultima_ronda(player))
+
     @staticmethod
     def is_displayed(player: Player):
         return ronda_activa(player)
@@ -371,6 +418,8 @@ class Resultados(Page):
         preg = r['pregunta']
         rec = r['recomendada']
         return dict(
+            **tiempo.contexto(player.session.config, 'mes', femenino=False),
+            t_fuera=r.get('fuera_de_tiempo', False),
             empresa=EMPRESA, num_rondas=num_rondas(player.session),
             evento=modelo.EVENTOS[r['evento']],
             lote=numero(r['lote']), punto_pedido=numero(r['punto_pedido']),
@@ -420,6 +469,7 @@ class ResultadoFinal(Page):
         est = estado(player)
         meses = meses_jugados(player)
         return dict(
+            t_fuera_lista=tiempo.lista(player.participant.vars, 'M'),
             empresa=EMPRESA, ranking=filas,
             costo=pesos(est['costo_acumulado']),
             costo_recomendado=pesos(sum(m['recomendada']['costo'] for m in meses)),

@@ -56,6 +56,10 @@ El óptimo simulado coincide con el del modelo en mañana, mediodía y tarde; a 
 12 cajas casi empatadas con 11 (los que quedan a las 22 se atienden sin costo de caja). Con el cajero
 nuevo el modelo M/M/s no cambia (supone cajas iguales): es un tema para la devolución.
 
+## Tiempo máximo por ronda (21/11/2026, rama `modalidad_juego`)
+
+El docente puede fijar al crear la sesión los minutos de cada franja. Si un equipo no envía a tiempo, el sistema abre entre 1 y el máximo de cajas del súper, sin responder la pregunta de la franja. La ronda queda marcada como fuera de tiempo (tablero, CSV, resultados y devolución) y no cambia el puntaje. Funcionamiento común: `DESPLIEGUE.md`, sección *Tiempo máximo por ronda*.
+
 ## Estado
 
 | Fase | Estado |

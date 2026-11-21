@@ -6,6 +6,13 @@
 
 {{ block content }}
 
+{{ if fuera_de_tiempo }}
+<div class="alert alert-danger">
+    <b>No enviaron el plan a tiempo.</b> El sistema decidió al azar los precios, la producción y el evento del mes,
+    y el mes quedó marcado como fuera de tiempo.
+</div>
+{{ endif }}
+
 <div class="row g-3 mb-2">
     <div class="col-md-6">
         <div class="alert {{ if decidio_bien }}alert-success{{ else }}alert-warning{{ endif }} h-100 mb-0">

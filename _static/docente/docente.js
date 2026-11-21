@@ -236,6 +236,13 @@
         return el('label', {class: 'campo'}, [el('span', null, rotulo), input]);
     }
 
+    var MAX_MINUTOS = 180;
+
+    function campoTiempo(id, rotulo, valor, ayuda) {
+        var input = el('input', {type: 'number', id: id, min: '0', max: String(MAX_MINUTOS), step: '1', value: String(valor)});
+        return el('label', {class: 'campo'}, [el('span', null, rotulo), input, el('small', {class: 'nota'}, ayuda)]);
+    }
+
     /* Campos propios del juego elegido: tamaño de los grupos, rondas y opciones. */
     function dibujarCamposJuego() {
         var juego = nueva.juego, base = nueva.base, caja = $('campos-juego');
@@ -256,6 +263,22 @@
             if (c.clave in base) { select.value = String(base[c.clave]); }
             caja.appendChild(el('label', {class: 'campo'}, [el('span', null, c.rotulo), select]));
         });
+        // Tiempo máximo por ronda (solo en los juegos que lo admiten; ver nucleo/tiempo.py).
+        var t = juego.tiempo;
+        if (t) {
+            var f = t.femenino;   // "la primera franja" / "el primer mes"
+            caja.appendChild(campoTiempo('nueva-minutos', 'Minutos por ' + t.ronda, base.minutos_por_ronda || 0,
+                '0 = sin límite' + (t.sugerido ? ' · sugerido: ' + t.sugerido : '')));
+            caja.appendChild(campoTiempo('nueva-minutos-primera', 'Minutos para ' + (f ? 'la primera ' : 'el primer ') + t.ronda,
+                base.minutos_primera_ronda || 0,
+                'incluye leer las instrucciones · 0 = igual que ' + (f ? 'las demás' : 'los demás') +
+                (t.sugerido_primera ? ' · sugerido: ' + t.sugerido_primera : '')));
+            caja.appendChild(el('p', {class: 'nota campo-ancho'},
+                'Si un equipo no envía su decisión a tiempo, el sistema decide al azar por él y ' + (f ? 'esa ' : 'ese ') +
+                t.ronda + ' queda ' + (f ? 'marcada' : 'marcado') + ' como fuera de tiempo. Desde ' +
+                (f ? 'la segunda ' : 'el segundo ') + t.ronda + ', el tiempo corre para todos a la vez desde que se ' +
+                'publican los resultados.'));
+        }
         $('parametros-titulo').textContent = (juego.parametros_titulo || 'Parámetros') + ' (opcional)';
         dibujarParametros();
         actualizarVistaPrevia();
@@ -371,9 +394,18 @@
             : grupo !== null && fuera(grupo, juego.grupo) ? '"' + juego.grupo.rotulo + '" tiene que estar entre ' + juego.grupo.min + ' y ' + juego.grupo.max + '.'
             : juego.rondas && fuera(rondas, juego.rondas) ? '"' + juego.rondas.rotulo + '" tiene que estar entre ' + juego.rondas.min + ' y ' + juego.rondas.max + '.'
             : null;
+        var minutos = juego.tiempo ? parseFloat($('nueva-minutos').value) : null;
+        var minutosPrimera = juego.tiempo ? parseFloat($('nueva-minutos-primera').value) : null;
+        if (!problema && juego.tiempo && !(minutos >= 0 && minutos <= MAX_MINUTOS && minutosPrimera >= 0 && minutosPrimera <= MAX_MINUTOS)) {
+            problema = 'Los minutos tienen que estar entre 0 (sin límite) y ' + MAX_MINUTOS + '.';
+        }
         if (problema) { error.textContent = problema; error.hidden = false; return; }
 
         var cambios = {};
+        if (juego.tiempo) {
+            if (minutos !== (nueva.base.minutos_por_ronda || 0)) { cambios.minutos_por_ronda = minutos; }
+            if (minutosPrimera !== (nueva.base.minutos_primera_ronda || 0)) { cambios.minutos_primera_ronda = minutosPrimera; }
+        }
         if (juego.rondas) { cambios[juego.rondas.campo] = rondas; }
         if (grupo !== null) { cambios[juego.grupo.campo] = grupo; }
         [].forEach.call(document.querySelectorAll('#campos-juego select'), function (sel) {
@@ -439,6 +471,44 @@
         if (!t) { return {clase: 'sin-ingresar', texto: 'Sin ingresar'}; }
         var texto = t.etapa === 'termino' ? t.estado : t.ronda.abrev + t.ronda.actual + ' · ' + t.estado;
         return {clase: t.etapa, texto: texto};
+    }
+
+    // ------------------------------------------------ tiempo máximo por ronda
+    // Cada resumen trae `vence` (segundos desde 1970) mientras el equipo tiene una decisión pendiente.
+    // La cuenta regresiva se actualiza cada segundo en el navegador, sin pedir datos al servidor
+    // (usa la hora de esta computadora: unos segundos de diferencia con el servidor no importan).
+    function textoCuenta(vence) {
+        var s = Math.round(vence - Date.now() / 1000);
+        if (s <= 0) { return 'vencido: decide el sistema'; }
+        var m = Math.floor(s / 60), r = s % 60;
+        return 'quedan ' + m + ':' + (r < 10 ? '0' : '') + r;
+    }
+
+    function cuentaRegresiva(vence, prefijo) {
+        var nodo = el('span', {class: 'cuenta', 'data-vence': String(vence), 'data-prefijo': prefijo || ''});
+        refrescarCuenta(nodo);
+        return nodo;
+    }
+
+    function refrescarCuenta(nodo) {
+        var vence = parseFloat(nodo.getAttribute('data-vence')), s = vence - Date.now() / 1000;
+        nodo.textContent = nodo.getAttribute('data-prefijo') + textoCuenta(vence);
+        nodo.className = 'cuenta' + (s <= 0 ? ' cuenta-vencida' : s < 60 ? ' cuenta-urgente' : '');
+    }
+
+    setInterval(function () {
+        if (document.hidden) { return; }
+        [].forEach.call(document.querySelectorAll('[data-vence]'), refrescarCuenta);
+    }, 1000);
+
+    // ¿El equipo tiene una decisión pendiente con tiempo límite?
+    function pendiente(tab) { return tab.vence && (tab.etapa === 'decidiendo' || tab.etapa === 'resultados'); }
+
+    function marcaFueraDeTiempo(tab) {
+        var rondas = tab.fuera_de_tiempo || [];
+        if (!rondas.length) { return null; }
+        return el('span', {class: 'marca-tiempo', title: 'No envió a tiempo (decidió el sistema) en: ' +
+            rondas.map(function (r) { return tab.ronda.abrev + r; }).join(', ')}, ' ⏱ ' + rondas.length);
     }
 
     // ----------------------------------------------------- enlaces de los equipos
@@ -649,6 +719,7 @@
             // Papelera: aviso con "Recuperar" si la sesión está eliminada; si no, botón para eliminarla.
             estado.sesionActual = {code: codigo, label: datos.label, papelera: datos.papelera || null};
             estado.app = (datos.config && datos.config.app_sequence || [])[0] || null;
+            estado.config = datos.config || {};
             // Si la sesión es la del aula, su enlace para proyectar.
             $('enlace-aula-sesion').hidden = !datos.room_url;
             if (datos.room_url) { $('enlace-aula-texto').textContent = datos.room_url; }
@@ -698,7 +769,7 @@
             [minT == null ? '—' : (minT === maxT ? ronda.abrev + minT : ronda.abrev + minT + '–' + ronda.abrev + maxT) +
                 (total ? ' de ' + total : ''), ronda.nombre + ' en curso'],
             [terminaron, 'terminaron el juego']
-        ].forEach(function (d) { resumen.appendChild(el('div', {class: 'dato'}, [el('b', null, String(d[0])), el('span', null, d[1])])); });
+        ].concat(datosTiempo(conTablero, ronda)).forEach(function (d) { resumen.appendChild(el('div', {class: 'dato'}, [el('b', null, String(d[0])), el('span', null, d[1])])); });
 
         // Tamaño de los mercados (por si algún tablero viejo no lo informa).
         estado.tamMercado = Math.max.apply(null, [0].concat(Object.keys(mercados).map(function (m) {
@@ -730,6 +801,19 @@
         }
     }
 
+    /* Datos del resumen sobre el tiempo máximo (ninguno si la sesión no tiene límite). */
+    function datosTiempo(conTablero, ronda) {
+        var cfg = estado.config || {}, minutos = parseFloat(cfg.minutos_por_ronda) || 0;
+        if (!minutos) { return []; }
+        var primera = parseFloat(cfg.minutos_primera_ronda) || 0;
+        var tarde = conTablero.reduce(function (n, p) { return n + (p.tablero.fuera_de_tiempo || []).length; }, 0);
+        return [
+            [numero(minutos) + ' min', 'por ' + ronda.nombre + ' para decidir' +
+                (primera && primera !== minutos ? ' (' + ronda.abrev + '1: ' + numero(primera) + ' min)' : '')],
+            [tarde, 'envíos fuera de tiempo (decidió el sistema)']
+        ];
+    }
+
     function dibujarMercado(numeroMercado, equipos) {
         equipos.sort(function (a, b) { return a.tablero.grupo.posicion - b.tablero.grupo.posicion; });
         var primero = equipos[0].tablero, tipo = primero.grupo.tipo;
@@ -749,8 +833,10 @@
                              onclick: function () { abrirDetalle(p.code); },
                              onkeydown: function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrirDetalle(p.code); } }}, [
                 el('td', null, [el('span', {class: 'empresa'}, tab.equipo),
-                                p.comentario_docente ? el('span', {class: 'marca-comentario', title: 'Tiene comentario del docente'}, ' ✎') : null]),
-                el('td', null, el('span', {class: 'chip chip-' + (demora ? 'bloquea' : e.clase)}, demora ? e.texto + ' · lo esperan' : e.texto))
+                                p.comentario_docente ? el('span', {class: 'marca-comentario', title: 'Tiene comentario del docente'}, ' ✎') : null,
+                                marcaFueraDeTiempo(tab)]),
+                el('td', null, [el('span', {class: 'chip chip-' + (demora ? 'bloquea' : e.clase)}, demora ? e.texto + ' · lo esperan' : e.texto),
+                                pendiente(tab) ? cuentaRegresiva(tab.vence) : null])
             ].concat((tab.indicadores || []).map(function (d) {
                 return el('td', {class: claseNumero(d.valor, d)}, formatear(d.valor, d.formato, tab));
             })).concat([
@@ -759,10 +845,21 @@
             ]));
         });
 
+        // Tiempo: cuántos equipos de la ronda en curso todavía no enviaron y cuándo cierra.
+        // (Quien está viendo resultados tiene pendiente la decisión de la ronda siguiente.)
+        var rondaPendiente = function (tab) { return tab.etapa === 'resultados' ? tab.ronda.actual + 1 : tab.ronda.actual; };
+        var conRelojTodos = equipos.filter(function (p) { return pendiente(p.tablero); });
+        var objetivo = Math.max.apply(null, [0].concat(conRelojTodos.map(function (p) { return rondaPendiente(p.tablero); })));
+        var conReloj = conRelojTodos.filter(function (p) { return rondaPendiente(p.tablero) === objetivo; });
+        var cierre = conReloj.length ? Math.max.apply(null, conReloj.map(function (p) { return p.tablero.vence; })) : null;
+
         return el('section', {class: 'mercado'}, [
             el('div', {class: 'mercado-cabecera'}, [
                 el('h2', null, mayuscula(tipo) + ' ' + numeroMercado),
-                el('span', {class: 'nota'}, mayuscula(primero.ronda.nombre) + ' ' + t)
+                el('span', {class: 'nota'}, [mayuscula(primero.ronda.nombre) + ' ' + t,
+                    cierre ? ' · ' + primero.ronda.abrev + objetivo + ': faltan enviar ' + conReloj.length + ' de ' +
+                        equipos.length + ' · ' : null,
+                    cierre ? cuentaRegresiva(cierre, 'cierra: ') : null])
             ]),
             demoran.length ? el('p', {class: 'aviso-espera'},
                 'El ' + tipo + ' espera a: ' + demoran.map(function (p) { return p.tablero.equipo; }).join(', ') + '.') : null,
@@ -824,7 +921,13 @@
         $('detalle-titulo').textContent = tab.equipo;
         var textoEstado = e.texto + (tab.puesto ? ' · puesto ' + tab.puesto + '° en su ' + tab.grupo.tipo : '');
         if (tab.decision && tab.etapa === 'esperando') { textoEstado += ' · decidió ' + tab.decision; }
-        $('detalle-estado').textContent = textoEstado;
+        var tarde = tab.fuera_de_tiempo || [];
+        if (tarde.length) {
+            textoEstado += ' · fuera de tiempo en ' + tarde.map(function (r) { return tab.ronda.abrev + r; }).join(', ');
+        }
+        var detalleEstado = $('detalle-estado');
+        detalleEstado.textContent = textoEstado;
+        if (pendiente(tab)) { detalleEstado.appendChild(cuentaRegresiva(tab.vence, ' · ')); }
 
         // Enlace personal del equipo
         var enlace = $('detalle-enlace');

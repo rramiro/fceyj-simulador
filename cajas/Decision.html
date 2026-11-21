@@ -48,6 +48,8 @@
 {{ formfield 'respuesta' }}
 <p class="form-text">Opcional, pero suma {{ puntos_pregunta }} puntos si acierta (±{{ tolerancia }}). Use punto o coma decimal según su teclado.</p>
 
+{{ include "global/tiempo_decision.html" }}
+
 {{ next_button }}
 
 {{ endblock }}

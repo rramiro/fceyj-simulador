@@ -29,6 +29,8 @@
     Su resultado acumulado: <b>{{ acumulado_var }}</b> por costeo variable y {{ acumulado_int }} por costeo integral
     (diferencia: {{ diferencia }}, que son los costos fijos que quedaron en el stock). Acertaron
     <b>{{ aciertos }} de {{ num_meses }}</b> informes.
+    {{ if fuera_de_tiempo }}<span class="text-danger">Fuera de tiempo (decidió el sistema) en los meses:
+    {{ fuera_de_tiempo }}.</span>{{ endif }}
 </p>
 
 <h5>Mes a mes</h5>
@@ -38,7 +40,7 @@
     <tbody>
     {{ for r in meses }}
         <tr><td>{{ r.mes }}</td><td>{{ r.evento }}</td><td>{{ r.decision }}</td><td>{{ r.recomendada }}</td>
-            <td class="text-end {{ if r.negativo }}text-danger{{ endif }}">{{ r.resultado }}</td><td>{{ r.informe }}</td></tr>
+            <td class="text-end {{ if r.negativo }}text-danger{{ endif }}">{{ r.resultado }}</td><td>{{ r.informe }}{{ if r.fuera_de_tiempo }} <span class="text-danger" title="Fuera de tiempo: decidió el sistema">⏱</span>{{ endif }}</td></tr>
     {{ endfor }}
     </tbody>
 </table>
