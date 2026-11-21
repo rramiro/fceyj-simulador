@@ -1,6 +1,9 @@
 """
 Bots de prueba: recorren las cuatro etapas del encargo con decisiones al azar.
 Ejecutar con:  otree test auditoria
+
+Caso 'fuera_de_tiempo': el estudio 2 deja vencer el tiempo de las etapas 3 y 4 con decisiones
+inválidas; el sistema decide al azar (dentro del presupuesto de horas) y las etapas quedan marcadas.
 """
 import json
 import random
@@ -13,7 +16,10 @@ from . import (Controles, Hallazgos, Informe, Instrucciones, Planeamiento, Resul
 
 
 class PlayerBot(Bot):
+    cases = ['a_tiempo', 'fuera_de_tiempo']
+
     def play_round(self):
+        tarde = self.case == 'fuera_de_tiempo' and self.player.id_in_group == 2
         esc = escenario(self.session)
         p = parametros(self.session)
         r = self.round_number
@@ -46,8 +52,18 @@ class PlayerBot(Bot):
             if esc['limitacion']:
                 yield SubmissionMustFail(Sustantivas, {f'alcance_{pr}': (1 if pr == 'confirmacion' else 0)
                                                        for pr in PROCEDIMIENTOS}, check_html=False)
-            elegidos = {pr: (random.randint(0, 2) if pr in disponibles else 0) for pr in PROCEDIMIENTOS}
-            yield Submission(Sustantivas, {f'alcance_{pr}': a for pr, a in elegidos.items()}, check_html=False)
+            if tarde:
+                # Vence el tiempo con un plan que se pasa del presupuesto: decide el sistema, dentro de él.
+                yield Submission(Sustantivas, {f'alcance_{pr}': 3 for pr in PROCEDIMIENTOS}, check_html=False,
+                                 timeout_happened=True)
+                elegidos = {pr: getattr(self.player, f'alcance_{pr}') for pr in PROCEDIMIENTOS}
+                expect(self.player.fuera_de_tiempo, True)
+                expect(modelo.horas_totales(ciclos, elegidos, p, esc), '<=', p['presupuesto_horas'] + 1e-9)
+                if esc['limitacion']:
+                    expect(elegidos['confirmacion'], 0)
+            else:
+                elegidos = {pr: (random.randint(0, 2) if pr in disponibles else 0) for pr in PROCEDIMIENTOS}
+                yield Submission(Sustantivas, {f'alcance_{pr}': a for pr, a in elegidos.items()}, check_html=False)
             # Ajustes: la mitad bien calculados (con el monto del error) y el resto mal o en blanco.
             ajustes = {}
             for e in encontrados(self.player):
@@ -63,8 +79,14 @@ class PlayerBot(Bot):
 
         elif r == 4:
             yield SubmissionMustFail(Informe, dict(opinion='favorable'), check_html=False)
-            yield Submission(Informe, dict(opinion=random.choice(modelo.OPINIONES), enfasis=random.random() < 0.5),
-                             check_html=False)
+            if tarde:
+                yield Submission(Informe, dict(opinion='favorable'), check_html=False, timeout_happened=True)
+                expect(self.player.fuera_de_tiempo, True)
+                expect(self.player.opinion in modelo.OPINIONES, True)
+                expect(self.participant.vars['fuera_de_tiempo'], [3, 4])
+            else:
+                yield Submission(Informe, dict(opinion=random.choice(modelo.OPINIONES), enfasis=random.random() < 0.5),
+                                 check_html=False)
             pl = self.player
             expect(pl.horas, '<=', p['presupuesto_horas'])
             expect(pl.comparacion in ('correcta', 'falla', 'severa'), True)
@@ -77,5 +99,9 @@ class PlayerBot(Bot):
             expect(tablero['juego'], 'auditoria')
             expect(len(tablero['historial']['filas']), 4)
             expect(len(tablero['devolucion']), '>', 0)
+            expect(tablero['vence'], None)  # la configuración de prueba no tiene tiempo máximo
+            expect(tablero['fuera_de_tiempo'], [3, 4] if tarde else [])
+            expect([f['envio'] for f in tablero['historial']['filas']],
+                   ['a tiempo', 'a tiempo'] + (['⏱ al azar'] * 2 if tarde else ['a tiempo'] * 2))
             # La página final no tiene botón "Siguiente".
             yield Submission(ResultadoFinal, check_html=False)

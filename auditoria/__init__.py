@@ -2,7 +2,7 @@ import random
 
 from otree.api import *
 
-from nucleo import ajustes_otree, tablero
+from nucleo import ajustes_otree, tablero, tiempo
 from nucleo.formato import numero, pesos, porcentaje
 
 from . import devolucion, modelo
@@ -139,6 +139,8 @@ class Player(BasePlayer):
     puntaje = models.FloatField()
     opinion_correcta = models.StringField()
     comparacion = models.StringField()
+    # No enviaron a tiempo la decisión de la etapa: la tomó el sistema al azar (ver nucleo/tiempo.py).
+    fuera_de_tiempo = models.BooleanField(initial=False)
 
 
 # --- Funciones auxiliares ---------------------------------------------------
@@ -230,6 +232,50 @@ def base_valor(esc, base):
     return dict(resultado=esc['resultado'], ventas=esc['ventas'], activo=esc['activo'])[base]
 
 
+# --- Decisión al azar (cuando el estudio no envía a tiempo) -----------------------------
+
+def marcar_al_azar(player):
+    player.fuera_de_tiempo = True
+    tiempo.marcar_fuera_de_tiempo(player.participant.vars, player.round_number)
+
+
+def planeamiento_al_azar(player):
+    player.base_significatividad = random.choice(list(BASES_SIGNIFICATIVIDAD))
+    player.pct_significatividad = round(random.uniform(0.5, 10), 1)
+    for r in RUBROS:
+        setattr(player, f'riesgo_{r}', random.choice([o for o, _ in OPCIONES_RIESGO]))
+    marcar_al_azar(player)
+
+
+def controles_al_azar(player):
+    for r in RUBROS:
+        setattr(player, f'calif_{r}', random.choice(list(modelo.CALIFICACIONES_CONTROL)))
+        setattr(player, f'prueba_{r}', random.random() < 0.5)
+    marcar_al_azar(player)
+
+
+def sustantivas_al_azar(player):
+    """Alcances al azar que respetan la limitación del cliente y el presupuesto de horas."""
+    p = parametros(player.session)
+    esc = escenario(player.session)
+    probados = ciclos_probados(player)
+    a = {pr: random.choice([x for x, _ in OPCIONES_ALCANCE]) for pr in PROCEDIMIENTOS}
+    if esc['limitacion']:
+        a['confirmacion'] = 0
+    disponibles = p['presupuesto_horas'] - p['horas_planeamiento'] - modelo.horas_controles(probados, p)
+    while modelo.horas_sustantivas(a, p, esc, probados) > disponibles + 1e-9 and any(a.values()):
+        a[random.choice([pr for pr, x in a.items() if x])] -= 1
+    for pr, x in a.items():
+        setattr(player, f'alcance_{pr}', x)
+    marcar_al_azar(player)
+
+
+def informe_al_azar(player):
+    player.opinion = random.choice(modelo.OPINIONES)
+    player.enfasis = random.random() < 0.5
+    marcar_al_azar(player)
+
+
 # --- Creación de la sesión: el encargo ----------------------------------------------
 
 def creating_session(subsession: Subsession):
@@ -252,6 +298,10 @@ def cerrar_etapa(group: Group):
             pl.puntaje = ev['puntaje']
             pl.opinion_correcta = ev['opinion_correcta']
             pl.comparacion = ev['comparacion']
+    # El reloj de la etapa siguiente corre desde ahora, igual para todos.
+    if group.round_number < C.NUM_ROUNDS:
+        tiempo.abrir_ronda([pl.participant.vars for pl in group.get_players()], group.round_number + 1,
+                           group.session.config)
     for pl in group.get_players():
         actualizar_tablero(pl, 'Resultados listos')
 
@@ -439,6 +489,7 @@ COLUMNAS_TABLERO = [
     tablero.columna('nombre_etapa', 'Etapa', 'texto'),
     tablero.columna('decision', 'Decisión', 'texto'),
     tablero.columna('horas', 'Horas acumuladas', 'numero'),
+    tablero.columna('envio', 'Envío', 'texto'),
 ]
 
 
@@ -481,7 +532,8 @@ def historial(player):
         if texto is None:
             continue
         filas.append(dict(etapa=etapa, nombre_etapa=ETAPAS[etapa], decision=texto,
-                          horas=horas_usadas(player, etapa)))
+                          horas=horas_usadas(player, etapa),
+                          envio='⏱ al azar' if en_etapa(player, etapa).fuera_de_tiempo else 'a tiempo'))
     return filas
 
 
@@ -492,7 +544,7 @@ def devolucion_de(player):
     return devolucion.diagnosticar(
         esc, riesgos_propios(player), significatividad_propia(player), ciclos_probados(player),
         alcances(player), evaluacion(player), parametros(player.session), puesto(player),
-        len(player.group.get_players()), calificaciones(player))
+        len(player.group.get_players()), calificaciones(player)) + tiempo.observaciones(player.participant.vars, 'E')
 
 
 def ajustes_bien(player):
@@ -531,6 +583,9 @@ def actualizar_tablero(player, pagina):
         filas=historial(player),
         nota_historial='Horas acumuladas al cerrar cada etapa.',
         devolucion=devolucion_de(player),
+        vence=tiempo.vence_pendiente(player.participant.vars, player.session.config, player.round_number,
+                                     etapa, player.round_number == C.NUM_ROUNDS),
+        fuera_de_tiempo=tiempo.rondas_fuera_de_tiempo(player.participant.vars),
     )
 
 
@@ -539,6 +594,11 @@ def actualizar_tablero(player, pagina):
 class Instrucciones(Page):
     form_model = 'player'
     form_fields = ['nombre_equipo']
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -549,6 +609,7 @@ class Instrucciones(Page):
         actualizar_tablero(player, 'Instrucciones')
         p = parametros(player.session)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
             cliente=CLIENTE,
             num_equipos=len(player.group.get_players()),
             honorarios=pesos(p['honorarios']),
@@ -578,6 +639,12 @@ class Planeamiento(Page):
     form_model = 'player'
     form_fields = ['base_significatividad', 'pct_significatividad'] + [f'riesgo_{r}' for r in RUBROS]
 
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
+
     @staticmethod
     def is_displayed(player: Player):
         return player.round_number == 1
@@ -587,6 +654,7 @@ class Planeamiento(Page):
         actualizar_tablero(player, 'Decidiendo')
         esc = escenario(player.session)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
             nombre=nombre(player), cliente=CLIENTE,
             ec=estados_contables(esc),
             senal={r: esc['rubros'][r]['senal'] for r in RUBROS},
@@ -600,6 +668,8 @@ class Planeamiento(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            planeamiento_al_azar(player)
         esc = escenario(player.session)
         player.significatividad = base_valor(esc, player.base_significatividad) * player.pct_significatividad / 100
         actualizar_tablero(player, 'Esperando a los demás estudios')
@@ -608,6 +678,12 @@ class Planeamiento(Page):
 class Controles(Page):
     form_model = 'player'
     form_fields = [f'calif_{r}' for r in RUBROS] + [f'prueba_{r}' for r in RUBROS]
+
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -620,6 +696,7 @@ class Controles(Page):
         esc = escenario(player.session)
         riesgos = riesgos_propios(player)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
             nombre=nombre(player),
             horas_usadas=numero(horas_usadas(player, 1)),
             presupuesto=numero(p['presupuesto_horas']),
@@ -634,12 +711,20 @@ class Controles(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            controles_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás estudios')
 
 
 class Sustantivas(Page):
     form_model = 'player'
     form_fields = [f'alcance_{pr}' for pr in PROCEDIMIENTOS]
+
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -665,6 +750,7 @@ class Sustantivas(Page):
         esc = escenario(player.session)
         probados = ciclos_probados(player)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
             nombre=nombre(player),
             limitacion=esc['limitacion'],
             horas_previas=numero(horas_usadas(player, 2)),
@@ -685,12 +771,20 @@ class Sustantivas(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            sustantivas_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás estudios')
 
 
 class Informe(Page):
     form_model = 'player'
     form_fields = ['enfasis', 'opinion']
+
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -705,6 +799,7 @@ class Informe(Page):
         acepta = modelo.respuesta_cliente(halls, p, montos(player))
         a = alcances(player)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
             nombre=nombre(player),
             hallazgos=filas_hallazgos(player),
             hay_hallazgos=bool(halls),
@@ -720,6 +815,8 @@ class Informe(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            informe_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás estudios')
 
 
@@ -730,6 +827,13 @@ class EsperaEtapa(WaitPage):
 
 
 class ResultadoControles(Page):
+    timer_text = tiempo.TEXTO_LECTURA
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        # El reloj de la etapa siguiente ya corre mientras leen los resultados.
+        return tiempo.segundos_lectura(player.participant.vars, player.round_number, player.round_number == 4)
+
     @staticmethod
     def is_displayed(player: Player):
         return player.round_number == 2
@@ -741,6 +845,8 @@ class ResultadoControles(Page):
         esc = escenario(player.session)
         probados = ciclos_probados(player)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
+            t_fuera=player.fuera_de_tiempo,
             nombre=nombre(player),
             resultados=[dict(ciclo=modelo.RUBROS[r]['ciclo'], rubro=modelo.RUBROS[r]['nombre'],
                              fuerte=esc['rubros'][r]['control'] == 'fuerte',
@@ -756,6 +862,13 @@ class ResultadoControles(Page):
 class Hallazgos(Page):
     form_model = 'player'
 
+    timer_text = tiempo.TEXTO_LECTURA
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        # El reloj de la etapa siguiente ya corre mientras leen los resultados.
+        return tiempo.segundos_lectura(player.participant.vars, player.round_number, player.round_number == 4)
+
     @staticmethod
     def is_displayed(player: Player):
         return player.round_number == 3
@@ -770,6 +883,8 @@ class Hallazgos(Page):
         esc = escenario(player.session)
         p = parametros(player.session)
         return dict(
+            **tiempo.contexto(player.session.config, 'etapa', femenino=True),
+            t_fuera=player.fuera_de_tiempo,
             nombre=nombre(player),
             cierre=CIERRE,
             tolerancia=porcentaje(p['tolerancia_ajuste'], 0),
@@ -820,6 +935,7 @@ class ResultadoFinal(Page):
                            opinion=modelo.NOMBRES_OPINION[q.opinion], acerto=q.comparacion == 'correcta')
                       for i, q in enumerate(ranking(player))]
         return dict(
+            t_fuera_lista=tiempo.lista(player.participant.vars, 'E'),
             nombre=nombre(player),
             errores=errores,
             hay_errores=bool(errores),

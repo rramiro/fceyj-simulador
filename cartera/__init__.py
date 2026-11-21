@@ -2,7 +2,7 @@ import random
 
 from otree.api import *
 
-from nucleo import ajustes_otree, tablero
+from nucleo import ajustes_otree, tablero, tiempo
 from nucleo.formato import numero, pesos, porcentaje
 
 from . import devolucion, modelo
@@ -94,6 +94,8 @@ class Player(BasePlayer):
     rendimiento_real = models.FloatField()
     valor_real = models.FloatField()        # en pesos del inicio del juego
     valor_dolares = models.FloatField()     # en "dólares del inicio": valor / índice del dólar
+    # No enviaron a tiempo: la decisión la tomó el sistema al azar (ver nucleo/tiempo.py).
+    fuera_de_tiempo = models.BooleanField(initial=False)
 
 
 # --- Funciones auxiliares ---------------------------------------------------
@@ -206,6 +208,15 @@ def puesto(player, clave='valor_real'):
     return [p.id_in_group for p in orden[0]].index(player.id_in_group) + 1
 
 
+def decision_al_azar(player):
+    """Reparto al azar (cuando el equipo no envía a tiempo): porcentajes en pasos de 5 que suman 100."""
+    cortes = sorted(random.randint(0, 20) for _ in range(2))
+    player.pct_acciones, player.pct_bonos, player.pct_liquidez = (
+        5 * cortes[0], 5 * (cortes[1] - cortes[0]), 5 * (20 - cortes[1]))
+    player.fuera_de_tiempo = True
+    tiempo.marcar_fuera_de_tiempo(player.participant.vars, player.round_number)
+
+
 # --- Creación de la sesión: el escenario de mercado ----------------------------
 
 def creating_session(subsession: Subsession):
@@ -258,6 +269,10 @@ def calcular_resultados(group: Group):
             siguiente = p.in_round(group.round_number + 1)
             siguiente.pct_acciones, siguiente.pct_bonos, siguiente.pct_liquidez = (
                 p.pct_acciones, p.pct_bonos, p.pct_liquidez)
+    # El reloj de la ronda siguiente corre desde ahora, igual para todos.
+    if group.round_number < num_rondas(group.session):
+        tiempo.abrir_ronda([pl.participant.vars for pl in group.get_players()], group.round_number + 1,
+                           group.session.config)
     # Recién con todos los valores se puede calcular el puesto de cada uno.
     for p in group.get_players():
         actualizar_tablero(p, 'Resultados listos')
@@ -351,6 +366,7 @@ COLUMNAS_TABLERO = [
     tablero.columna('comision', 'Comisión', 'pesos'),
     tablero.columna('valor_final', 'Valor', 'pesos'),
     tablero.columna('valor_real', 'Valor real', 'pesos', signo=False),
+    tablero.columna('envio', 'Envío', 'texto'),
 ]
 
 
@@ -367,6 +383,7 @@ def historial(player):
             valor_real=p.valor_real, valor_dolares=p.valor_dolares,
             crisis=g.crisis, noticia=g.noticia, inflacion=g.inflacion,
             rend_acciones=g.rend_acciones, rend_bonos=g.rend_bonos, rend_liquidez=g.rend_liquidez,
+            envio='⏱ al azar' if p.fuera_de_tiempo else 'a tiempo',
         ))
     return filas
 
@@ -379,9 +396,10 @@ def devolucion_de(player):
     ev = evaluacion(player)
     refs = {k: v['evaluacion'] for k, v in referencias(player.session, n).items()}
     equipos = len(player.group.get_players())
-    return devolucion.diagnosticar(
+    obs = devolucion.diagnosticar(
         filas, ev, refs, puesto(player), puesto(player, 'sharpe'), equipos,
         terminado=n == num_rondas(player.session), capital=player.session.config['capital_inicial'])
+    return obs + tiempo.observaciones(player.participant.vars, 'T')
 
 
 def texto_decision(player):
@@ -416,6 +434,9 @@ def actualizar_tablero(player, pagina):
         filas=historial(player),
         nota_historial='Valor en pesos de cada trimestre; el valor real está en pesos del inicio del juego.',
         devolucion=devolucion_de(player),
+        vence=tiempo.vence_pendiente(player.participant.vars, player.session.config, player.round_number,
+                                     etapa, es_ultima_ronda(player)),
+        fuera_de_tiempo=tiempo.rondas_fuera_de_tiempo(player.participant.vars),
     )
 
 
@@ -424,6 +445,11 @@ def actualizar_tablero(player, pagina):
 class Instrucciones(Page):
     form_model = 'player'
     form_fields = ['nombre_equipo']
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
 
     @staticmethod
     def is_displayed(player: Player):
@@ -435,6 +461,7 @@ class Instrucciones(Page):
         cfg = player.session.config
         n = num_rondas(player.session)
         return dict(
+            **tiempo.contexto(player.session.config, 'trimestre', femenino=False),
             num_rondas=n,
             anios=texto_anios(n),
             num_equipos=len(player.group.get_players()),
@@ -456,6 +483,11 @@ class Instrucciones(Page):
 
 class Decision(Page):
     form_model = 'player'
+    timer_text = tiempo.TEXTO_DECISION
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_decision(player.participant.vars, player.session.config, player.round_number)
     form_fields = ['pct_acciones', 'pct_bonos', 'pct_liquidez']
 
     @staticmethod
@@ -469,6 +501,8 @@ class Decision(Page):
 
     @staticmethod
     def before_next_page(player: Player, timeout_happened):
+        if timeout_happened:
+            decision_al_azar(player)
         actualizar_tablero(player, 'Esperando a los demás equipos')
 
     @staticmethod
@@ -482,6 +516,7 @@ class Decision(Page):
         valor = sum(montos)
         indice_previo = ant.group.indice if ant else 1.0
         return dict(
+            **tiempo.contexto(player.session.config, 'trimestre', femenino=False),
             nombre=nombre(player),
             num_rondas=num_rondas(player.session),
             anio=anio_de(r),
@@ -511,6 +546,13 @@ class EsperaResultados(WaitPage):
 
 
 class Resultados(Page):
+    timer_text = tiempo.TEXTO_LECTURA
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        # El reloj de la ronda siguiente ya corre mientras leen los resultados.
+        return tiempo.segundos_lectura(player.participant.vars, player.round_number, es_ultima_ronda(player))
+
     @staticmethod
     def is_displayed(player: Player):
         return ronda_activa(player)
@@ -529,6 +571,8 @@ class Resultados(Page):
                    for a, pct, i, r, f in zip(modelo.ACTIVOS, (player.pct_acciones, player.pct_bonos, player.pct_liquidez),
                                               invertido, rend, finales)]
         return dict(
+            **tiempo.contexto(player.session.config, 'trimestre', femenino=False),
+            t_fuera=player.fuera_de_tiempo,
             nombre=nombre(player),
             num_rondas=num_rondas(player.session),
             crisis=g.crisis,
@@ -556,6 +600,12 @@ class Resultados(Page):
 
 
 class InformeAnual(Page):
+    timer_text = tiempo.TEXTO_LECTURA
+
+    @staticmethod
+    def get_timeout_seconds(player: Player):
+        return tiempo.segundos_lectura(player.participant.vars, player.round_number, es_ultima_ronda(player))
+
     """Al cerrar cada año (y el último tramo si el juego no termina en un año entero)."""
 
     @staticmethod
@@ -605,6 +655,7 @@ class ResultadoFinal(Page):
         filas_ref = [dict(nombre=f'{nombre(player)} (ustedes)', es_propia=True, **indicadores(ev))]
         filas_ref += [dict(nombre=k, es_propia=False, **indicadores(v['evaluacion'])) for k, v in refs.items()]
         return dict(
+            t_fuera_lista=tiempo.lista(player.participant.vars, 'T'),
             nombre=nombre(player),
             num_rondas=n,
             inflacion_acumulada=porcentaje(player.group.indice - 1),

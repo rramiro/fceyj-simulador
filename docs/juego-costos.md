@@ -63,6 +63,10 @@ prueba: la devolución distingue "producción insuficiente" (demanda sin atender
 ociosa) de "falta capacidad"; los montos que redondean a cero ya no muestran "-$ 0"; la tolerancia
 y los puntos del informe salen de los parámetros de la sesión.
 
+## Tiempo máximo por ronda (21/11/2026, rama `modalidad_juego`)
+
+El docente puede fijar al crear la sesión los minutos de cada mes. Si un equipo no envía el plan a tiempo, el sistema elige precios entre ±20 % del de referencia, una producción entre la mitad y 1,3 veces la demanda prevista (achicada hasta entrar en la capacidad), la respuesta del evento al azar y ningún informe al empresario. La ronda queda marcada como fuera de tiempo (tablero, CSV, resultados y devolución) y no cambia el puntaje. Funcionamiento común: `DESPLIEGUE.md`, sección *Tiempo máximo por ronda*.
+
 ## Estado
 
 | Fase | Estado |

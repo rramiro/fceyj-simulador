@@ -12,6 +12,7 @@
       "estado": "disponible",
       "nombre": "Comercialización",
       "subtitulo": "Mercado de gaseosas",
+      "tiempo": {"ronda": "trimestre", "sugerido": 15, "sugerido_primera": 30},
       "resumen": "Precio, publicidad, producción e investigación de mercado, compitiendo con otras empresas en un contexto con inflación.",
       "grupo": {
         "tipo": "mercado",
@@ -56,6 +57,7 @@
       "estado": "disponible",
       "nombre": "Cartera de inversión",
       "subtitulo": "Acciones, bonos y liquidez",
+      "tiempo": {"ronda": "trimestre", "sugerido": 8, "sugerido_primera": 20},
       "resumen": "Cada trimestre se reparte la cartera entre acciones internacionales, bonos de renta fija y liquidez; cada año se evalúa la rentabilidad real.",
       "grupo": {
         "tipo": "grupo",
@@ -82,6 +84,7 @@
       "estado": "disponible",
       "nombre": "Auditoría",
       "subtitulo": "Encargo de auditoría de estados contables",
+      "tiempo": {"ronda": "etapa", "femenino": true, "sugerido": 25, "sugerido_primera": 35},
       "resumen": "Cada equipo es un estudio que planifica, prueba controles, elige procedimientos con horas limitadas y emite su opinión sobre un cliente con errores sorteados.",
       "grupo": {
         "tipo": "grupo",
@@ -137,6 +140,7 @@
       "estado": "disponible",
       "nombre": "El depósito",
       "subtitulo": "Gestión de inventarios con demanda incierta",
+      "tiempo": {"ronda": "mes", "sugerido": 12, "sugerido_primera": 25},
       "resumen": "Cada equipo maneja el depósito de un mueble de cocina: fija el lote y el punto de pedido de cada mes, con demanda y demora del proveedor aleatorias. Un evento por mes (descuento por cantidad, suba de costos, campaña, huelga) y una pregunta para calcular con las fórmulas del modelo.",
       "grupo": {
         "tipo": "grupo",
@@ -164,6 +168,7 @@
       "estado": "disponible",
       "nombre": "Las cajas del súper",
       "subtitulo": "Líneas de espera: cuántas cajas abrir",
+      "tiempo": {"ronda": "franja", "femenino": true, "sugerido": 8, "sugerido_primera": 20},
       "resumen": "Cada equipo gerencia la línea de cajas de un supermercado durante uno o más sábados: en cada franja (mañana, mediodía, tarde, noche) decide cuántas cajas abre. Llegadas Poisson y atención exponencial en fila única (M/M/s); el costo suma las cajas y la espera de los clientes. Un evento y una pregunta del modelo por franja.",
       "grupo": {
         "tipo": "grupo",

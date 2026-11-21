@@ -144,10 +144,16 @@ el mismo login de oTree, así que un solo ingreso sirve para el tablero y para e
   aparecen: se abren por código).
 - **Nueva sesión en el aula:** se elige el juego y el aula (dice cuáles están libres y avisa si la
   elegida ya tiene una sesión abierta), la cantidad de equipos, los campos propios del juego
-  (tamaño de los mercados, trimestres, etc.) y, opcionalmente, sus parámetros.
+  (tamaño de los mercados, trimestres, etc.), el **tiempo máximo por ronda** (ver *Tiempo máximo
+  por ronda*) y, opcionalmente, sus parámetros.
 - Para cada grupo (en gaseosas, cada mercado; en la cartera, toda la clase) muestra en qué
   trimestre y en qué pantalla está cada equipo, quién está demorando al grupo, los indicadores
   del juego y el puesto. Se actualiza solo cada 10 segundos.
+- Si la sesión tiene tiempo máximo: los minutos por ronda, cuántos equipos de cada grupo faltan
+  enviar y cuándo cierra la ronda, una cuenta regresiva en cada equipo que todavía decide (ámbar en
+  el último minuto, rojo al vencer) y la marca ⏱ en los equipos que no enviaron a tiempo (al pasar
+  el mouse, en qué rondas). La cuenta regresiva corre cada segundo en el navegador con la hora de
+  la computadora del docente.
 - Al elegir un equipo: su historial trimestre a trimestre, la **devolución automática**
   (reglas en `devolucion.py` de cada juego) y un cuadro para el **comentario del docente**.
   El equipo ve la devolución y el comentario en su pantalla de resultado final.
@@ -198,9 +204,14 @@ En la computadora (`otree devserver`) la API no pide clave: el tablero funciona 
 |---|---|---|---|
 | Comercialización — Mercado de gaseosas | `comercializacion/` | `mercado.py` | `python scripts/simular_mercado.py` |
 | Cartera de inversión | `cartera/` | `modelo.py` | `python scripts/simular_cartera.py` |
+| Auditoría | `auditoria/` | `modelo.py` | `python scripts/simular_auditoria.py` |
+| Costos para la gestión | `costos/` | `modelo.py` | `python scripts/simular_costos.py` |
+| El depósito | `deposito/` | `modelo.py` | `python scripts/simular_deposito.py` |
+| Las cajas del súper | `cajas/` | `modelo.py` | `python scripts/simular_cajas.py` |
 
 Lo que comparten está en `nucleo/`: formato de números, inflación y moneda constante, el
-resumen para el tablero y los ajustes de oTree (la página de aula llena).
+resumen para el tablero, el tiempo máximo por ronda y los ajustes de oTree (la página de aula
+llena).
 
 **Aulas.** Hay tres: `aula`, `aula2` y `aula3` (enlaces `/room/aula`, `/room/aula2` y
 `/room/aula3`). Cada una tiene **una sola sesión abierta a la vez**, del juego que sea: con tres
@@ -212,12 +223,50 @@ guiones en el nombre de un aula.
 y las aulas; lo leen la portada y el tablero. `python scripts/verificar_catalogo.py` (también en
 CI) controla que coincida con `settings.py`.
 
+### Tiempo máximo por ronda
+
+Al crear la sesión, el docente fija los **minutos por ronda** y, si quiere, los de la **primera
+ronda**, que incluye leer las instrucciones (campos `minutos_por_ronda` y `minutos_primera_ronda`
+de `SESSION_CONFIG_DEFAULTS`; 0 = sin límite, que es el valor por defecto).
+
+- **Ronda 1:** el reloj de cada equipo corre desde que abre las instrucciones, porque los equipos
+  entran en distintos momentos.
+- **Rondas siguientes:** un reloj común a todo el grupo (o mercado), desde que se publican los
+  resultados de la ronda anterior. Leer los resultados forma parte de ese tiempo.
+- **Si vence:** oTree envía la página sola, el juego descarta lo que el equipo haya cargado y
+  completa una **decisión válida al azar** (`decision_al_azar` en `__init__.py` de cada juego; en
+  auditoría, una por etapa), y la ronda queda marcada como **fuera de tiempo**: campo
+  `fuera_de_tiempo` del jugador (sale en el CSV), lista en `participant.vars['fuera_de_tiempo']`,
+  marca ⏱ en el tablero, aviso en la pantalla de resultados y una observación en la devolución.
+  No cambia el puntaje.
+- **Con el navegador cerrado:** el envío lo hace el proceso de tiempos de oTree, que corre dentro
+  de `otree prodserver` (el comando del `Dockerfile`), así que en testing y producción una
+  sesión no queda trabada por un equipo que se fue. Con `otree devserver` ese proceso no corre:
+  en la computadora la página solo se envía sola si su pestaña sigue abierta y al frente.
+- **Lugares sin usar:** el reloj arranca cuando el equipo abre la página. Un lugar de la sesión
+  que nadie ocupó sigue trabando la espera; conviene crear la sesión con la cantidad exacta de
+  equipos.
+- **Cambiar el tiempo en una sesión abierta:** no se puede para una página ya abierta (oTree lo
+  fija al cargarla).
+
+Lo común está en `nucleo/tiempo.py` (vencimientos, tiempo de cada página, vencimiento para el
+tablero, observación de la devolución) y en las plantillas `_templates/global/tiempo_*.html`
+(textos para los estudiantes). En el catálogo, la entrada `"tiempo"` de cada juego
+(`{"ronda": "mes", "femenino": false, "sugerido": 15, "sugerido_primera": 25}`) muestra los campos
+en *Nueva sesión*, con los minutos sugeridos.
+
 ### Sumar un juego nuevo
 
 1. Crear la app (`<juego>/__init__.py`, plantillas, `tests.py`) con su modelo en funciones
    puras y un script de calibración en `scripts/`. En `C`, `TITULO_JUEGO` y `SUBTITULO_JUEGO`
    (los muestra el encabezado).
 2. Guardar el resumen de cada equipo con `nucleo.tablero.resumen()` en cada página.
+   Para el tiempo máximo, seguir el patrón de cualquier juego (por ejemplo `deposito/`):
+   `get_timeout_seconds` con `tiempo.segundos_decision` en las páginas hasta el envío y
+   `tiempo.segundos_lectura` en las de resultados, `tiempo.abrir_ronda` al cerrar cada ronda,
+   `decision_al_azar` en `before_next_page` si `timeout_happened`, el campo `fuera_de_tiempo`,
+   `vence` y `fuera_de_tiempo` en el resumen del tablero, los `tiempo_*.html` en las plantillas,
+   un caso `fuera_de_tiempo` en los bots y la entrada `"tiempo"` en el catálogo.
 3. Agregar su configuración en `SESSION_CONFIGS` de `settings.py` y su entrada en
    `_static/juegos/catalogo.json` (`"estado": "proximamente"` lo muestra sin dejar elegirlo).
 4. Sumar sus bots y su script a `.github/workflows/ci.yml`.

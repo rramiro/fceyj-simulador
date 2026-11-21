@@ -123,6 +123,10 @@ sección de empresa en funcionamiento cuando corresponde):
 `scripts/simular_auditoria.py` verifica además que cada papel de trabajo permita calcular su ajuste
 (3.741 papeles en 2.000 encargos). Se probó una partida completa en el navegador.
 
+## Tiempo máximo por ronda (21/11/2026, rama `modalidad_juego`)
+
+El docente puede fijar al crear la sesión los minutos de cada etapa. Si un estudio no envía a tiempo, el sistema decide al azar la etapa: base y porcentaje de significatividad y riesgos (planeamiento); calificación y prueba de cada ciclo (control interno); alcances que respetan la limitación del cliente y el presupuesto de horas (pruebas sustantivas); opinión y párrafo de empresa en funcionamiento (informe). Los ajustes de la pantalla de hallazgos cuentan para el reloj de la etapa 4: si vence, se guardan los que estaban bien cargados. La ronda queda marcada como fuera de tiempo (tablero, CSV, resultados y devolución) y no cambia el puntaje. Funcionamiento común: `DESPLIEGUE.md`, sección *Tiempo máximo por ronda*.
+
 ## Estado
 
 | Fase | Estado |

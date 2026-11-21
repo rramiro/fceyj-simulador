@@ -85,6 +85,70 @@ def segundos_restantes(venc, ahora=None):
     return max(MINIMO, venc - (time.time() if ahora is None else ahora))
 
 
+# --- Atajos para las páginas de cada juego -----------------------------------------------
+
+def segundos_decision(pvars, config, ronda):
+    """get_timeout_seconds de las páginas de la ronda hasta el envío (instrucciones y decisión)."""
+    if ronda == 1:
+        iniciar_primera_ronda(pvars, config)
+    return segundos_restantes(vencimiento(pvars, ronda))
+
+
+def segundos_lectura(pvars, ronda, ultima):
+    """get_timeout_seconds de las páginas de resultados: ya corre el reloj de la ronda siguiente."""
+    if ultima:
+        return None
+    return segundos_restantes(vencimiento(pvars, ronda + 1))
+
+
+def vence_pendiente(pvars, config, ronda, etapa, ultima):
+    """`vence` del tablero: el vencimiento de la decisión que el equipo tiene pendiente según su etapa."""
+    if etapa == 'decidiendo':
+        if ronda == 1:
+            iniciar_primera_ronda(pvars, config)
+        return vencimiento(pvars, ronda)
+    if etapa == 'resultados' and not ultima:
+        return vencimiento(pvars, ronda + 1)
+    return None
+
+
+def aviso(config):
+    """Minutos por ronda en texto para las pantallas (None si no hay límite)."""
+    return texto_minutos(minutos_por_ronda(config)) if hay_limite(config) else None
+
+
+def contexto(config, ronda, femenino=False):
+    """Variables para los textos comunes de las pantallas (_templates/global/tiempo_*.html).
+
+    `ronda` es el nombre de la ronda del juego ('mes', 'franja', 'etapa'...)."""
+    return dict(
+        t_minutos=aviso(config),
+        t_minutos_primera=texto_minutos(minutos_primera_ronda(config)) if hay_limite(config) else None,
+        t_ronda=ronda,
+        t_cada=f'Cada {ronda}',
+        t_primera=f'{"la primera" if femenino else "el primer"} {ronda}',
+        t_anterior=f'{"de la" if femenino else "del"} {ronda} anterior',
+        t_esa=f'{"esa" if femenino else "ese"} {ronda}',
+        t_marcada='marcada' if femenino else 'marcado',
+    )
+
+
+def lista(pvars, abrev):
+    """Rondas fuera de tiempo en texto ('M1, M3'), o '' si no hubo."""
+    return ', '.join(f'{abrev}{r}' for r in rondas_fuera_de_tiempo(pvars))
+
+
+def observaciones(pvars, abrev):
+    """Observación para la devolución automática (lista vacía si siempre enviaron a tiempo)."""
+    rondas = rondas_fuera_de_tiempo(pvars)
+    if not rondas:
+        return []
+    return [dict(tipo='alerta', tema='Tiempo',
+                 texto=f'No enviaron la decisión a tiempo {len(rondas)} {"vez" if len(rondas) == 1 else "veces"} '
+                       f'({lista(pvars, abrev)}) y el sistema decidió al azar por ustedes. Conviene repartir el '
+                       'tiempo y enviar una decisión razonable antes del cierre, aunque no sea perfecta.')]
+
+
 def marcar_fuera_de_tiempo(pvars, ronda):
     rondas = list(pvars.get('fuera_de_tiempo') or [])
     if ronda not in rondas:

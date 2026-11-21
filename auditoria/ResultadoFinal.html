@@ -6,6 +6,8 @@
 
 {{ block content }}
 
+{{ include "global/tiempo_final.html" }}
+
 <div class="alert {{ clase_alerta }}">
     Su opinión: <b>{{ opinion }}</b>. La que correspondía: <b>{{ opinion_correcta }}</b>.
     {{ if falla }}Firmaron una opinión menos severa de lo que correspondía: es una falla de auditoría.{{ endif }}
