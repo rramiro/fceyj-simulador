@@ -24,6 +24,7 @@
             <a href="#auditoria">Auditoría</a>
             <a href="#costos">Costos</a>
             <a href="#deposito">El depósito</a>
+            <a href="#cajas">Cajas del súper</a>
             <a href="docentes.html" class="cambiar-rol">Soy docente</a>
         </nav>
     </div>
@@ -284,6 +285,44 @@
                 <li>La demanda y la demora varían: sin stock de protección, se pierden ventas.</li>
                 <li>Un descuento por cantidad no siempre conviene: hay que mantener lo que se compra.</li>
                 <li>El ranking usa el costo de gestión acumulado, más las preguntas acertadas.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section id="cajas" class="seccion">
+    <div class="contenedor">
+        <h2>Cómo se juega: Las cajas del súper</h2>
+        <p class="bajada">
+            Gerencian la línea de cajas de un supermercado un sábado. Todos los equipos atienden a los mismos clientes.
+            En cada franja:
+        </p>
+        <ol class="pasos">
+            <li>
+                <h3>Leen el evento</h3>
+                <p>Lluvia, una promoción, un cajero nuevo, una falla del sistema de cobro…</p>
+            </li>
+            <li>
+                <h3>Abren cajas</h3>
+                <p>Deciden cuántas cajas abren. Cada caja cuesta por hora; cada cliente esperando, también.</p>
+            </li>
+            <li>
+                <h3>Calculan</h3>
+                <p>La pregunta de la franja: utilización, clientes en la fila, espera, cajas óptimas. Si aciertan, suma puntos.</p>
+            </li>
+            <li>
+                <h3>Ven la fila</h3>
+                <p>La fila minuto a minuto, lo observado frente al modelo M/M/s y lo que habría costado la cantidad óptima.</p>
+            </li>
+        </ol>
+
+        <div class="claves">
+            <h3>Para tener en cuenta</h3>
+            <ul>
+                <li>Si llegan más clientes de los que pueden atender las cajas (ρ ≥ 1), la fila crece sin límite.</li>
+                <li>Cerca de ρ = 1, una caja menos puede duplicar el costo; una de más cuesta poco.</li>
+                <li>Los que quedan en la fila al terminar la franja siguen esperando en la siguiente.</li>
+                <li>El ranking usa el costo acumulado (cajas + espera), más las preguntas acertadas.</li>
             </ul>
         </div>
     </div>

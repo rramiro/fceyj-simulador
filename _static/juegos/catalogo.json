@@ -156,6 +156,32 @@
         {"clave": "tolerancia_pregunta", "rotulo": "Tolerancia de la pregunta", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
         {"clave": "puntos_pregunta", "rotulo": "Puntos por pregunta acertada", "unidad": "puntos", "paso": 1}
       ]
+    },
+    {
+      "config": "cajas",
+      "app": "cajas",
+      "estado": "disponible",
+      "nombre": "Las cajas del súper",
+      "subtitulo": "Líneas de espera: cuántas cajas abrir",
+      "resumen": "Cada equipo gerencia la línea de cajas de un supermercado durante uno o más sábados: en cada franja (mañana, mediodía, tarde, noche) decide cuántas cajas abre. Llegadas Poisson y atención exponencial en fila única (M/M/s); el costo suma las cajas y la espera de los clientes. Un evento y una pregunta del modelo por franja.",
+      "grupo": {
+        "tipo": "grupo",
+        "texto": "Todos los equipos atienden a los mismos clientes y pasan juntos de franja."
+      },
+      "rondas": {"campo": "num_rondas", "rotulo": "Franjas (4 por sábado)", "min": 4, "max": 12},
+      "parametros_titulo": "Parámetros del súper",
+      "parametros": [
+        {"clave": "semilla", "rotulo": "Escenario (0 = al azar)", "unidad": "n.° de escenario: el mismo número repite clientes y eventos", "paso": 1},
+        {"clave": "llegadas_manana", "rotulo": "Llegadas a la mañana", "unidad": "clientes por hora", "paso": 5},
+        {"clave": "llegadas_mediodia", "rotulo": "Llegadas al mediodía", "unidad": "clientes por hora", "paso": 5},
+        {"clave": "llegadas_tarde", "rotulo": "Llegadas a la tarde", "unidad": "clientes por hora", "paso": 5},
+        {"clave": "llegadas_noche", "rotulo": "Llegadas a la noche", "unidad": "clientes por hora", "paso": 5},
+        {"clave": "minutos_atencion", "rotulo": "Tiempo medio de atención", "unidad": "minutos por cliente", "paso": 0.5},
+        {"clave": "costo_caja", "rotulo": "Costo de una caja Cs", "unidad": "$ por hora", "paso": 1000},
+        {"clave": "costo_espera", "rotulo": "Costo de espera Cc", "unidad": "$ por cliente y hora", "paso": 1000},
+        {"clave": "tolerancia_pregunta", "rotulo": "Tolerancia de la pregunta", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
+        {"clave": "puntos_pregunta", "rotulo": "Puntos por pregunta acertada", "unidad": "puntos", "paso": 1}
+      ]
     }
   ]
 }

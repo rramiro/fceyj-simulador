@@ -1,0 +1,65 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Las cajas del súper
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes gerencian la línea de cajas de <b>{{ empresa }}</b> durante {{ if sabados > 1 }}<b>{{ sabados }} sábados</b>{{ else }}<b>un sábado</b>{{ endif }}
+    ({{ num_rondas }} franjas). Los {{ num_equipos }} equipos de la clase atienden exactamente a los mismos clientes:
+    lo que cambia es cuántas cajas abre cada uno.
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <h5>Las franjas del sábado</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Franja</th><th>Horario</th><th class="text-end">Clientes por hora</th></tr></thead>
+            {{ for f in franjas }}<tr><td>{{ f.nombre }}</td><td>{{ f.horario }}</td><td class="text-end">{{ f.llegadas }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+    <div class="col-lg-6">
+        <h5>Cómo funciona la línea de cajas</h5>
+        <ul>
+            <li>Los clientes llegan al azar (proceso Poisson) y forman <b>una sola fila</b>; pasan a la primera caja libre.</li>
+            <li>Cada caja tarda en promedio <b>{{ minutos_atencion }} minutos</b> por cliente (tiempo exponencial).</li>
+            <li>Hay {{ max_cajas }} cajas. Si cierran cajas, cada cajero termina con el cliente que está atendiendo.</li>
+            <li>Los clientes que siguen en el súper al terminar la franja pasan a la siguiente. A las 22 se cierran las
+                puertas y se atiende a los que quedaron adentro.</li>
+        </ul>
+    </div>
+</div>
+
+<h5>En cada franja</h5>
+<ol>
+    <li>Leen el <b>evento</b>: lluvia, una promoción, un cajero nuevo, una falla del sistema de cobro… Puede cambiar la
+        cantidad de clientes (λ) o la velocidad de atención (μ).</li>
+    <li>Deciden <b>cuántas cajas abren</b>.</li>
+    <li>Responden la <b>pregunta de la franja</b>: una medida del modelo M/M/s (utilización, clientes en la fila, espera,
+        cajas óptimas…). Acierta si queda a ±{{ tolerancia }} y suma {{ puntos_pregunta }} puntos.</li>
+</ol>
+
+<h5>Cómo se evalúa</h5>
+<p>
+    El costo de cada franja es <b>cajas + espera</b>:
+</p>
+<ul>
+    <li>Cada caja abierta cuesta <b>{{ costo_caja }} por hora</b> (Cs), toda la franja.</li>
+    <li>Cada cliente cuesta <b>{{ costo_espera }} por hora</b> que pasa en el súper, en la fila o en la caja (Cc): es el
+        costo de tenerlo esperando (enojo, compras que no hace, clientes que no vuelven).</li>
+</ul>
+<p>
+    Es el costo total del teórico de la cátedra: <b>CT = Cs·s + Cc·Ls</b>. El ranking suma hasta
+    <b>{{ puntos_resultado }} puntos</b> por el costo acumulado (el equipo con menor costo se lleva los
+    {{ puntos_resultado }}) más los puntos de las preguntas. Después de cada franja verán la fila minuto a minuto, las
+    medidas observadas frente a las del modelo y lo que habría costado la cantidad de cajas óptima.
+</p>
+
+{{ formfield 'nombre_equipo' }}
+<p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de equipo.</p>
+
+{{ next_button }}
+
+{{ endblock }}

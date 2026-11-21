@@ -1,0 +1,71 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Resultado final
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    El ranking suma hasta {{ puntos_resultado }} puntos por el costo acumulado (cajas + espera; el menor costo se lleva
+    todos) más los puntos de las preguntas.
+</p>
+
+<table class="table table-sm">
+    <thead><tr><th>Puesto</th><th>Equipo</th><th class="text-end">Puntaje</th><th class="text-end">Costo acumulado</th>
+        <th class="text-end">Espera media</th><th class="text-end">Preguntas</th></tr></thead>
+    <tbody>
+    {{ for f in ranking }}
+        <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+            <td>{{ f.puesto }}</td><td>{{ f.nombre }}</td><td class="text-end">{{ f.puntaje }}</td>
+            <td class="text-end">{{ f.costo }}</td><td class="text-end">{{ f.espera }}</td><td class="text-end">{{ f.preguntas }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+
+<p>
+    Su costo: <b>{{ costo }}</b>. Con las cajas óptimas del modelo en cada franja, con los mismos clientes, habría sido
+    {{ costo_recomendado }}. Acertaron <b>{{ aciertos }} de {{ num_rondas }}</b> preguntas.
+</p>
+
+<h5>Franja por franja</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead><tr><th>Franja</th><th>Evento</th><th class="text-end">Sus cajas</th><th class="text-end">Modelo</th>
+        <th class="text-end">Su costo</th><th class="text-end">Costo del modelo</th><th class="text-end">Espera media</th><th>Pregunta</th></tr></thead>
+    <tbody>
+    {{ for r in rondas }}
+        <tr><td>{{ r.franja }}</td><td>{{ r.evento }}</td><td class="text-end">{{ r.cajas }}</td><td class="text-end">{{ r.rec }}</td>
+            <td class="text-end">{{ r.costo }}</td><td class="text-end">{{ r.costo_rec }}</td>
+            <td class="text-end">{{ r.espera }}</td><td>{{ r.pregunta }}</td></tr>
+    {{ endfor }}
+    </tbody>
+</table>
+</div>
+
+<h5 class="mt-2">Devolución</h5>
+<div class="devolucion mb-3">
+    {{ for o in devolucion }}
+    <div class="devolucion-item devolucion-{{ o.tipo }}">
+        <span class="devolucion-tema">{{ o.tema }}</span>
+        <span>{{ o.texto }}</span>
+    </div>
+    {{ endfor }}
+</div>
+
+{{ if comentario_docente }}
+<div class="comentario-docente mb-3">
+    <div class="comentario-titulo">Comentario del docente</div>
+    <div class="comentario-texto">{{ comentario_docente }}</div>
+</div>
+{{ else }}
+<p class="small text-muted">
+    El docente todavía no dejó un comentario. Si lo hace, aparecerá aquí al <a href="">recargar la página</a>.
+</p>
+{{ endif }}
+
+<p class="small text-muted">Escenario n.° {{ semilla }} (con este número el docente puede repetirlo).</p>
+<p>¡Gracias por participar!</p>
+
+{{ endblock }}

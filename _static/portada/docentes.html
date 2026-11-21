@@ -402,6 +402,57 @@
             </details>
         </article>
 
+        <article class="juego">
+            <div class="juego-cabecera">
+                <div>
+                    <p class="antetitulo">Métodos Cuantitativos para la Administración</p>
+                    <h3>Las cajas del súper: líneas de espera</h3>
+                </div>
+                <span class="etiqueta">Versión 1</span>
+            </div>
+
+            <ul class="datos">
+                <li><b>Cualquier</b> cantidad de equipos</li>
+                <li><b>Todos</b> con los mismos clientes</li>
+                <li><b>4 a 12</b> franjas (4 por sábado)</li>
+                <li><b>1</b> dispositivo por equipo</li>
+            </ul>
+
+            <div class="juego-columnas">
+                <div>
+                    <h4>Qué decide cada equipo</h4>
+                    <ul>
+                        <li>Cuántas cajas abre en cada franja del sábado (mañana, mediodía, tarde, noche).</li>
+                        <li>Cómo responder a un evento: lluvia, promoción, cajero nuevo, falla del sistema de cobro,
+                            partido de fútbol.</li>
+                        <li>La pregunta de la franja: ρ, Ls, Lq, Wq, probabilidad de esperar o cajas óptimas.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Qué se aprende</h4>
+                    <ul>
+                        <li>Modelo M/M/s con fila única y sus medidas de desempeño.</li>
+                        <li>Que con utilización cercana a 1 la cola crece muy rápido, y con ρ ≥ 1 sin límite.</li>
+                        <li>El equilibrio entre costo de servicio y costo de espera: CT = Cs·s + Cc·Ls.</li>
+                        <li>Simulación frente a modelo: promedios de largo plazo y variación en pocas horas.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <details class="modelo">
+                <summary>Ver el modelo</summary>
+                <ul>
+                    <li>Datos tomados de la guía 2025 (unidad 4): llegadas Poisson y atención exponencial de 5 minutos.</li>
+                    <li>Cada franja se simula cliente por cliente con los mismos clientes para todos los equipos; los que
+                        quedan en el súper pasan a la franja siguiente.</li>
+                    <li>Costo = cajas abiertas × horas × Cs + horas-cliente en el súper × Cc.</li>
+                    <li>Ranking: costo acumulado relativo (hasta 70 puntos) más 5 puntos por pregunta acertada.</li>
+                    <li>Cada franja se muestra lo observado frente al modelo y lo que habría costado el s óptimo.</li>
+                </ul>
+                <p class="nota">Llegadas, tiempo de atención, costos y tolerancia se ajustan al crear la sesión.</p>
+            </details>
+        </article>
+
         <p class="nota proximamente">Próximamente se sumarán nuevos juegos.</p>
     </div>
 </section>

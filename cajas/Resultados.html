@@ -1,0 +1,145 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ empresa }} — Resultados: {{ franja }}
+{{ endblock }}
+
+{{ block content }}
+
+<p>Franja {{ player.round_number }} de {{ num_rondas }}. Evento: <b>{{ evento }}</b>. Abrieron <b>{{ cajas }} cajas</b>.</p>
+
+<h5>La fila minuto a minuto</h5>
+<div class="mb-1">
+    <svg id="grafico" viewBox="0 0 640 260" width="100%" role="img" aria-label="Clientes en la fila y en caja durante la franja"></svg>
+</div>
+<p class="small text-muted mb-3">
+    <span style="color:#c62828">■</span> clientes en la fila ·
+    <span style="color:#0b5cad">■</span> clientes en caja ·
+    <span style="color:#5f6b7a">┄</span> cajas abiertas
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <h5>Clientes</h5>
+        <table class="table table-sm">
+            {{ if en_sistema_inicial }}<tr><td>En el súper al empezar la franja</td><td class="text-end">{{ en_sistema_inicial }}</td></tr>{{ endif }}
+            <tr><td>Llegaron en la franja</td><td class="text-end">{{ llegaron }}</td></tr>
+            <tr><td>Espera media en la fila</td><td class="text-end">{{ espera_media }}</td></tr>
+            <tr><td>La espera más larga</td><td class="text-end">{{ espera_max }}</td></tr>
+            <tr><td>La fila más larga</td><td class="text-end">{{ fila_max }} clientes</td></tr>
+            {{ if hay_quedan }}<tr><td>Siguen en el súper al terminar la franja (pasan a la siguiente)</td><td class="text-end">{{ quedan }}</td></tr>{{ endif }}
+            {{ if cierre_extra }}<tr><td>Atención después de cerrar las puertas</td><td class="text-end">{{ cierre_extra }}</td></tr>{{ endif }}
+        </table>
+
+        <h5>Lo observado y el modelo M/M/s (s = {{ cajas }})</h5>
+        <table class="table table-sm">
+            <thead><tr><th>Medida</th><th class="text-end">Observada</th><th class="text-end">Modelo</th></tr></thead>
+            {{ for m in medidas }}<tr><td>{{ m.medida }}</td><td class="text-end">{{ m.observada }}</td><td class="text-end">{{ m.modelo }}</td></tr>{{ endfor }}
+        </table>
+        <p class="small text-muted">
+            El modelo da promedios de largo plazo con la fila estabilizada; en una franja de pocas horas lo observado
+            varía alrededor de esos valores.
+            {{ if cajero_nuevo }}En esta franja una caja atendía más lento: el modelo M/M/s supone cajas iguales.{{ endif }}
+        </p>
+    </div>
+    <div class="col-lg-6">
+        <h5>Costo de la franja</h5>
+        <table class="table table-sm">
+            <tr><td>Cajas</td><td class="small text-muted">{{ detalle_cajas }}</td><td class="text-end">{{ costo_cajas }}</td></tr>
+            <tr><td>Espera</td><td class="small text-muted">{{ detalle_espera }}</td><td class="text-end">{{ costo_espera }}</td></tr>
+            <tr class="fw-bold"><td>Total</td><td></td><td class="text-end">{{ costo }}</td></tr>
+        </table>
+        <div class="alert {{ if mejor_que_rec }}alert-success{{ else }}alert-light border{{ endif }} small">
+            Con las cajas óptimas del modelo (<b>s = {{ rec_cajas }}</b>), con los mismos clientes, la franja habría costado
+            <b>{{ rec_costo }}</b> (espera media {{ rec_espera }}).
+        </div>
+
+        <h6>Costo total por hora según el modelo: CT = Cs·s + Cc·Ls</h6>
+        <table class="table table-sm">
+            <thead><tr><th>Cajas s</th><th class="text-end">ρ</th><th class="text-end">Wq</th><th class="text-end">CT por hora</th></tr></thead>
+            {{ for c in curva }}
+            <tr class="{{ if c.elegida }}table-primary fw-bold{{ elif c.optimo }}table-success{{ endif }}">
+                <td>{{ c.s }}{{ if c.optimo }} (óptimo){{ endif }}{{ if c.elegida }} ← ustedes{{ endif }}</td>
+                <td class="text-end">{{ c.rho }}</td><td class="text-end">{{ c.wq }}</td><td class="text-end">{{ c.costo }}</td>
+            </tr>
+            {{ endfor }}
+        </table>
+
+        <div class="alert {{ if acierto }}alert-success{{ else }}alert-warning{{ endif }} small">
+            <b>Pregunta:</b> {{ pregunta }}.<br>
+            Su respuesta: {{ respuesta }} · Valor correcto: <b>{{ correcto }}</b>
+            {{ if acierto }}(+{{ puntos_pregunta }} puntos){{ endif }}
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-light border">
+    Costo acumulado: <b>{{ acumulado }}</b>. Puesto en la clase: <b>{{ puesto }}° de {{ num_equipos }}</b>.
+</div>
+
+{{ next_button }}
+
+<script>
+    // Clientes en la fila (rojo) y en caja (azul), apilados, cada pocos minutos; línea con las cajas abiertas.
+    (function () {
+        var svg = document.getElementById('grafico');
+        var ns = 'http://www.w3.org/2000/svg';
+        var serie = js_vars.serie, cajas = js_vars.cajas;
+        var izq = 44, der = 612, arriba = 12, abajo = 228;
+        var finX = Math.max(js_vars.minutos, serie.length ? serie[serie.length - 1][0] : 0);
+        var maxY = cajas;
+        serie.forEach(function (f) { maxY = Math.max(maxY, f[1] + f[2]); });
+        var paso = [2, 5, 10, 20, 25, 50, 100].find(function (p) { return maxY * 1.1 / p <= 5; }) || 200;
+        var lineas = Math.ceil(maxY * 1.1 / paso);
+        maxY = lineas * paso;
+        function x(m) { return izq + (der - izq) * m / finX; }
+        function y(v) { return abajo - (abajo - arriba) * v / maxY; }
+        function el(tag, attrs, texto) {
+            var e = document.createElementNS(ns, tag);
+            for (var k in attrs) e.setAttribute(k, attrs[k]);
+            if (texto !== undefined) e.textContent = texto;
+            svg.appendChild(e);
+            return e;
+        }
+        for (var i = 0; i <= lineas; i++) {
+            var v = i * paso;
+            el('line', {x1: izq, x2: der, y1: y(v), y2: y(v), stroke: '#e3e6ea', 'stroke-width': 1});
+            el('text', {x: izq - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#5f6b7a'}, v);
+        }
+        for (var m = 0; m <= finX; m += 60) {
+            var h = js_vars.inicio + m / 60;
+            el('text', {x: x(m), y: abajo + 16, 'text-anchor': 'middle', 'font-size': 11, fill: '#5f6b7a'}, h + ' h');
+        }
+        // Áreas: en caja (abajo) y en la fila (encima).
+        function area(fn, color) {
+            var pts = [[x(0), y(0)]];
+            serie.forEach(function (f, k) {
+                var hasta = k + 1 < serie.length ? serie[k + 1][0] : f[0];
+                pts.push([x(f[0]), y(fn(f, 1))]);
+                pts.push([x(hasta), y(fn(f, 1))]);
+            });
+            for (var k = serie.length - 1; k >= 0; k--) {
+                var f = serie[k];
+                var hasta = k + 1 < serie.length ? serie[k + 1][0] : f[0];
+                pts.push([x(hasta), y(fn(f, 0))]);
+                pts.push([x(f[0]), y(fn(f, 0))]);
+            }
+            el('polygon', {points: pts.map(function (p) { return p.join(','); }).join(' '), fill: color, opacity: 0.8});
+        }
+        area(function (f, arriba_) { return arriba_ ? f[2] : 0; }, '#0b5cad');
+        area(function (f, arriba_) { return arriba_ ? f[2] + f[1] : f[2]; }, '#c62828');
+        el('line', {x1: izq, x2: x(js_vars.minutos), y1: y(cajas), y2: y(cajas), stroke: '#5f6b7a', 'stroke-width': 1.5,
+                    'stroke-dasharray': '5 4'});
+        el('text', {x: izq + 4, y: y(cajas) - 4, 'font-size': 11, fill: '#3d4752', stroke: '#fff', 'stroke-width': 3,
+                    'paint-order': 'stroke'}, cajas + ' cajas');
+        if (finX > js_vars.minutos) {
+            el('line', {x1: x(js_vars.minutos), x2: x(js_vars.minutos), y1: arriba, y2: abajo, stroke: '#b26b00',
+                        'stroke-dasharray': '3 3'});
+            el('text', {x: x(js_vars.minutos) + 3, y: arriba + 10, 'font-size': 11, fill: '#b26b00'}, 'cierre');
+        }
+        el('line', {x1: izq, x2: izq, y1: arriba, y2: abajo, stroke: '#9aa4b1'});
+        el('line', {x1: izq, x2: der, y1: abajo, y2: abajo, stroke: '#9aa4b1'});
+    })();
+</script>
+
+{{ endblock }}

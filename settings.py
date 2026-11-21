@@ -173,6 +173,34 @@ SESSION_CONFIGS = [
         puntos_resultado=70,          # puntos del ranking por el costo (relativo al mejor)
         doc='El depósito: cada equipo fija el lote y el punto de pedido de cada mes, con demanda y demora inciertas.',
     ),
+    dict(
+        name='cajas',
+        display_name='Las cajas del súper (líneas de espera)',
+        app_sequence=['cajas'],
+        num_demo_participants=3,  # cada equipo gerencia su línea de cajas; todos con los mismos clientes
+        num_rondas=8,                 # franjas: 4 por sábado (máximo: C.NUM_ROUNDS = 12)
+        semilla=0,                    # escenario: 0 = al azar; otro número lo repite
+        # --- Parámetros del modelo (ver cajas/modelo.py) ---
+        # Calibrar con: python scripts/simular_cajas.py
+        llegadas_manana=40,           # λ, clientes por hora (8 a 12 h)
+        llegadas_mediodia=80,         # 12 a 14 h
+        llegadas_tarde=60,            # 14 a 18 h
+        llegadas_noche=100,           # 18 a 22 h
+        escala_llegadas=1.0,          # multiplica todas las llegadas (dificultad)
+        minutos_atencion=5,           # 1/μ: minutos por cliente en promedio (exponencial)
+        costo_caja=15_000,            # Cs: $ por caja abierta y por hora
+        costo_espera=20_000,          # Cc: $ por cliente y por hora en el sistema
+        max_cajas=15,
+        efecto_lluvia=-0.25,          # llegadas −25 % (evento)
+        efecto_promocion=0.30,        # llegadas +30 % (evento)
+        efecto_partido=-0.40,         # llegadas −40 %, solo de noche (evento)
+        lentitud_nuevo=0.30,          # el cajero nuevo atiende 30 % más lento (evento)
+        lentitud_falla=0.20,          # todas las cajas 20 % más lentas (evento)
+        tolerancia_pregunta=0.05,     # la pregunta de la franja acierta con ±5 %
+        puntos_pregunta=5,            # puntos por pregunta acertada
+        puntos_resultado=70,          # puntos del ranking por el costo (relativo al mejor)
+        doc='Las cajas del súper: cada equipo decide cuántas cajas abre en cada franja de un sábado (M/M/s).',
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

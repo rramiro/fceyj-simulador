@@ -1,0 +1,53 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ empresa }} — {{ franja }}
+{{ endblock }}
+
+{{ block content }}
+
+<p class="text-muted">
+    Franja {{ player.round_number }} de {{ num_rondas }}.
+    {{ if acumulado }}Costo acumulado: <b>{{ acumulado }}</b>.{{ endif }}
+</p>
+
+<div class="alert {{ if evento_normal }}alert-light border{{ else }}alert-info{{ endif }}">
+    <small class="d-block text-uppercase fw-bold">Evento: {{ evento }}</small>
+    {{ texto_evento }}
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <h5>Datos de la franja</h5>
+        <table class="table table-sm">
+            {{ for f in datos }}<tr><td class="text-nowrap">{{ f.concepto }}</td><td>{{ f.valor }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+    <div class="col-lg-5">
+        <h5>El súper ahora</h5>
+        <table class="table table-sm">
+            {{ if sabado_nuevo }}
+            <tr><td colspan="2">Empieza un nuevo sábado: el súper abre vacío.</td></tr>
+            {{ else }}
+            <tr><td>Clientes en la fila</td><td class="text-end"><b>{{ en_fila }}</b></td></tr>
+            <tr><td>Clientes en caja</td><td class="text-end">{{ en_caja }}</td></tr>
+            {{ endif }}
+            {{ if cajas_anteriores }}<tr><td>Cajas en la franja anterior</td><td class="text-end">{{ cajas_anteriores }}</td></tr>{{ endif }}
+        </table>
+    </div>
+</div>
+
+<h5>Cajas de la franja</h5>
+<div class="row g-3">
+    <div class="col-md-6">{{ formfield 'cajas' }}</div>
+</div>
+<p class="form-text">De 1 a {{ max_cajas }}. Cada caja abierta cuesta Cs por hora durante toda la franja.</p>
+
+<h5>Pregunta de la franja</h5>
+<p><b>{{ pregunta }}</b> ({{ unidad }}).</p>
+{{ formfield 'respuesta' }}
+<p class="form-text">Opcional, pero suma {{ puntos_pregunta }} puntos si acierta (±{{ tolerancia }}). Use punto o coma decimal según su teclado.</p>
+
+{{ next_button }}
+
+{{ endblock }}
