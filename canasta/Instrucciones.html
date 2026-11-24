@@ -1,0 +1,68 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    La canasta de Soledad
+{{ endblock }}
+
+{{ block content }}
+
+<p>
+    Ustedes son un consumidor que cada mes reparte su ingreso entre dos cosas: <b>entradas al cine</b> (X) y
+    <b>alimentos</b> (Y, en canastas). Juegan <b>{{ num_rondas }} meses</b>. Los {{ num_equipos }} equipos de la clase
+    ven los mismos precios, pero no todos tienen los mismos gustos.
+</p>
+
+<div class="alert alert-info">
+    <small class="d-block text-uppercase fw-bold">Su tipo de consumidor: {{ tipo_nombre }}</small>
+    {{ tipo_descripcion }}
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <h5>En marzo</h5>
+        <table class="table table-sm">
+            <tr><td>Ingreso del mes</td><td class="text-end">{{ ingreso }}</td></tr>
+            <tr><td>Entrada al cine (Px)</td><td class="text-end">{{ precio_cine }}</td></tr>
+            <tr><td>Canasta de alimentos (Py)</td><td class="text-end">{{ precio_alimentos }}</td></tr>
+        </table>
+        <p class="small text-muted">Después cada mes trae una novedad: una promo, una suba, el aguinaldo…</p>
+    </div>
+    <div class="col-lg-6">
+        <h5>Los meses</h5>
+        <table class="table table-sm">
+            {{ for m in meses }}<tr><td>{{ m.mes }}</td><td>{{ m.titulo }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+</div>
+
+<h5>En cada mes</h5>
+<ol>
+    <li>Leen la <b>novedad del mes</b> y la recta de presupuesto.</li>
+    <li>Eligen <b>cuántas entradas compran</b>. Lo que sobra del ingreso va a alimentos: siempre gastan todo.
+        En el gráfico ven sus curvas de indiferencia y la curva a la que llega la canasta que eligen.</li>
+    <li>Responden la <b>pregunta del mes</b>: la TMS, una elasticidad o el efecto sustitución, calculados con
+        <b>sus propias</b> cantidades. Acierta si queda a ±{{ tolerancia }}.</li>
+</ol>
+
+<h5>Cómo se evalúa</h5>
+<ul>
+    <li>La canasta óptima es la que llega a la curva de indiferencia más alta posible con su ingreso: donde la curva
+        toca la recta de presupuesto (TMS = Px/Py).</li>
+    <li>Por la decisión: <b>{{ puntos_exacto }} puntos</b> si eligen la cantidad óptima de entradas,
+        {{ puntos_a_uno }} si quedan a una entrada y {{ puntos_a_dos }} si quedan a dos.</li>
+    <li>Por la pregunta: <b>{{ puntos_pregunta }} puntos</b> si aciertan.</li>
+    <li>El puntaje es el porcentaje de los puntos posibles (de 0 a 100).</li>
+</ul>
+<p>
+    Después de cada mes verán la canasta óptima, cuánto ingreso "perdieron" por no elegirla y cómo se van armando su
+    curva de demanda y su curva de Engel.
+</p>
+
+{{ include "global/tiempo_instrucciones.html" }}
+
+{{ formfield 'nombre_equipo' }}
+<p class="form-text">Opcional. Si lo dejan vacío, figuran con el número de equipo.</p>
+
+{{ next_button }}
+
+{{ endblock }}

@@ -201,6 +201,24 @@ SESSION_CONFIGS = [
         puntos_resultado=70,          # puntos del ranking por el costo (relativo al mejor)
         doc='Las cajas del súper: cada equipo decide cuántas cajas abre en cada franja de un sábado (M/M/s).',
     ),
+    dict(
+        name='canasta',
+        display_name='La canasta de Soledad (comportamiento del consumidor)',
+        app_sequence=['canasta'],
+        num_demo_participants=3,  # un equipo de cada tipo de consumidor; todos con los mismos precios
+        num_rondas=8,                 # meses (máximo 8)
+        # --- Parámetros del modelo (ver canasta/modelo.py) ---
+        # Calibrar con: python scripts/simular_canasta.py
+        ingreso_base=160_000,         # ingreso del mes en marzo ($); los demás meses lo multiplican
+        precio_cine=20_000,           # Px en marzo ($ por entrada)
+        precio_alimentos=10_000,      # Py en marzo ($ por canasta de alimentos)
+        puntos_exacto=10,             # puntos de la decisión: cantidad óptima de entradas
+        puntos_a_uno=6,               # a una entrada del óptimo
+        puntos_a_dos=2,               # a dos entradas
+        tolerancia_pregunta=0.05,     # la pregunta del mes acierta con ±5 %
+        puntos_pregunta=5,            # puntos por pregunta acertada
+        doc='La canasta de Soledad: cada equipo elige su canasta de cine y alimentos cuando cambian precios e ingreso.',
+    ),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs

@@ -188,6 +188,28 @@
         {"clave": "tolerancia_pregunta", "rotulo": "Tolerancia de la pregunta", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
         {"clave": "puntos_pregunta", "rotulo": "Puntos por pregunta acertada", "unidad": "puntos", "paso": 1}
       ]
+    },
+    {
+      "config": "canasta",
+      "app": "canasta",
+      "estado": "disponible",
+      "nombre": "La canasta de Soledad",
+      "subtitulo": "Comportamiento del consumidor",
+      "tiempo": {"ronda": "mes", "sugerido": 6, "sugerido_primera": 15},
+      "resumen": "Cada equipo es un consumidor que reparte su ingreso entre entradas al cine y alimentos. Cada mes cambian los precios o el ingreso (promo, suba, aguinaldo, compensación de Slutsky) y el equipo elige su canasta mirando sus curvas de indiferencia y la recta de presupuesto. Tres tipos de consumidor; puntos por acercarse a la canasta óptima y por la pregunta del mes (TMS, elasticidades, efecto sustitución).",
+      "grupo": {
+        "tipo": "grupo",
+        "texto": "Todos los equipos ven los mismos precios y pasan juntos de mes; los tipos de consumidor se reparten en orden."
+      },
+      "rondas": {"campo": "num_rondas", "rotulo": "Meses", "min": 3, "max": 8},
+      "parametros_titulo": "Parámetros del consumidor",
+      "parametros": [
+        {"clave": "ingreso_base", "rotulo": "Ingreso de marzo", "unidad": "$ por mes", "paso": 10000},
+        {"clave": "precio_cine", "rotulo": "Precio de la entrada (Px)", "unidad": "$ en marzo", "paso": 1000},
+        {"clave": "precio_alimentos", "rotulo": "Precio de la canasta de alimentos (Py)", "unidad": "$ en marzo", "paso": 1000},
+        {"clave": "tolerancia_pregunta", "rotulo": "Tolerancia de la pregunta", "unidad": "% de error admitido", "porcentaje": true, "paso": 1},
+        {"clave": "puntos_pregunta", "rotulo": "Puntos por pregunta acertada", "unidad": "puntos", "paso": 1}
+      ]
     }
   ]
 }

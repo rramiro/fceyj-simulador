@@ -1,0 +1,129 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Resultado final
+{{ endblock }}
+
+{{ block content }}
+
+{{ include "global/tiempo_final.html" }}
+
+<p>
+    El puntaje es el porcentaje de los puntos posibles: la decisión de cada mes (según la distancia a la canasta
+    óptima) más la pregunta.
+</p>
+
+<table class="table table-sm">
+    <thead><tr><th>Puesto</th><th>Equipo</th><th>Consumidor</th><th class="text-end">Puntaje</th>
+        <th class="text-end">Canastas óptimas</th><th class="text-end">Ingreso real logrado</th><th class="text-end">Preguntas</th></tr></thead>
+    <tbody>
+    {{ for f in ranking }}
+        <tr {{ if f.es_propia }}class="table-primary fw-bold"{{ endif }}>
+            <td>{{ f.puesto }}</td><td>{{ f.nombre }}</td><td>{{ f.tipo }}</td><td class="text-end">{{ f.puntaje }}</td>
+            <td class="text-end">{{ f.optimas }}</td><td class="text-end">{{ f.relativa }}</td><td class="text-end">{{ f.preguntas }}</td>
+        </tr>
+    {{ endfor }}
+    </tbody>
+</table>
+
+<p>
+    Su puntaje: <b>{{ puntaje }}</b>. Consumidor {{ tipo_nombre }}: eligieron la canasta óptima en <b>{{ optimas }} de
+    {{ num_rondas }}</b> meses y acertaron <b>{{ aciertos }}</b> preguntas.
+</p>
+
+<h5>Mes por mes</h5>
+<div class="table-responsive">
+<table class="table table-sm">
+    <thead><tr><th>Mes</th><th class="text-end">Ingreso</th><th class="text-end">Px</th><th class="text-end">Py</th>
+        <th class="text-end">Sus entradas</th><th class="text-end">Óptimo</th><th class="text-end">Ingreso real</th>
+        <th class="text-end">Puntos</th><th>Pregunta</th></tr></thead>
+    <tbody>
+    {{ for r in rondas }}
+        <tr><td>{{ r.mes }}</td><td class="text-end">{{ r.ingreso }}</td><td class="text-end">{{ r.px }}</td>
+            <td class="text-end">{{ r.py }}</td><td class="text-end">{{ r.x }}</td><td class="text-end">{{ r.opt }}</td>
+            <td class="text-end">{{ r.relativa }}</td><td class="text-end">{{ r.puntos }}</td><td>{{ r.pregunta }}</td></tr>
+    {{ endfor }}
+    </tbody>
+</table>
+</div>
+
+<h5>Sus curvas</h5>
+<div class="row g-3">
+    <div class="col-md-6">
+        <h6>Demanda de cine (ingreso de marzo)</h6>
+        <svg id="demanda" viewBox="0 0 560 360" width="100%" role="img" aria-label="Curva de demanda de cine"></svg>
+    </div>
+    <div class="col-md-6">
+        <h6>Curva de Engel del cine (precios de marzo)</h6>
+        <svg id="engel" viewBox="0 0 560 360" width="100%" role="img" aria-label="Curva de Engel del cine"></svg>
+    </div>
+</div>
+
+{{ if demanda_clase }}
+<h5 class="mt-2">La demanda de cine de la clase</h5>
+<p>
+    La demanda de mercado es la <b>suma horizontal</b> de las demandas individuales: a cada precio, se suman las
+    entradas de todos los equipos (con el ingreso de marzo).
+</p>
+<div class="row g-3">
+    <div class="col-md-5">
+        <table class="table table-sm">
+            <thead><tr><th>Precio de la entrada</th><th class="text-end">Entradas de la clase</th><th class="text-end">Con las canastas óptimas</th></tr></thead>
+            {{ for f in demanda_clase }}<tr><td>{{ f.px }}</td><td class="text-end">{{ f.total }}</td><td class="text-end">{{ f.total_opt }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+    <div class="col-md-7">
+        <svg id="clase" viewBox="0 0 560 360" width="100%" role="img" aria-label="Demanda de cine de la clase"></svg>
+    </div>
+</div>
+{{ endif }}
+
+<h5 class="mt-2">Devolución</h5>
+<div class="devolucion mb-3">
+    {{ for o in devolucion }}
+    <div class="devolucion-item devolucion-{{ o.tipo }}">
+        <span class="devolucion-tema">{{ o.tema }}</span>
+        <span>{{ o.texto }}</span>
+    </div>
+    {{ endfor }}
+</div>
+
+{{ if comentario_docente }}
+<div class="comentario-docente mb-3">
+    <div class="comentario-titulo">Comentario del docente</div>
+    <div class="comentario-texto">{{ comentario_docente }}</div>
+</div>
+{{ else }}
+<p class="small text-muted">
+    El docente todavía no dejó un comentario. Si lo hace, aparecerá aquí al <a href="">recargar la página</a>.
+</p>
+{{ endif }}
+
+<p>¡Gracias por participar!</p>
+
+<script src="{{ static 'canasta/canasta.js' }}?v=1"></script>
+<script>
+    (function () {
+        function series(filas) {
+            return [
+                {nombre: 'ustedes', color: Canasta.AZUL, puntos: filas.map(function (f) { return [f[1], f[0]]; })},
+                {nombre: 'óptimo', color: Canasta.VERDE, punteada: true, puntos: filas.map(function (f) { return [f[2], f[0]]; })}
+            ];
+        }
+        if (js_vars.demanda.length > 1) {
+            Canasta.puntos(document.getElementById('demanda'), {series: series(js_vars.demanda), ejeX: 'entradas',
+                ejeY: 'precio de la entrada', fmtY: Canasta.miles});
+        }
+        if (js_vars.engel.length > 1) {
+            Canasta.puntos(document.getElementById('engel'), {series: series(js_vars.engel), ejeX: 'entradas',
+                ejeY: 'ingreso', fmtY: Canasta.miles});
+        }
+        var clase = document.getElementById('clase');
+        if (clase && js_vars.clase.length > 1) {
+            Canasta.puntos(clase, {series: series(js_vars.clase), ejeX: 'entradas de la clase',
+                ejeY: 'precio de la entrada', fmtY: Canasta.miles});
+        }
+    })();
+</script>
+
+{{ endblock }}

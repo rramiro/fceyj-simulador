@@ -105,6 +105,24 @@ habría que usar un sistema simplificado con las alícuotas como parámetros.
 Los juegos de mecánica conocida (por ejemplo, de cadena de suministro) se diseñan con reglas propias,
 sin copiar juegos existentes.
 
+### Microeconomía (2.7, ambas carreras) — propuesta del 24/11/2026
+
+Leído el curso de Moodle 2026 (id 4162; resumen en
+`material-catedra/materias/2.7-microeconomia/notas/`). Siete juegos, calibrados con los TP de la cátedra;
+documento para la cátedra: https://claude.ai/artifact/CXrbLcD9hJ81uoHeLQPeGM
+
+| # | Juego | Unidades | Qué deciden los equipos |
+|---|---|---|---|
+| 1 | La canasta de Soledad | II-III | Canasta con su ingreso cuando cambian precios e ingreso |
+| 2 | **El mercado de naranjas de Santa Rosa** | I, III-IV | Ofertas en un remate doble; rondas con impuesto, precio máximo y mínimo (TP 5: P = 6, Q = 90) |
+| 3 | La papa y la telaraña | IV (4.3) | Hectáreas a sembrar sin conocer el precio |
+| 4 | Surprise S.A.: la fábrica que crece | V-VII | Planta (5 tamaños del TP 7), cantidad, entrar o salir |
+| 5 | El único proveedor | III, VIII | Precio en dos mercados y reparto entre dos plantas; regulación |
+| 6 | Duopolio: competir o pactar | IX | Cournot, luego precios, luego cártel con chat (TP 11: Qd = 240 − 10P) |
+| 7 | El frigorífico del pueblo | X-XI | Contratación con VPMg, monopsonio y paritaria con sindicato |
+
+Orden recomendado: 2, 6, 4 y después el resto. Objetivo: 2.º cuatrimestre de 2027.
+
 **Cómo trabajarlos:** cada juego conviene diseñarlo con la cátedra correspondiente, a partir de sus
 casos y datos, y validarlo con ella antes de usarlo en clase. El material que aporten las cátedras se
 guarda en `material-catedra/` (ver su README).
@@ -114,4 +132,5 @@ guarda en `material-catedra/` (ver su README).
 | Juego | Estado |
 |---|---|
 | Costos | Elegido como el próximo (19/11/2026). Se espera material de la cátedra antes de diseñarlo. |
+| Microeconomía | Siete juegos propuestos (24/11/2026). El 1, **La canasta de Soledad**, está hecho en la rama `consumidor` (app `canasta`, docs/juego-canasta.md). |
 | Los demás | Propuestos. |

@@ -1,0 +1,74 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    {{ mes }}
+{{ endblock }}
+
+{{ block content }}
+
+<p class="text-muted">
+    Mes {{ player.round_number }} de {{ num_rondas }}. Consumidor: <b>{{ tipo_nombre }}</b>.
+    {{ if puntaje }}Puntaje hasta ahora: <b>{{ puntaje }}</b>.{{ endif }}
+</p>
+
+<div class="alert {{ if compensada }}alert-warning{{ else }}alert-info{{ endif }}">
+    <small class="d-block text-uppercase fw-bold">Novedad del mes</small>
+    {{ anuncio }}
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <h5>Su mapa de indiferencia</h5>
+        <svg id="mapa" viewBox="0 0 560 360" width="100%" role="img"
+             aria-label="Curvas de indiferencia, recta de presupuesto y la canasta elegida"></svg>
+        <p class="small text-muted">
+            <span style="color:#b9c3ce">━</span> algunas de sus curvas de indiferencia ·
+            <b>━</b> recta de presupuesto (los puntos son las canastas con entradas enteras) ·
+            <span style="color:#0b5cad">┅ ●</span> la curva a la que llega la canasta que eligen.
+            Más arriba y a la derecha, más satisfacción.
+        </p>
+    </div>
+    <div class="col-lg-5">
+        <h5>Datos del mes</h5>
+        <table class="table table-sm">
+            {{ for f in datos }}<tr><td>{{ f.concepto }}</td><td>{{ f.valor }}</td></tr>{{ endfor }}
+            {{ if hay_marzo }}<tr><td>Entradas que compraron en marzo</td><td>{{ x_marzo }}</td></tr>{{ endif }}
+            {{ if hay_anterior }}<tr><td>Entradas del mes anterior</td><td>{{ entradas_anteriores }}</td></tr>{{ endif }}
+        </table>
+
+        <h5>Su canasta</h5>
+        {{ formfield 'entradas' }}
+        <p class="form-text" id="resto">De 0 a {{ x_max }} entradas. El resto del ingreso va a alimentos.</p>
+    </div>
+</div>
+
+<h5>Pregunta del mes</h5>
+<p><b>{{ pregunta }}</b> ({{ unidad }}).</p>
+{{ formfield 'respuesta' }}
+<p class="form-text">Opcional, pero suma {{ puntos_pregunta }} puntos si acierta (±{{ tolerancia }}). Use punto o coma decimal según su teclado.</p>
+
+{{ include "global/tiempo_decision.html" }}
+
+{{ next_button }}
+
+<script src="{{ static 'canasta/canasta.js' }}?v=1"></script>
+<script>
+    (function () {
+        var campo = document.getElementById('id_entradas');
+        var resto = document.getElementById('resto');
+        Canasta.mapa(document.getElementById('mapa'), js_vars, {campo: campo});
+        function pesos(v) { return '$ ' + Math.round(v).toLocaleString('es-AR'); }
+        function actualizar() {
+            var x = parseInt(campo.value, 10);
+            if (isNaN(x) || x < 0) { resto.textContent = 'De 0 a ' + js_vars.x_max + ' entradas. El resto del ingreso va a alimentos.'; return; }
+            if (x > js_vars.x_max) { resto.textContent = 'No les alcanza: como máximo ' + js_vars.x_max + ' entradas.'; return; }
+            var gasto = x * js_vars.px, y = (js_vars.ingreso - gasto) / js_vars.py;
+            resto.textContent = x + ' entradas: ' + pesos(gasto) + ' en cine y ' + pesos(js_vars.ingreso - gasto) +
+                ' en alimentos (' + (Math.round(y * 100) / 100).toLocaleString('es-AR') + ' canastas).';
+        }
+        campo.addEventListener('input', actualizar);
+        actualizar();
+    })();
+</script>
+
+{{ endblock }}

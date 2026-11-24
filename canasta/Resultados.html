@@ -1,0 +1,90 @@
+{{ extends "global/Page.html" }}
+
+{{ block title }}
+    Resultados: {{ mes }}
+{{ endblock }}
+
+{{ block content }}
+
+{{ include "global/tiempo_resultados.html" }}
+
+<p>Mes {{ player.round_number }} de {{ num_rondas }}. Compraron <b>{{ x }} entradas</b> y <b>{{ y }} canastas de alimentos</b>
+    ({{ gasto_cine }} en cine y {{ gasto_alimentos }} en alimentos).</p>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <svg id="mapa" viewBox="0 0 560 360" width="100%" role="img"
+             aria-label="La canasta elegida y la canasta óptima sobre la recta de presupuesto"></svg>
+        <p class="small text-muted">
+            <span style="color:#2e7d32">━ ●</span> canasta óptima y su curva de indiferencia, tangente a la recta ·
+            <span style="color:#0b5cad">┅ ●</span> su canasta y la curva a la que llegó.
+        </p>
+    </div>
+    <div class="col-lg-5">
+        <div class="alert {{ if es_optima }}alert-success{{ else }}alert-light border{{ endif }}">
+            {{ if es_optima }}
+                ¡Eligieron la canasta óptima! <b>+{{ puntos }} puntos</b>.
+            {{ else }}
+                La canasta óptima era <b>{{ x_opt }} entradas</b> y {{ y_opt }} canastas de alimentos
+                (sin redondear, {{ x_continuo }} entradas). Su decisión suma <b>{{ puntos }} de {{ puntos_exacto }}
+                puntos</b>.
+            {{ endif }}
+        </div>
+        <table class="table table-sm">
+            <tr><td>Ingreso real logrado: U(su canasta) / U(óptima)</td><td class="text-end"><b>{{ relativa }}</b></td></tr>
+            {{ if hay_perdida }}<tr><td>Es como si hubieran perdido</td><td class="text-end">{{ ingreso_perdido }} de ingreso</td></tr>{{ endif }}
+            {{ if tms_elegida }}<tr><td>TMS en su canasta</td><td class="text-end">{{ tms_elegida }}</td></tr>{{ endif }}
+            <tr><td>Precio relativo Px / Py</td><td class="text-end">{{ precio_relativo }}</td></tr>
+        </table>
+        <p class="small text-muted">
+            Si la TMS de su canasta es mayor que Px/Py, valoran una entrada más de lo que cuesta en alimentos: les
+            conviene comprar más entradas. Si es menor, menos.
+        </p>
+
+        <div class="alert {{ if acierto }}alert-success{{ else }}alert-warning{{ endif }} small">
+            <b>Pregunta:</b> {{ pregunta }}<br>
+            {{ if anulada }}
+                Con sus cantidades no se puede calcular: la pregunta se anula y suma los {{ puntos_pregunta }} puntos.
+            {{ else }}
+                Su respuesta: {{ respuesta }} · Valor correcto: <b>{{ correcto }}</b>
+                {{ if absoluto }}(se acepta con o sin signo){{ endif }}
+                {{ if acierto }}(+{{ puntos_pregunta }} puntos){{ endif }}
+            {{ endif }}
+        </div>
+    </div>
+</div>
+
+{{ if demanda or engel }}
+<h5>Sus curvas hasta ahora</h5>
+<div class="row g-3">
+    {{ if demanda }}
+    <div class="col-md-6">
+        <h6>Demanda de cine (con el ingreso de marzo)</h6>
+        <table class="table table-sm">
+            <thead><tr><th>Precio de la entrada</th><th class="text-end">Ustedes</th><th class="text-end">Óptimo</th></tr></thead>
+            {{ for f in demanda }}<tr><td>{{ f.px }}</td><td class="text-end">{{ f.x }}</td><td class="text-end">{{ f.opt }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+    {{ endif }}
+    {{ if engel }}
+    <div class="col-md-6">
+        <h6>Curva de Engel del cine (con los precios de marzo)</h6>
+        <table class="table table-sm">
+            <thead><tr><th>Ingreso</th><th class="text-end">Ustedes</th><th class="text-end">Óptimo</th></tr></thead>
+            {{ for f in engel }}<tr><td>{{ f.ingreso }}</td><td class="text-end">{{ f.x }}</td><td class="text-end">{{ f.opt }}</td></tr>{{ endfor }}
+        </table>
+    </div>
+    {{ endif }}
+</div>
+{{ endif }}
+
+<div class="alert alert-light border">
+    Puntaje: <b>{{ puntaje }}</b> de 100. Puesto en la clase: <b>{{ puesto }}° de {{ num_equipos }}</b>.
+</div>
+
+{{ next_button }}
+
+<script src="{{ static 'canasta/canasta.js' }}?v=1"></script>
+<script>Canasta.mapa(document.getElementById('mapa'), js_vars);</script>
+
+{{ endblock }}
