@@ -70,5 +70,5 @@ marzo fue óptimo.
 
 ## Estado
 
-Hecho en la rama `consumidor` (desde `main`), sin commit al 24/11/2026. Falta: commit, despliegue a testing y
-revisarlo con la cátedra.
+Hecho en la rama `consumidor` (desde `main`), commit del 24/11/2026. Falta: despliegue a testing y revisarlo
+con la cátedra.
